@@ -4,6 +4,25 @@
 
 A lightweight and customizable Android page turning library inspired by real-world reading experiences. Supports animations like simulation, slide, cover, and scroll styles.
 
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+  <div style="width: 25%; text-align: center;">
+    <img src="gif/ibookslide.gif" style="max-width: 100%; height: auto;" />
+    <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">iBook Slide</p>
+  </div>
+  <div style="width: 25%; text-align: center;">
+    <img src="gif/slide.gif" style="max-width: 100%; height: auto;" />
+    <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">Slide</p>
+  </div>
+  <div style="width: 25%; text-align: center;">
+    <img src="gif/cover.gif" style="max-width: 100%; height: auto;" />
+    <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">Cover</p>
+  </div>
+  <div style="width: 25%; text-align: center;">
+    <img src="gif/simulation.gif" style="max-width: 100%; height: auto;" />
+    <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">Simulation</p>
+  </div>
+</div>
+
 ## 🚀 Features
 
 - 📖 Realistic page flip effects (Simulate, Cover, Slide, NoAnim, Scroll)
@@ -15,7 +34,8 @@ A lightweight and customizable Android page turning library inspired by real-wor
 
 <details>
 <summary><b>Via Jar</b></summary></details>
-You can download a jar from GitHub's [releases page](https://github.com/peyilo/libreadview/releases).
+You can download a jar from [GitHub's releases page](https://github.com/peyilo/libreadview/releases).
+
 
 <details>
 <summary><b>Via Gradle</b></summary></details>
