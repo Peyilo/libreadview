@@ -15,7 +15,7 @@ A lightweight and customizable Android page turning library inspired by real-wor
 
 <details>
 <summary><b>Via Jar</b></summary></details>
-You can download a jar from GitHub's [releases page][1].
+You can download a jar from GitHub's [releases page](https://github.com/peyilo/libreadview/releases).
 
 <details>
 <summary><b>Via Gradle</b></summary></details>
