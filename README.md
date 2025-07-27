@@ -6,22 +6,23 @@ A lightweight and customizable Android page turning library inspired by real-wor
 
 <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
   <div style="width: 25%; text-align: center;">
-    <img src="gif/ibookslide.gif" style="max-width: 100%; height: auto;" />
+    <img src="gif/ibookslide_small.gif" style="max-width: 100%; height: auto;" />
     <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">iBook Slide</p>
   </div>
   <div style="width: 25%; text-align: center;">
-    <img src="gif/slide.gif" style="max-width: 100%; height: auto;" />
+    <img src="gif/slide_small.gif" style="max-width: 100%; height: auto;" />
     <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">Slide</p>
   </div>
   <div style="width: 25%; text-align: center;">
-    <img src="gif/cover.gif" style="max-width: 100%; height: auto;" />
+    <img src="gif/cover_small.gif" style="max-width: 100%; height: auto;" />
     <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">Cover</p>
   </div>
   <div style="width: 25%; text-align: center;">
-    <img src="gif/simulation.gif" style="max-width: 100%; height: auto;" />
+    <img src="gif/simulation_small.gif" style="max-width: 100%; height: auto;" />
     <p style="margin: 6px 0 0; font-size: 14px; white-space: nowrap;font-weight: bold;">Simulation</p>
   </div>
 </div>
+
 
 ## 🚀 Features
 
