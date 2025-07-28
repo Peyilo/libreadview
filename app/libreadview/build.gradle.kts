@@ -26,45 +26,47 @@ group = groupId
 version = versionId
 
 mavenPublishing {
-    publishToMavenCentral()
-    signAllPublications()
+    if (project.hasProperty("enablePublishing")) {
+        publishToMavenCentral()
+        signAllPublications()
 
-    if (!project.hasProperty("mavenCentralUsername")) {
-        throw IllegalArgumentException("mavenCentralUsername is not set")
-    } else if (!project.hasProperty("mavenCentralPassword")) {
-        throw IllegalArgumentException("mavenCentralPassword is not set")
-    } else if (!project.hasProperty("signing.keyId")) {
-        throw IllegalArgumentException("signing.keyId is not set")
-    } else if (!project.hasProperty("signing.password")) {
-        throw IllegalArgumentException("signing.password is not set")
-    }
-
-    coordinates(groupId, artifactId, versionId)
-
-    pom {
-        name.set(artifactId)
-        description.set(descriptions)
-        inceptionYear.set(year)
-        url.set("https://$gitUri/$gitRepoName/")
-        licenses {
-            license {
-                name.set(license)
-                url.set(licenseUrl)
-                distribution.set(licenseUrl)
-            }
+        if (!project.hasProperty("mavenCentralUsername")) {
+            throw IllegalArgumentException("mavenCentralUsername is not set")
+        } else if (!project.hasProperty("mavenCentralPassword")) {
+            throw IllegalArgumentException("mavenCentralPassword is not set")
+        } else if (!project.hasProperty("signing.keyId")) {
+            throw IllegalArgumentException("signing.keyId is not set")
+        } else if (!project.hasProperty("signing.password")) {
+            throw IllegalArgumentException("signing.password is not set")
         }
-        developers {
-            developer {
-                id.set(developerId)
-                name.set(authorName)
-                email.set(emails)
-                url.set("https://$gitUri")
+
+        coordinates(groupId, artifactId, versionId)
+
+        pom {
+            name.set(artifactId)
+            description.set(descriptions)
+            inceptionYear.set(year)
+            url.set("https://$gitUri/$gitRepoName/")
+            licenses {
+                license {
+                    name.set(license)
+                    url.set(licenseUrl)
+                    distribution.set(licenseUrl)
+                }
             }
-        }
-        scm {
-            url.set(gitRepoName)
-            connection.set("scm:git:git://$gitUri/$gitRepoName.git")
-            developerConnection.set("scm:git:ssh://git@$gitUri/$gitRepoName.git")
+            developers {
+                developer {
+                    id.set(developerId)
+                    name.set(authorName)
+                    email.set(emails)
+                    url.set("https://$gitUri")
+                }
+            }
+            scm {
+                url.set(gitRepoName)
+                connection.set("scm:git:git://$gitUri/$gitRepoName.git")
+                developerConnection.set("scm:git:ssh://git@$gitUri/$gitRepoName.git")
+            }
         }
     }
 }
