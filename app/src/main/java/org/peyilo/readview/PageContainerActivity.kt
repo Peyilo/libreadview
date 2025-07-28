@@ -34,7 +34,9 @@ class PageContainerActivity : AppCompatActivity() {
 
         pageContainerTop = findViewById(R.id.pageContainer)
         pageContainerTop.initPageIndex(1)
-        pageContainerTop.pageManager = SimulationPageManagers.Style1()
+        pageContainerTop.pageManager = SimulationPageManagers.Style1().apply {
+            enableDebugMode = true
+        }
 
         pageContainerTop.adapter = ColorAdapter(colors)
         pageContainerTop.setOnClickRegionListener{ xPercent, _ ->

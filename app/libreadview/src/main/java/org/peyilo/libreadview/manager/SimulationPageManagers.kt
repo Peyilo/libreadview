@@ -19,6 +19,7 @@ import org.peyilo.libreadview.utils.Vec
 import org.peyilo.libreadview.utils.copy
 import org.peyilo.libreadview.utils.rakeRadio
 import org.peyilo.libreadview.utils.screenshot
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.sin
@@ -37,7 +38,7 @@ class SimulationPageManagers {
     /**
      * 仿真翻页实现1，常见于Android端各种小说阅读软件的仿真翻页实现
      * TODO: 扭曲实现
-     * TODO：不再使用贝塞尔曲线，在圆柱模型下，使用椭圆曲线更好
+     * TODO：不再使用贝塞尔曲线，在圆柱模型下，使用椭圆曲线更好，添加A区域的扭曲实现
      * TODO：尽可能不在绘制中创建大量的PointF对象，由于对象全部保存在堆上，可能造成频繁地GC
      */
     open class Style1: HorizontalPageManager(), AnimatedPageManager {
@@ -560,7 +561,6 @@ class SimulationPageManagers {
         }
 
         private fun drawRegionC(canvas: Canvas) {
-
             canvas.withClip(pathC) {
                 // 计算两个控制点之间的距离
                 val dis = hypot(bezierControl2.x - bezierControl1.x, bezierControl2.y - bezierControl1.y)
@@ -581,6 +581,9 @@ class SimulationPageManagers {
             }
         }
 
+        /**
+         * 计算drawBitmapMesh需要的点坐标，并对点坐标应用matrix的线性变换
+         */
         private fun computeMeshVerts(matrix: Matrix?) {
             var index = 0
             for (y in 0..meshHeight) {
@@ -602,7 +605,7 @@ class SimulationPageManagers {
             val originY = cornerVertex.y
             val radius = abs((touchPoint.x - bezierVertex1.x) * ux + (touchPoint.y - bezierVertex1.y) * uy)  // 圆柱半径，值越大弯曲越柔和
 
-            // TODO: 当cornerVertex为右上角的顶点时，映射并不正确，推测是因为meshVerts中多个点位置可能存在互相覆盖的可能
+
             for (i in meshVerts.indices step 2) {
                 val x = meshVerts[i]
                 val y = meshVerts[i + 1]
@@ -620,8 +623,18 @@ class SimulationPageManagers {
                 // 另一条则是垂直于cornerVertex指向touchPoint的连线
                 // 将 s 映射到圆柱体表面
                 val theta = s / radius
-                val curveX = radius * sin(theta)
-
+                // 当cornerVertex为右上角的顶点时，映射并不正确，推测是因为meshVerts中多个点位置可能存在互相覆盖的可能
+                // theta < PI / 2区域是需要的区域，但是theta > PI / 2是不必要的区域，且有可能覆盖需要的区域
+                // 因此，需要避免被覆盖
+                // curveX表示的是沿着s方向的投影，由于采用的是圆柱仿真翻页模型，对于curveY直接不做任何更改，也就是直接使curveY=t
+                val curveX = if (theta < PI / 2) {
+                    radius * sin(theta)
+                } else {
+                    // 由于sin的周期性，大于PI/2时，得到的值可能和小于PI/2的值相同，导致遮挡
+                    // 因此，对于在半径radius以内的区域进行弯曲，对于大于radius的区域则不采用任何弯曲特效（即平铺）
+                    // 并且保证映射之后的page是连续的
+                    s - PI.toFloat() / 2 * radius + radius
+                }
                 // 将变换后的点再映射回屏幕坐标系
                 meshVerts[i] = originX + curveX * ux - t * uy
                 meshVerts[i + 1] = originY + curveX * uy + t * ux

@@ -20,7 +20,9 @@ class ReadPage (
     }
 
     val root: View = findViewById(R.id.page_root)
-    val header: View = root.findViewById(R.id.page_header)
+    val header: TextView = root.findViewById<TextView>(R.id.page_header).apply{
+        text = "123456789101112131415161718192021222324252627282930"
+    }
     val footer: View = root.findViewById(R.id.page_footer)
 
     val content: ReadContent = root.findViewById(R.id.page_content)

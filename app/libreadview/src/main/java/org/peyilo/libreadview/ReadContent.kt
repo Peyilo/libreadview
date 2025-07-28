@@ -23,8 +23,8 @@ class ReadContent(
         }
 
     // 绘制细线网格
-    var cellWidth = 20
-    var cellHeight = 20
+    var cellWidth = 40
+    var cellHeight = 40
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK

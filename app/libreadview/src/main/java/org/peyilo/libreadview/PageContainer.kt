@@ -157,11 +157,8 @@ open class PageContainer(
         _adapter ?: return
         pageCache.setAdapter(adapter)
         val count = itemCount
-        if (count == 0) {
-            curPageIndex = 1                                           // 如果count=0，将curPageIndex也约束到1
-        } else {
-            curPageIndex = curPageIndex.coerceIn(1, count)         // 约束curPageIndex在有效取值范围内
-        }
+        // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
+        curPageIndex = if (count == 0) 1 else curPageIndex.coerceIn(1, count)
         val pageRange = getPageRange(curPageIndex, maxAttachedPage, count)
         pageRange.reversed().forEach { pageIndex ->
             val position = pageIndex - 1            // 页码转position

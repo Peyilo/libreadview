@@ -20,14 +20,16 @@
         android:id="@+id/page_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingVertical="8dp"
-        android:paddingHorizontal="10dp"
-        android:layout_below="@id/page_header"
         android:layout_above="@id/page_footer"
+        android:layout_below="@id/page_header"
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="0dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="8dp"
         android:paddingStart="10dp"
-        android:paddingEnd="10dp"
         android:paddingTop="10dp"
-        android:paddingBottom="10dp"/>
+        android:paddingEnd="10dp"
+        android:paddingBottom="10dp" />
 
     <RelativeLayout
         android:id="@+id/page_footer"
