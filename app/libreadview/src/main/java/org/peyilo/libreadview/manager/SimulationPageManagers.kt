@@ -37,35 +37,33 @@ class SimulationPageManagers {
 
     /**
      * 仿真翻页实现1，常见于Android端各种小说阅读软件的仿真翻页实现
-     * TODO: 扭曲实现
-     * TODO：不再使用贝塞尔曲线，在圆柱模型下，使用椭圆曲线更好，添加A区域的扭曲实现
      * TODO：尽可能不在绘制中创建大量的PointF对象，由于对象全部保存在堆上，可能造成频繁地GC
      */
     open class Style1: HorizontalPageManager(), AnimatedPageManager {
 
-        private val containerWidth get() = pageContainer.width      // 容器的宽度
-        private val containerHeight get() = pageContainer.height    // 容器的高度
+        protected val containerWidth get() = pageContainer.width      // 容器的宽度
+        protected val containerHeight get() = pageContainer.height    // 容器的高度
 
-        private val bezierStart1 = PointF()         // 第一条贝塞尔曲线的起始点、终点、控制点
-        private val bezierEnd1 = PointF()
-        private val bezierControl1 = PointF()
+        protected val bezierStart1 = PointF()         // 第一条贝塞尔曲线的起始点、终点、控制点
+        protected val bezierEnd1 = PointF()
+        protected val bezierControl1 = PointF()
 
-        private val bezierStart2 = PointF()         // 第二条贝塞尔曲线的起始点、终点、控制点
-        private val bezierEnd2 = PointF()
-        private val bezierControl2 = PointF()
+        protected val bezierStart2 = PointF()         // 第二条贝塞尔曲线的起始点、终点、控制点
+        protected val bezierEnd2 = PointF()
+        protected val bezierControl2 = PointF()
 
         // 大多数情况下，bezierControl2和bezierControl2Copy完全相同
-        private val bezierControl2Copy = PointF()
-        private var userCopy = false        // bezierControl2和bezierControl2Copy不同时，该值为true
+        protected val bezierControl2Copy = PointF()
+        protected var userCopy = false        // bezierControl2和bezierControl2Copy不同时，该值为true
 
-        private val bezierVertex1 = PointF()        // C区域直角三角形（为了更加简便，这里了近似为直角，真实视觉效果应该上比90°稍大）斜边与两条贝塞尔曲线相切的两个点
-        private val bezierVertex2 = PointF()
+        protected val bezierVertex1 = PointF()        // C区域直角三角形（为了更加简便，这里了近似为直角，真实视觉效果应该上比90°稍大）斜边与两条贝塞尔曲线相切的两个点
+        protected val bezierVertex2 = PointF()
 
-        private val touchPoint = PointF()                 // 触摸点
-        private val cornerVertex = PointF()               // 页脚顶点
-        private val middlePoint = PointF()                // 触摸点、页脚定点连线的中点
-        private val m1 = PointF()                         // bezierStart1、bezierEnd1连线的中点
-        private val m2 = PointF()                         // bezierStart2、bezierEnd2连线的中点
+        protected val touchPoint = PointF()                 // 触摸点
+        protected val cornerVertex = PointF()               // 页脚顶点
+        protected val middlePoint = PointF()                // 触摸点、页脚定点连线的中点
+        protected val m1 = PointF()                         // bezierStart1、bezierEnd1连线的中点
+        protected val m2 = PointF()                         // bezierStart2、bezierEnd2连线的中点
 
         /**
          * 仿真翻页时有三个区域：A、B、C
@@ -73,16 +71,46 @@ class SimulationPageManagers {
          * B区域：下一页区域
          * C区域：当前页背面区域
          */
-        private val pathA = Path()
-        private val pathB = Path()
-        private val pathC = Path()
+        protected val pathA = Path()
+        protected val pathB = Path()
+        protected val pathC = Path()
 
-        // 绘制区域C要用到的: 叠加灰色调遮罩、矩阵变换
-        private val backShadowPaint = Paint().apply {
-            color = Color.argb(10, 0, 0, 0) // 半透明黑（你也可以用灰）
+        /**
+         * 绘制区域C要用到的: 叠加灰色调遮罩、矩阵变换
+         */
+        protected val backShadowPaint = Paint().apply {
+            color = Color.argb(72, 0, 0, 0) // 半透明黑（也可以用灰）
         }
-        private val matrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
-        private val matrix = Matrix()
+        private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
+        private val regionCMatrix = Matrix()
+
+        /**
+         * C区域：当前页的背面区域
+         * 设置渲染仿真翻页扭曲部分区域的横向采样点数量：采样点越多，越精确，但是计算量也越高
+         */
+        var regionCMeshWidth = 40
+
+        /**
+         * C区域：当前页的背面区域
+         * 设置渲染仿真翻页扭曲部分区域的纵向采样点数量：采样点越多，越精确，但是计算量也越高
+         */
+        var regionCMeshHeight = 40
+        private val regionCMeshVertsCount = (regionCMeshWidth + 1) * (regionCMeshHeight + 1)
+        private val regionCMeshVerts = FloatArray(regionCMeshVertsCount * 2)
+
+        /**
+         * A区域：当前页的正面区域
+         * 设置渲染仿真翻页扭曲部分区域的横向采样点数量：采样点越多，越精确，但是计算量也越高
+         */
+        var regionAMeshWidth = 40
+
+        /**
+         * A区域：当前页的正面区域
+         * 设置渲染仿真翻页扭曲部分区域的纵向采样点数量：采样点越多，越精确，但是计算量也越高
+         */
+        var regionAMeshHeight = 40
+        private val regionAMeshVertsCount = (regionAMeshWidth + 1) * (regionAMeshHeight + 1)
+        private val regionAMeshVerts = FloatArray(regionAMeshVertsCount * 2)
 
         private class PageBitmap {
             var topBitmap: Bitmap? = null
@@ -117,40 +145,35 @@ class SimulationPageManagers {
             }
         }
 
-        // 注意控制Bitmap的回收，避免出现内存泄漏
+        /**
+         * 注意控制Bitmap的回收，避免出现内存泄漏
+         */
         private val pageBitmap = PageBitmap()
 
         private var animMode = AnimMode.None
 
-        private val regionPaint = Paint().apply {
-            color = Color.BLACK
-            style = Paint.Style.STROKE
-            strokeWidth = 5F
-        }
-
-        private var animDuration = 600              // 动画持续时间
+        /**
+         * 动画持续时间
+         */
+        private var animDuration = 600
 
         private val shadowB = Path()
         private val shadowC = Path()
         private val shadowA1 = Path()
         private val shadowA2 = Path()
 
-        private val shadowPaint = Paint().apply {
+        protected val shadowPaint = Paint().apply {
             isAntiAlias = true
             style = Paint.Style.FILL
         }
 
-        private val shadowAWidth = 20F
-        private val shadowAStartColor = Color.argb(60, 0, 0, 0)
-        private val shadowAEndColor = Color.argb(0, 0, 0, 0)
+        var shadowAWidth = 20F
+        protected val shadowAStartColor = Color.argb(60, 0, 0, 0)
+        protected val shadowAEndColor = Color.argb(0, 0, 0, 0)
 
-        // 设置渲染仿真翻页扭曲部分区域的采样点数量：采样点越多，越精确，但是计算量也越高
-        var meshWidth = 40
-        var meshHeight = 40
-        private val count = (meshWidth + 1) * (meshHeight + 1)
-        private val meshVerts = FloatArray(count * 2)
-
-        // 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
+        /**
+         * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
+         */
         var enableDebugMode = false
 
         private val debugLinePaint by lazy {
@@ -169,16 +192,6 @@ class SimulationPageManagers {
 
         override fun setAnimDuration(animDuration: Int) {
             this.animDuration = animDuration
-        }
-
-        /**
-         * 当前的CornetVertex是否为右上角的顶点
-         */
-        private fun isTopCorner(): Boolean {
-            if (!isAnimRuning && !isDragging) {
-                throw IllegalStateException("只有当页面处于拖动或者动画执行的过程中，才能调用该函数")
-            }
-            return cornerVertex.y == 0F
         }
 
         /**
@@ -360,9 +373,9 @@ class SimulationPageManagers {
             val initDire = super.decideInitDire(dx, dy)
             animMode = when (initDire) {
                 PageDirection.NEXT -> {     // 向下一页翻页时，根据本轮手势的DOWN坐标决定翻页动画的三种不同模式：右上角翻页、右下角翻页、横向翻页
-                    if (gesture.down.y < containerHeight * 1 / 3) {               // 右上角翻页
+                    if (gesture.down.y < containerHeight * 0.4) {               // 右上角翻页
                         AnimMode.TopRightCorner
-                    } else if (gesture.down.y > containerHeight * 2 / 3) {    // 右下角翻页
+                    } else if (gesture.down.y > containerHeight * 0.8) {    // 右下角翻页
                         AnimMode.BottomRightCorner
                     } else {   // 横向翻页
                         AnimMode.NextLandscape
@@ -550,13 +563,14 @@ class SimulationPageManagers {
 
         private fun drawRegionA(canvas: Canvas) {
             canvas.withClip(pathA) {
-                drawBitmap(pageBitmap.topBitmap!!, 0F, 0F, regionPaint)
+                computeRegionAMeshVerts()
+                canvas.drawBitmapMesh(pageBitmap.topBitmap!!, regionAMeshWidth, regionAMeshHeight, regionAMeshVerts, 0, null, 0, null)
             }
         }
 
         private fun drawRegionB(canvas: Canvas) {
             canvas.withClip(pathB) {
-                drawBitmap(pageBitmap.bottomBitmap!!, 0F, 0F, regionPaint)
+                drawBitmap(pageBitmap.bottomBitmap!!, 0F, 0F, null)
             }
         }
 
@@ -566,32 +580,31 @@ class SimulationPageManagers {
                 val dis = hypot(bezierControl2.x - bezierControl1.x, bezierControl2.y - bezierControl1.y)
                 val sin = (bezierControl2.x - bezierControl1.x) / dis
                 val cos = (bezierControl2.y - bezierControl1.y) / dis
-                matrixArray[0] = -(1 - 2 * sin * sin)
-                matrixArray[1] = 2 * sin * cos
-                matrixArray[3] = 2 * sin * cos
-                matrixArray[4] = 1 - 2 * sin * sin
-                this@Style1.matrix.reset()
-                this@Style1.matrix.setValues(matrixArray)
+                regionCMatrixArray[0] = -(1 - 2 * sin * sin)
+                regionCMatrixArray[1] = 2 * sin * cos
+                regionCMatrixArray[3] = 2 * sin * cos
+                regionCMatrixArray[4] = 1 - 2 * sin * sin
+                this@Style1.regionCMatrix.reset()
+                this@Style1.regionCMatrix.setValues(regionCMatrixArray)
                 // 将坐标原点平移到bezierControl1处
-                this@Style1.matrix.preTranslate(-bezierControl1.x, -bezierControl1.y)
-                this@Style1.matrix.postTranslate(bezierControl1.x, bezierControl1.y)
-                computeMeshVerts(this@Style1.matrix)
-                canvas.drawBitmapMesh(pageBitmap.topBitmap!!, meshWidth, meshHeight, meshVerts, 0, null, 0, null)
-                canvas.drawPath(pathC, backShadowPaint)         // 给背面区域添加一个很淡的阴影
+                this@Style1.regionCMatrix.preTranslate(-bezierControl1.x, -bezierControl1.y)
+                this@Style1.regionCMatrix.postTranslate(bezierControl1.x, bezierControl1.y)
+                computeRegionCMeshVerts(this@Style1.regionCMatrix)
+                canvas.drawBitmapMesh(pageBitmap.topBitmap!!, regionCMeshWidth, regionCMeshHeight, regionCMeshVerts, 0, null, 0, null)
             }
         }
 
         /**
-         * 计算drawBitmapMesh需要的点坐标，并对点坐标应用matrix的线性变换
+         * 计算RegionC drawBitmapMesh需要的点坐标，并对点坐标应用matrix的线性变换
          */
-        private fun computeMeshVerts(matrix: Matrix?) {
+        private fun computeRegionCMeshVerts(matrix: Matrix?) {
             var index = 0
-            for (y in 0..meshHeight) {
-                val fy = containerHeight.toFloat() * y / meshHeight
-                for (x in 0..meshWidth) {
-                    val fx = containerWidth * x.toFloat() / meshWidth
-                    meshVerts[index * 2] = fx
-                    meshVerts[index * 2 + 1] = fy
+            for (y in 0..regionCMeshHeight) {
+                val fy = containerHeight.toFloat() * y / regionCMeshHeight
+                for (x in 0..regionCMeshWidth) {
+                    val fx = containerWidth * x.toFloat() / regionCMeshWidth
+                    regionCMeshVerts[index * 2] = fx
+                    regionCMeshVerts[index * 2 + 1] = fy
                     index++
                 }
             }
@@ -606,9 +619,9 @@ class SimulationPageManagers {
             val radius = abs((touchPoint.x - bezierVertex1.x) * ux + (touchPoint.y - bezierVertex1.y) * uy)  // 圆柱半径，值越大弯曲越柔和
 
 
-            for (i in meshVerts.indices step 2) {
-                val x = meshVerts[i]
-                val y = meshVerts[i + 1]
+            for (i in regionCMeshVerts.indices step 2) {
+                val x = regionCMeshVerts[i]
+                val y = regionCMeshVerts[i + 1]
 
                 // 计算当前mesh vert相对于origin的坐标
                 val dx = x - originX
@@ -636,17 +649,75 @@ class SimulationPageManagers {
                     s - PI.toFloat() / 2 * radius + radius
                 }
                 // 将变换后的点再映射回屏幕坐标系
-                meshVerts[i] = originX + curveX * ux - t * uy
-                meshVerts[i + 1] = originY + curveX * uy + t * ux
+                regionCMeshVerts[i] = originX + curveX * ux - t * uy
+                regionCMeshVerts[i + 1] = originY + curveX * uy + t * ux
             }
             // drawBitmapMesh没有matrix参数，因此需要主动调用matrix，应用矩阵变换转换坐标
             val temp = FloatArray(2)
-            for (i in meshVerts.indices step 2) {
-                temp[0] = meshVerts[i]
-                temp[1] = meshVerts[i + 1]
+            for (i in regionCMeshVerts.indices step 2) {
+                temp[0] = regionCMeshVerts[i]
+                temp[1] = regionCMeshVerts[i + 1]
                 matrix?.mapPoints(temp)
-                meshVerts[i] = temp[0]
-                meshVerts[i + 1] = temp[1]
+                regionCMeshVerts[i] = temp[0]
+                regionCMeshVerts[i + 1] = temp[1]
+            }
+        }
+
+        /**
+         * 计算RegionA drawBitmapMesh需要的点坐标
+         */
+        private fun computeRegionAMeshVerts() {
+            var index = 0
+            for (y in 0..regionAMeshHeight) {
+                val fy = containerHeight.toFloat() * y / regionAMeshHeight
+                for (x in 0..regionAMeshWidth) {
+                    val fx = containerWidth * x.toFloat() / regionAMeshWidth
+                    regionAMeshVerts[index * 2] = fx
+                    regionAMeshVerts[index * 2 + 1] = fy
+                    index++
+                }
+            }
+
+            val dirX = cornerVertex.x - touchPoint.x
+            val dirY = cornerVertex.y - touchPoint.y        // touchPoint指向cornerVertex的向量
+            val len = hypot(dirX, dirY)
+            val ux = dirX / len                             // 单位方向向量
+            val uy = dirY / len
+            val originX = bezierEnd1.x                      // bezierEnd1作为原点
+            val originY = bezierEnd1.y
+            val radiusC = abs((touchPoint.x - bezierVertex1.x) * ux + (touchPoint.y - bezierVertex1.y) * uy)
+            val radiusA = (len - PI.toFloat() / 2 * radiusC) / (PI.toFloat() / 2)
+            val temp = abs((bezierEnd1.x - bezierVertex1.x) * ux + (bezierEnd1.y - bezierVertex1.y) * uy)
+            val axisX = temp - radiusA      // 圆柱轴在新坐标系的x坐标
+
+            for (i in regionAMeshVerts.indices step 2) {
+                val x = regionAMeshVerts[i]
+                val y = regionAMeshVerts[i + 1]
+
+                // 计算当前mesh vert相对于origin的坐标
+                val dx = x - originX
+                val dy = y - originY
+
+                // s 是沿翻页轴方向的投影（用于卷曲角度）
+                val s = dx * ux + dy * uy
+                // t 是垂直于翻页轴的投影（保留该方向用于回变换）
+                val t = -dx * uy + dy * ux
+
+                // 对于这部分区域，无需进行弯曲
+                if (s < axisX) continue
+
+                val theta = (s - axisX) / radiusA
+                val curveX = if (theta < PI / 2) {
+                    axisX + radiusA * sin(theta)
+                } else {
+                    // 由于sin的周期性，大于PI/2时，得到的值可能和小于PI/2的值相同，导致遮挡
+                    // 因此，对于在半径radius以内的区域进行弯曲，对于大于radius的区域则不采用任何弯曲特效（即平铺）
+                    // 并且保证映射之后的page是连续的
+                    s - PI.toFloat() / 2 * radiusA + radiusA
+                }
+                // 将变换后的点再映射回屏幕坐标系
+                regionAMeshVerts[i] = originX + curveX * ux - t * uy
+                regionAMeshVerts[i + 1] = originY + curveX * uy + t * ux
             }
         }
 
@@ -659,7 +730,7 @@ class SimulationPageManagers {
             drawPathCShadow(canvas)
         }
 
-        private fun drawPathBShadow(canvas: Canvas) {
+        protected fun drawPathBShadow(canvas: Canvas) {
             val width = 50F      // shadow width
             val v1 = bezierVertex1 - m1
             val v2 = Vec.normalize(v1.copy())           // v1的单位向量
@@ -686,7 +757,9 @@ class SimulationPageManagers {
             canvas.drawPath(shadowB, shadowPaint)
         }
 
-        private fun drawPathCShadow(canvas: Canvas) {
+        protected fun drawPathCShadow(canvas: Canvas) {
+            canvas.drawPath(pathC, backShadowPaint)         // 给背面区域添加一个很淡的阴影
+
             val width = 60F
             val v1 = Vec.normalize(bezierVertex1 - m1)
             val v2 =  v1 * width
@@ -711,7 +784,7 @@ class SimulationPageManagers {
             canvas.drawPath(shadowC, shadowPaint)
         }
 
-        private fun drawPathAShadow(canvas: Canvas) {
+        protected fun drawPathAShadow(canvas: Canvas) {
             val v1 = Vec.normalize(touchPoint - bezierControl1)
             val v2 = Vec.normalize(touchPoint - bezierControl2)
 
