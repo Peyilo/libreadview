@@ -12,10 +12,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
-import android.widget.Scroller
 import androidx.annotation.IntRange
-import kotlin.math.hypot
 import kotlin.math.max
 
 /**
@@ -82,12 +79,12 @@ open class PageContainer(
     /**
      * 根据点击区域监听点击事件
      */
-    private var onClickRegionListener: OnClickRegionListener? = null
+    internal var onClickRegionListener: OnClickRegionListener? = null
 
     /**
      * 监听翻页事件，在翻页完成时调用
      */
-    private var onFlipListener: OnFlipListener? = null
+    internal var onFlipListener: OnFlipListener? = null
 
     /**
      * 表示当前页码，从1开始
@@ -102,16 +99,6 @@ open class PageContainer(
     private val pageCache: PageCache<ViewHolder> get() = _pageCache as PageCache<ViewHolder>
 
     private val maxAttachedPage = 3             // child view最大数量
-
-    /**
-     * 最小翻页时间间隔: 限制翻页速度，取值为0时，表示不限制
-     */
-    @IntRange(from = 0) var minPageTurnInterval = 250
-
-    /**
-     * 上次翻页动画执行的时间
-     */
-    private var lastAnimTimestamp: Long = 0L
 
     /**
      * 初始化页码：设置一个标记位curPageIndex，在adapter设置之后决定显示页码
@@ -253,7 +240,7 @@ open class PageContainer(
                 child.layout(left, top, right, bottom)
             }
         }
-        if (pageManager.needPagePositionInit) {
+        if (pageManager.needInitPagePosition) {
             pageManager.initPagePosition()
         }
     }
@@ -273,15 +260,7 @@ open class PageContainer(
      */
     fun flipToNextPage(limited: Boolean = true): Boolean {
         if (hasNextPage()) {
-            if (!limited) {
-                pageManager.flipToNextPage()
-                return true
-            }
-            val internal =  System.currentTimeMillis() - lastAnimTimestamp
-            if (internal > minPageTurnInterval) {
-                pageManager.flipToNextPage()
-                return true
-            }
+            return pageManager.flipToNextPage(limited)
         }
         return false
     }
@@ -292,15 +271,7 @@ open class PageContainer(
      */
     fun flipToPrevPage(limited: Boolean = true): Boolean {
         if (hasPrevPage()) {
-            if (!limited) {
-                pageManager.flipToPrevPage()
-                return true
-            }
-            val internal =  System.currentTimeMillis() - lastAnimTimestamp
-            if (internal > minPageTurnInterval) {
-                pageManager.flipToPrevPage()
-                return true
-            }
+            return pageManager.flipToPrevPage(limited)
         }
         return false
     }
@@ -314,39 +285,12 @@ open class PageContainer(
         protected val pageContainer: PageContainer
             get() = _pageContainer ?: throw IllegalStateException("PageContainer is not initialized. Did you forget to call setPageContainer()?")
 
-        /**
-         * 动画播放状态（不包含拖动状态的动画），若为true则表示当前动画还没有播放完
-         * 这个状态需要子类维护，只有当isAnimRuning为true时，abortAnim才可能会被调用
-         */
-        protected var isAnimRuning = false
-
-        /**
-         * 表示当前某个page正在处于被拖动中
-         */
-        protected var isDragging = false
-            private set
-
-        private var _scroller: Scroller? = null
-        protected val scroller: Scroller
-            get() {
-                if (_scroller == null) {
-                    _scroller = getDefaultScroller()        // 如果没设置scoller，就是用默认的
-                }
-                return _scroller!!
-            }
-
-        protected val gesture: Gesture = Gesture()
-        private var isSwipeGesture = false                      // 此次手势是否为滑动手势,一旦当前手势移动的距离大于scaledTouchSlop，就被判为滑动手势
-        private var needStartAnim = false                       // 此次手势是否需要触发滑动动画
-        private var initDire = PageDirection.NONE               // 初始滑动方向，其确定了要滑动的page
-        private var realTimeDire = PageDirection.NONE
-
-        var needPagePositionInit = true
-            protected set
-
         internal fun setPageContainer(pageContainer: PageContainer) {
             _pageContainer = pageContainer
         }
+
+        var needInitPagePosition = true
+            protected set
 
         open fun destroy() {
             _pageContainer?.let {
@@ -354,171 +298,14 @@ open class PageContainer(
             }
         }
 
-        private fun getDefaultScroller() = Scroller(pageContainer.context, LinearInterpolator())
-
-        protected fun setScroller(scroller: Scroller) {
-            _scroller = scroller
-        }
-
         /**
          * 设置page的初始位置
          */
-        abstract fun initPagePosition()
-
-        /**
-         * 在某次手势中，一旦滑动的距离超过一定距离（scaledTouchSlop），说明就是滑动手势，然后就会调用该函数
-         * 用来决定本次滑动手势的方向，滑动手势的方向决定了哪个Page被选中
-         * 一旦返回了NEXT或PREV，该函数在本轮手势中将不会再被调用
-         * 如果返回了NONE，该函数就会在接下来的MOVE事件中一直被调用，直至本次手势结束会返回非NONE值为止
-         */
-        abstract fun decideInitDire(dx: Float, dy: Float): PageDirection
-
-        /**
-         * 计算实时方向
-         */
-        abstract fun decideRealTimeDire(curX: Float, curY: Float): PageDirection
-
-        open fun decideEndDire(initDire: PageDirection, realTimeDire: PageDirection): PageDirection {
-            return if (initDire == PageDirection.NEXT && realTimeDire == PageDirection.NEXT) {
-                PageDirection.NEXT
-            } else if (initDire == PageDirection.PREV && realTimeDire == PageDirection.PREV) {
-                PageDirection.PREV
-            } else {
-                PageDirection.NONE
-            }
+        open fun initPagePosition() {
+            needInitPagePosition = false
         }
 
-        /**
-         * 当initDire完成初始化且有开启动画的需要，PageContainer就会调用该函数
-         */
-        abstract fun prepareAnim(initDire: PageDirection)
-
-        /**
-         * 拖动某个view滑动
-         * dx: 当前点到落点的水平偏移量
-         * dy: 当前点到落点的垂直偏移量
-         */
-        open fun onDragging(initDire: PageDirection, dx: Float, dy: Float) = Unit
-
-        /**
-         * 只有当isAnimRuning为true时，abortAnim才可能会被调用
-         */
-        open fun abortAnim() = Unit
-
-        /**
-         * 开启翻向下一页的动画
-         */
-        abstract fun startNextAnim()
-
-        /**
-         * 开启翻向上一页的动画
-         */
-        abstract fun startPrevAnim()
-
-        /**
-         * 开启页面复位的动画：比如首先拖动page移动，但是没有松手，这时候再往回拖动，需要执行页面复位动画
-         * @param initDire 最开始拖动page移动的方向
-         */
-        open fun startResetAnim(initDire: PageDirection) = Unit
-
-        open fun onActionDown() = Unit
-        open fun onActionUp() = Unit
-        open fun onActionMove() = Unit
-        open fun onActionCancel() = Unit
-
-        fun onTouchEvent(event: MotionEvent): Boolean {
-            gesture.onTouchEvent(event)
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    val internal = System.currentTimeMillis() - pageContainer.lastAnimTimestamp
-                    // 如果还有动画正在执行、并且翻页动画间隔大于minPageTurnInterval，就结束动画
-                    // 如果小于最小翻页时间间隔minPageTurnInterval，就不强制结束动画
-                    if (internal > pageContainer.minPageTurnInterval && isAnimRuning) {
-                        abortAnim()
-                    }
-                    onActionDown()
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val internal = System.currentTimeMillis() - pageContainer.lastAnimTimestamp
-                    // 如果还有动画正在执行、并且翻页动画间隔大于minPageTurnInterval，就结束动画
-                    // 如果小于最小翻页时间间隔minPageTurnInterval，就不强制结束动画
-                    if (internal > pageContainer.minPageTurnInterval) {
-                        if (isAnimRuning) {
-                            abortAnim()
-                        }
-                        val dx = gesture.dx       // 水平偏移量
-                        val dy = gesture.dy       // 垂直偏移量
-                        val distance = hypot(dx, dy)            // 距离
-                        realTimeDire = decideRealTimeDire(event.x, event.y)
-                        if (isSwipeGesture || distance > pageContainer.scaledTouchSlop) {
-                            if (!isSwipeGesture) {
-                                initDire = decideInitDire(dx, dy)
-                                if (initDire != PageDirection.NONE) {
-                                    isSwipeGesture = true
-                                    needStartAnim = (initDire == PageDirection.NEXT && pageContainer.hasNextPage())
-                                            || (initDire == PageDirection.PREV && pageContainer.hasPrevPage())
-                                    if (needStartAnim) prepareAnim(initDire)
-                                }
-                            }
-                            if (needStartAnim) {
-                                // 跟随手指滑动
-                                isDragging = true
-                                onDragging(initDire, dx, dy)
-                            }
-                        }
-                    }
-                    onActionMove()
-                }
-                MotionEvent.ACTION_UP -> {
-                    if (isSwipeGesture) {   // 本轮事件构成滑动手势，清除某些状态
-                        if (needStartAnim) {
-                            // 决定最后的翻页方向，并且播放翻页动画
-                            when (decideEndDire(initDire, realTimeDire)) {
-                                PageDirection.NEXT -> {
-                                    startNextAnim()
-                                    pageContainer.nextCarouselLayout()
-                                    onNextCarouselLayout()
-                                    pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
-                                }
-                                PageDirection.PREV -> {
-                                    startPrevAnim()
-                                    pageContainer.prevCarouselLayout()
-                                    onPrevCarouselLayout()
-                                    pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
-                                }
-                                PageDirection.NONE -> {
-                                    startResetAnim(initDire)
-                                    pageContainer.onFlipListener?.onFlip(PageDirection.NONE, pageContainer.curPageIndex)
-                                }
-                            }
-                            needStartAnim = false
-                            pageContainer.lastAnimTimestamp = System.currentTimeMillis()
-                        }
-                        isSwipeGesture = false
-                        isDragging = false
-                        initDire = PageDirection.NONE
-                    } else {
-                        // 触发点击事件回调，点击事件回调有两种：OnClickRegionListener和OnClickListener
-                        // OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时
-                        // OnClickListener.onClick才会执行
-                        pageContainer.apply {
-                            val handled = onClickRegionListener?.let { listener ->
-                                val xPercent = gesture.down.x / width * 100
-                                val yPercent = gesture.up.y / height * 100
-                                listener.onClickRegion(xPercent.toInt(), yPercent.toInt())
-                            } ?: false
-
-                            if (!handled) performClick()
-                        }
-                    }
-                    onActionUp()
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    onActionCancel()
-                }
-            }
-            return true
-        }
+        abstract fun onTouchEvent(event: MotionEvent): Boolean
 
         /**
          * 这个函数会在PageContainer.computeScroll()中被调用，可以用来获取Scroller的偏移，实现平滑的动画
@@ -526,50 +313,14 @@ open class PageContainer(
         open fun computeScroll() = Unit
 
         /**
-         * 需要在这个函数里处理新添加的Page的位置
-         * 调用顺序：
-         *      startNextAnim() -> pageContainer.nextCarouselLayout() -> onNextCarouselLayout()
-         *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
+         * 调用该函数，将会直接触发翻向下一页动画，返回值表示是否翻页成功
          */
-        abstract fun onNextCarouselLayout()
+        abstract fun flipToNextPage(limited: Boolean = true): Boolean
 
         /**
-         * 需要在这个函数里处理新添加的Page的位置
-         * 调用顺序：
-         *      startPrevAnim() -> pageContainer.prevCarouselLayout() -> onPrevCarouselLayout()
-         *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
+         * 调用该函数，将会直接触发翻向上一页，返回值表示是否翻页成功
          */
-        abstract fun onPrevCarouselLayout()
-
-        /**
-         * 调用该函数，将会直接触发翻向下一页动画
-         */
-        open fun flipToNextPage() {
-            if (isAnimRuning) {
-                abortAnim()
-            }
-            prepareAnim(PageDirection.NEXT)
-            startNextAnim()
-            pageContainer.nextCarouselLayout()
-            onNextCarouselLayout()
-            pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
-            pageContainer.lastAnimTimestamp = System.currentTimeMillis()
-        }
-
-        /**
-         * 调用该函数，将会直接触发翻向上一页
-         */
-        open fun flipToPrevPage() {
-            if (isAnimRuning) {
-                abortAnim()
-            }
-            prepareAnim(PageDirection.PREV)
-            startPrevAnim()
-            pageContainer.prevCarouselLayout()
-            onPrevCarouselLayout()
-            pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
-            pageContainer.lastAnimTimestamp = System.currentTimeMillis()
-        }
+        abstract fun flipToPrevPage(limited: Boolean = true): Boolean
 
         open fun dispatchDraw(canvas: Canvas) = Unit
 
@@ -746,7 +497,7 @@ open class PageContainer(
      * 调整child的先后关系：按照下一页的顺序进行循环轮播
      * 注意：只有当itemCount>3时，该函数才会调整childView的位置
      */
-    private fun nextCarouselLayout() {
+    internal fun nextCarouselLayout() {
         val isFirst = isFirstPage()
         curPageIndex++
         if (isFirst || isLastPage()) return
@@ -776,7 +527,7 @@ open class PageContainer(
      * 调整child的先后关系：按照上一页的顺序进行循环轮播
      * 注意：只有当itemCount>3时，该函数才会调整childView的位置
      */
-    private fun prevCarouselLayout() {
+    internal fun prevCarouselLayout() {
         val isLast = isLastPage()
         curPageIndex--
         if (isLast || isFirstPage()) return
@@ -911,8 +662,8 @@ open class PageContainer(
         if (itemCount >= 2) {
             if (isFirstPage()) {
                 if (itemCount >= 3) {
-                    res.add(getChildAt(0)!!)
                     res.add(getChildAt(1)!!)
+                    res.add(getChildAt(0)!!)
                 } else {
                     res.add(getChildAt(0)!!)
                 }
@@ -967,7 +718,6 @@ open class PageContainer(
         savedState.flipTouchSlop = this.flipTouchSlop
         savedState.curPageIndex = this.curPageIndex
         savedState.maxCachedPage = this.pageCache.maxCachedPage
-        savedState.minPageTurnInterval = this.minPageTurnInterval
         return savedState
     }
 
@@ -981,7 +731,6 @@ open class PageContainer(
             this.flipTouchSlop = state.flipTouchSlop
             initPageIndex(state.curPageIndex)       // 无法通过简单的设置curPageIndex达到恢复的目的
             setMaxCachedPageNum(state.maxCachedPage)
-            this.minPageTurnInterval = state.minPageTurnInterval
         } else {
             super.onRestoreInstanceState(state)
         }
@@ -996,7 +745,6 @@ open class PageContainer(
         var flipTouchSlop: Int = 0
         var curPageIndex: Int = 0
         var maxCachedPage: Int = 0
-        var minPageTurnInterval: Int = 0
 
 
         constructor(superState: Parcelable?) : super(superState)
@@ -1006,7 +754,6 @@ open class PageContainer(
             flipTouchSlop = parcel.readInt()
             curPageIndex = parcel.readInt()
             maxCachedPage = parcel.readInt()
-            minPageTurnInterval = parcel.readInt()
         }
 
         override fun writeToParcel(out: Parcel, flags: Int) {
@@ -1015,7 +762,6 @@ open class PageContainer(
             out.writeInt(flipTouchSlop)
             out.writeInt(curPageIndex)
             out.writeInt(maxCachedPage)
-            out.writeInt(minPageTurnInterval)
         }
 
         companion object CREATOR : Parcelable.Creator<SavedState> {

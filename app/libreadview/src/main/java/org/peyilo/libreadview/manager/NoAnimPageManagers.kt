@@ -11,7 +11,7 @@ class NoAnimPageManagers {
     /**
      * NoAnimPageManagers的水平布局实现
      */
-    class Horizontal: HorizontalPageManager() {
+    class Horizontal: FlipOnReleasePageContainer.Horizontal() {
 
         private var draggedView: View? = null           // 当前滑动手势选中的page
 
@@ -50,7 +50,7 @@ class NoAnimPageManagers {
     /**
      * NoAnimPageManagers的垂直布局实现
      */
-    class Vertical: VerticalPageManager() {
+    class Vertical: FlipOnReleasePageContainer.Vertical() {
 
         private var draggedView: View? = null           // 当前滑动手势选中的page
 

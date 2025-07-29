@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.ReadPage
-import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.ScrollPageManager
 import kotlin.random.Random
 
 class PageContainerActivity : AppCompatActivity() {
@@ -29,14 +29,13 @@ class PageContainerActivity : AppCompatActivity() {
 
         repeat(1000) {
             val randomColor = generateRandomColor()
+//            val randomColor = Color.WHITE
             colors.add(Pair(randomColor, it + 1))
         }
 
         pageContainerTop = findViewById(R.id.pageContainer)
         pageContainerTop.initPageIndex(1)
-        pageContainerTop.pageManager = SimulationPageManagers.Style1().apply {
-            enableDebugMode = true
-        }
+        pageContainerTop.pageManager = ScrollPageManager()
 
         pageContainerTop.adapter = ColorAdapter(colors)
         pageContainerTop.setOnClickRegionListener{ xPercent, _ ->

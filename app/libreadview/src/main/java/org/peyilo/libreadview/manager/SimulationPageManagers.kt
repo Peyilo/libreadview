@@ -38,8 +38,9 @@ class SimulationPageManagers {
     /**
      * 仿真翻页实现1，常见于Android端各种小说阅读软件的仿真翻页实现
      * TODO：尽可能不在绘制中创建大量的PointF对象，由于对象全部保存在堆上，可能造成频繁地GC
+     * TODO: 向上翻页时，动画实在过于简陋，尝试采用iOS iBook那种实现
      */
-    open class Style1: HorizontalPageManager(), AnimatedPageManager {
+    open class Style1: FlipOnReleasePageContainer.Horizontal(), AnimatedPageManager {
 
         protected val containerWidth get() = pageContainer.width      // 容器的宽度
         protected val containerHeight get() = pageContainer.height    // 容器的高度
@@ -79,7 +80,7 @@ class SimulationPageManagers {
          * 绘制区域C要用到的: 叠加灰色调遮罩、矩阵变换
          */
         protected val backShadowPaint = Paint().apply {
-            color = Color.argb(72, 0, 0, 0) // 半透明黑（也可以用灰）
+            color = Color.argb(45, 0, 0, 0) // 半透明黑（也可以用灰）
         }
         private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
         private val regionCMatrix = Matrix()
@@ -155,7 +156,7 @@ class SimulationPageManagers {
         /**
          * 动画持续时间
          */
-        private var animDuration = 600
+        private var animDuration = 400
 
         private val shadowB = Path()
         private val shadowC = Path()
@@ -484,20 +485,20 @@ class SimulationPageManagers {
             }
         }
 
-        override fun flipToNextPage() {
+        override fun flipToNextPage(limited: Boolean): Boolean {
             cornerVertex.x = containerWidth.toFloat()
             cornerVertex.y = containerHeight.toFloat()
             touchPoint.x = cornerVertex.x
             touchPoint.y = cornerVertex.y
-            super.flipToNextPage()
+            return super.flipToNextPage(limited)
         }
 
-        override fun flipToPrevPage() {
+        override fun flipToPrevPage(limited: Boolean): Boolean {
             cornerVertex.x = containerWidth.toFloat()
             cornerVertex.y = containerHeight.toFloat()
             touchPoint.x = 0F
             touchPoint.y = cornerVertex.y
-            super.flipToPrevPage()
+            return super.flipToPrevPage(limited)
         }
 
         override fun computeScroll() {
@@ -836,7 +837,7 @@ class SimulationPageManagers {
         }
     }
 
-    class Style2: HorizontalPageManager(), AnimatedPageManager {
+    class Style2: FlipOnReleasePageContainer.Horizontal(), AnimatedPageManager {
 
         override fun prepareAnim(initDire: PageDirection) {
             TODO("Not yet implemented")
