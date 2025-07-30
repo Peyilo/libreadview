@@ -15,6 +15,12 @@
         android:text="PageContainer Demo"
         android:textAllCaps="false"/>
 
+    <Button android:id="@+id/btn_select_file"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select text file for readview demo"
+        android:textAllCaps="false"/>
+
     <Button android:id="@+id/btn_readview_demo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

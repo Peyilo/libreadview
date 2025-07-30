@@ -1,6 +1,7 @@
 package org.peyilo.libreadview.ui
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -18,6 +19,7 @@ class ReadPage (
 
     init {
         LayoutInflater.from(context).inflate(R.layout.item_read_page, this)
+        setBackgroundColor(Color.WHITE)
     }
 
     val root: View = findViewById(R.id.page_root)

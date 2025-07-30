@@ -12,6 +12,7 @@ import kotlin.math.min
  * 滚动翻页实现
  * TODO: 实现flipToNextPage、flipToPrevPage
  * TODO： 支持pageContainer.onFlipListener
+ * TODO: 如果PageContainer中一开始没有child，之后添加新的child，由于没有触发initPagePosition，导致所有的child都叠在一起，也就是
  */
 class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
 
@@ -125,15 +126,16 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
         super.onStartScroll(velocityX, velocityY)
         // 计算惯性滚动
         if (abs(velocityY) > 0) {
-            lastScrollY = curPage!!.translationY.toInt()
+            val maxFlingDis = pageContainer.height * 10
             scroller.fling(
                 0, lastScrollY,
                 0, velocityY.toInt(),
                 0, 0,
-                -pageContainer.height, pageContainer.height
+                -maxFlingDis, maxFlingDis
             )
             pageContainer.invalidate() // 开始滚动
             isScrolling = true
+            lastScrollY = curPage!!.translationY.toInt()
         }
     }
 

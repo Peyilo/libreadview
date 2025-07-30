@@ -18,6 +18,8 @@ class ReadBook {
     private var preprocessBehind = 0
 
     private lateinit var bookData: BookData
+    private var bookDataInitialized = false
+
     val config = ReadConfig()
     lateinit var loader: BookLoader
     lateinit var parser: ContentParser
@@ -25,6 +27,7 @@ class ReadBook {
 
     private val chapStatusTable = mutableMapOf<Int, ChapStatus>()
     private val readChapterTable = mutableMapOf<Int, ReadChapter>()
+    private val locksForChap = mutableMapOf<Int, Any>()
 
     private enum class ChapStatus {
         Unload,                 // 未加载
@@ -41,7 +44,9 @@ class ReadBook {
             bookData = loader.initToc()
             for (i in 1..bookData.chapCount) {              // 初始化章节状态表
                 chapStatusTable[i] = ChapStatus.Unload
+                locksForChap[i] = Any()
             }
+            bookDataInitialized = true
             return true
         } catch (e: Exception) {
             Log.e(TAG, "initToc: ${e.stackTrace}")
@@ -51,10 +56,9 @@ class ReadBook {
 
     /**
      * 多个线程调用该函数加载相同章节时，会触发竞态条件，因而需要对该章节的状态进行同步
-     * TODO：错误设计的锁，假设当前chapStatusTable[chapIndex]!!为ChapStatus.Upload，那么会阻塞全部当前chapStatusTable[chapIndex]!!为ChapStatus.Upload的函数调用
      */
     private fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean {
-        synchronized(chapStatusTable[chapIndex]!!) {              
+        synchronized(locksForChap[chapIndex]!!) {
             if (chapStatusTable[chapIndex] == ChapStatus.Unload) {      // 未加载
                 try {
                     val chapData = bookData.getChap(chapIndex)
@@ -72,7 +76,7 @@ class ReadBook {
     }
 
     private fun splitChap(@IntRange(from = 1) chapIndex: Int) {
-        synchronized(chapStatusTable[chapIndex]!!) {
+        synchronized(locksForChap[chapIndex]!!) {
             when (chapStatusTable[chapIndex]!!) {
                 ChapStatus.Unload -> {
                     throw IllegalStateException("章节[$chapIndex]未完成加载，不能进行分页!")
@@ -119,20 +123,117 @@ class ReadBook {
 
     fun splitCurChap() = preSplit(curChapIndex)
 
-    fun getChap(@IntRange(from = 1) chapIndex: Int): ReadChapter {
-        return readChapterTable[chapIndex]!!
-    }
-
-
-    class IndexPairs {
-        val cur = IndexPair()
-        val prev = IndexPair()
-        val next = IndexPair()
-    }
-
-    class IndexPair(var chapIndex: Int = 0, var pageIndex: Int = 0) {
-        override fun toString(): String {
-            return "chapIndex = $chapIndex, pageIndex = $pageIndex"
+    private fun getNextPageIndexPair(): Pair<Int, Int> {
+        val curChapStatus = chapStatusTable[curChapIndex]!!
+        return if (curChapStatus != ChapStatus.Finished) {     // 当前章节未完成分页
+            Pair(curChapIndex + 1, 1)
+        } else {
+            val curChap = readChapterTable[curChapIndex]!!
+            if (curPageIndex < curChap.pages.size) {        // 不是当前章节的最后一页
+                Pair(curChapIndex, curPageIndex + 1)
+            } else {        // 当前页为当前章节的最后一页
+                Pair(curChapIndex + 1, 1)
+            }
         }
     }
+
+    private fun getPrevPageIndexPair(): Pair<Int, Int> {
+        val curChapStatus = chapStatusTable[curChapIndex]!!
+        return if (curChapStatus != ChapStatus.Finished) {     // 当前章节未完成分页
+            val prevChapStatus = chapStatusTable[curChapIndex - 1]!!
+            if (prevChapStatus == ChapStatus.Finished) {
+                Pair(curChapIndex - 1, readChapterTable[curChapIndex - 1]!!.pages.size)
+            } else {
+                Pair(curChapIndex - 1, 1)
+            }
+        } else {
+            if (curPageIndex > 1) {        // 不是当前章节的第一页
+                Pair(curChapIndex, curPageIndex - 1)
+            } else {        // 当前页为当前章节的第一页
+                val prevChapStatus = chapStatusTable[curChapIndex - 1]!!
+                if (prevChapStatus == ChapStatus.Finished) {
+                    Pair(curChapIndex - 1, readChapterTable[curChapIndex - 1]!!.pages.size)
+                } else {
+                    Pair(curChapIndex - 1, 1)
+                }
+            }
+        }
+    }
+
+    /**
+     * 调用该函数之前需要保证chapIndex、pageIndex的有效性
+     * 同时需要保证章节已经完成了加载和分页
+     */
+    private fun getPage(chapIndex: Int, pageIndex: Int): PageData {
+        Log.d(TAG, "getPage: chapIndex=$chapIndex, pageIndex=$pageIndex")
+        val chapStatus = chapStatusTable[chapIndex]!!
+        return if (chapStatus == ChapStatus.Finished) {
+            readChapterTable[chapIndex]!!.pages[pageIndex - 1]
+        } else {
+            TODO()
+        }
+    }
+
+    fun getCurPage(): PageData {
+        return getPage(curChapIndex, curPageIndex)
+    }
+
+    fun getNextPage(): PageData {
+        val nextPageIndexPair = getNextPageIndexPair()
+        return getPage(nextPageIndexPair.first, nextPageIndexPair.second)
+    }
+
+    fun getPrevPage(): PageData {
+        val prevPageIndexPair = getPrevPageIndexPair()
+        return getPage(prevPageIndexPair.first, prevPageIndexPair.second)
+    }
+
+    fun hasNextChap(): Boolean {
+        return if (!bookDataInitialized) {
+            false
+        } else {
+            curChapIndex < bookData.chapCount
+        }
+    }
+
+    fun hasPrevChap(): Boolean {
+        return if (!bookDataInitialized) {
+            false
+        } else {
+            curChapIndex > 1
+        }
+    }
+
+    fun hasNextPage(): Boolean {
+        return if (!bookDataInitialized) {                  // BookData还未完成目录初始化
+            false
+        } else if (curChapIndex < bookData.chapCount) {     // 不是最后一章节
+            true
+        } else {        // 最后一章节
+            val curChapStatus = chapStatusTable[curChapIndex]!!
+            if (curChapStatus != ChapStatus.Finished) {     // 最后一章节未完成分页
+                false
+            } else {        // 完成了分页
+                curPageIndex < readChapterTable[curChapIndex]!!.pages.size
+            }
+        }
+    }
+
+    fun hasPrevPage(): Boolean {
+        return if (!bookDataInitialized) {
+            false
+        } else if (curChapIndex > 1) {      // 不是第一章节
+            true
+        } else {        // 第一章节
+            val curChapStatus = chapStatusTable[curChapIndex]!!
+            if (curChapStatus != ChapStatus.Finished) {
+                false
+            } else {
+                curPageIndex != 1
+            }
+        }
+    }
+
+    fun getReadChapter(chapIndex: Int) = readChapterTable[chapIndex]
+
 }

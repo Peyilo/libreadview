@@ -1,9 +1,11 @@
 package org.peyilo.readview
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.ReadView
-import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.IBookSlidePageManager
+import java.io.File
 
 class ReadViewActivity : AppCompatActivity() {
 
@@ -14,9 +16,18 @@ class ReadViewActivity : AppCompatActivity() {
         setContentView(R.layout.activity_read_view)
         supportActionBar?.hide()
 
+        // 从 Intent 获取文件路径
+        val filePath = intent.getStringExtra("SELECTED_FILE_PATH")
+
         readview = findViewById(R.id.readview)
 
-        readview.pageManager = SimulationPageManagers.Style1()
+        readview.pageManager = IBookSlidePageManager()
 
+        filePath?.let {
+            val selectedFile = File(it)
+            Log.d("ReadViewActivity", "File selected: ${selectedFile.absolutePath}")
+
+            readview.openFile(selectedFile)
+        }
     }
 }

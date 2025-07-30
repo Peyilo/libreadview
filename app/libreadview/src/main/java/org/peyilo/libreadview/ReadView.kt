@@ -9,11 +9,10 @@ import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.loader.SimpleTextLoader
-import org.peyilo.libreadview.parser.DefaultContentParser
+import org.peyilo.libreadview.parser.SimpleContentParser
 import org.peyilo.libreadview.provider.SimlpePageContentProvider
-import org.peyilo.libreadview.ui.ChapLoadPage
+import org.peyilo.libreadview.ui.PlaceholderPage
 import org.peyilo.libreadview.ui.ReadPage
-import org.peyilo.libreadview.ui.TocInitPage
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -30,7 +29,7 @@ class ReadView(
     private var attached = false
 
     init {
-        adapter = PageAdapter(pages)
+        adapter = PageAdapter()
     }
 
     override fun onAttachedToWindow() {
@@ -48,23 +47,12 @@ class ReadView(
         threadPool.submit(task)
     }
 
-    /**
-     * 进行目录初始化准备工作，如：显示“加载目录中”视图
-     */
-    private fun prepareInitToc() {
-        pages.add(Pair(PageType.TOC_INIT_PAGE, "加载目录中......"))
-    }
-
-    /**
-     * 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
-     */
-    private fun prepareLoadChap() {
-        pages.clear()       // 先将“加载目录中”视图清除
-        pages.add(Pair(PageType.CHAP_LOAD_PAGE, "章节xxx加载中......"))
-    }
-
-    private fun refreshAllPage() {
-
+    private fun setPlaceholderPage(text: String) {
+        post {
+            pages.clear()       // 先将“加载目录中”视图清除
+            pages.add(Pair(PageType.PLACEHOLDER_PAGE, text))
+            populateViews()
+        }
     }
 
     fun openBook(
@@ -73,26 +61,45 @@ class ReadView(
         @IntRange(from = 1) pageIndex: Int = 1
     ) {
         readBook.loader = loader
-        readBook.parser = DefaultContentParser()
-        readBook.provider = SimlpePageContentProvider()
+        readBook.parser = SimpleContentParser()
+        readBook.provider = SimlpePageContentProvider(readBook.config)
         readBook.curChapIndex = chapIndex
         readBook.curPageIndex = pageIndex
-        prepareInitToc()
+
+        // 进行目录初始化准备工作，如：显示“加载目录中”视图
+        setPlaceholderPage("加载目录中......")
+
         startTask {
             val initTocRes = readBook.initToc()                     // readBook.initToc()是一个耗时任务，不能在主线程执行
             if (initTocRes) {
-                prepareLoadChap()
+                // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
+                // 由于涉及UI更新，需要在主线程执行
+                setPlaceholderPage("章节xxx加载中......")
+
                 val loadChapRes = readBook.loadCurChap()
                 if (loadChapRes) {
                     // 等待视图宽高数据，用来分页
                     while (!attached) {
                         Thread.sleep(100)
                     }
+                    readBook.config.setContentDimen(width, height)          // TODO：不应该使用ReadView的宽高，应该使用ReadContent的宽高，这里只是为了方便测试
+                    readBook.splitCurChap()
                     post {
-                        readBook.splitCurChap()
-                        refreshAllPage()
+                        pages.clear()
+                        readBook.getReadChapter(chapIndex)?.let {
+                            it.pages.forEach { page ->
+                                pages.add(Pair(PageType.READ_PAGE, page))
+                            }
+                        }
+//                        pages.add(Pair(PageType.READ_PAGE, readBook.getCurPage()))
+//                        pages.add(Pair(PageType.READ_PAGE, readBook.getNextPage()))
+                        populateViews()
                     }
+                } else {
+                    setPlaceholderPage("章节加载失败......")
                 }
+            } else {
+                setPlaceholderPage("目录加载失败......")
             }
         }
     }
@@ -110,20 +117,17 @@ class ReadView(
     }
 
     enum class PageType {
-        TOC_INIT_PAGE, CHAP_LOAD_PAGE, READ_PAGE
+        PLACEHOLDER_PAGE, READ_PAGE
     }
 
-    class PageAdapter(val pages: List<Pair<PageType, Any>>): Adapter<PageAdapter.PageViewHolder>() {
+    private inner class PageAdapter: Adapter<PageAdapter.PageViewHolder>() {
 
         inner class PageViewHolder(page: View) : ViewHolder(page)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
             val page: View = when (viewType) {
-                PageType.TOC_INIT_PAGE.ordinal -> {
-                    TocInitPage(parent.context)
-                }
-                PageType.CHAP_LOAD_PAGE.ordinal -> {
-                    ChapLoadPage(parent.context)
+                PageType.PLACEHOLDER_PAGE.ordinal -> {
+                    PlaceholderPage(parent.context)
                 }
                 PageType.READ_PAGE.ordinal -> {
                     ReadPage(parent.context)
@@ -136,20 +140,16 @@ class ReadView(
         override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
             val type = pages[position].first
             when (type) {
-                PageType.TOC_INIT_PAGE -> {
-                    val page = holder.itemView as TocInitPage
+                PageType.PLACEHOLDER_PAGE -> {
+                    val page = holder.itemView as PlaceholderPage
                     val text = pages[position].second as String
                     page.text = text
-                }
-                PageType.CHAP_LOAD_PAGE -> {
-                    val page = holder.itemView as ChapLoadPage
-                    val chapTitle = pages[position].second as String
-                    page.chapTitle = chapTitle
                 }
                 PageType.READ_PAGE -> {
                     val page = holder.itemView as ReadPage
                     val pageData = pages[position].second as PageData
                     page.content.setContent(pageData)
+                    page.content.provider = readBook.provider
                 }
             }
         }

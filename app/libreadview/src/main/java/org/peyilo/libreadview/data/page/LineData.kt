@@ -1,4 +1,6 @@
 package org.peyilo.libreadview.data.page
 
-open class LineData {
+import org.peyilo.libreadview.data.AdditionalData
+
+open class LineData: AdditionalData() {
 }

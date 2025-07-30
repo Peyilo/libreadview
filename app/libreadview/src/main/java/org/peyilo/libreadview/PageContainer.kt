@@ -21,10 +21,11 @@ import kotlin.math.max
  * > pageContainer.pageManager = CoverPageManager()
  * > pageContainer.adapter = MyAdapter()
  *
- * TODO: 实现动态添加item，为page的动态添加、删除、修改提供支持
+ * TODO: 考虑使用观察者模式实现动态添加item，为page的动态添加、删除、修改提供支持
  * TODO: 测试100种类型以上page时的回收复用表现
  * TODO: 对于水平翻页的PageManager，考虑支持向上或向下的手势，以实现类似于起点阅读、番茄小说类似的书签、段评功能
  * TODO：横屏、竖屏状态改变时，需要保存状态、并恢复状态
+ * TODO: 如果PageContainer中一开始没有child，之后添加新的child，由于没有触发initPagePosition，导致所有的child都叠在一起，也就是
  */
 open class PageContainer(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
@@ -139,7 +140,7 @@ open class PageContainer(
     /**
      * 设置adapter的时候，初始化Child View
      */
-    private fun populateViews() {
+    protected fun populateViews() {
         removeAllViews()
         _adapter ?: return
         pageCache.setAdapter(adapter)

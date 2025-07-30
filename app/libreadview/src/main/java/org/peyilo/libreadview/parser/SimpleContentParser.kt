@@ -2,7 +2,7 @@ package org.peyilo.libreadview.parser
 
 import org.peyilo.libreadview.data.novel.ChapData
 
-class DefaultContentParser: ContentParser {
+class SimpleContentParser: ContentParser {
 
     override fun parse(chapData: ChapData): ReadChapter {
         val readChapter = ReadChapter(chapData.chapIndex)

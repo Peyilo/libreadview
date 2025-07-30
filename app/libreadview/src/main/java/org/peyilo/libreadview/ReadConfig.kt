@@ -39,4 +39,9 @@ class ReadConfig {
     var lineMargin = 30F                                        // 行间隔
     var paraMargin = 50F                                        // 段落间隔
 
+    fun setContentDimen(w: Int, h: Int) {
+        contentWidth = w.toFloat()
+        contentHeight = h.toFloat()
+    }
+
 }
