@@ -1,6 +1,7 @@
 package org.peyilo.libreadview.manager
 
 import android.view.MotionEvent
+import android.view.VelocityTracker
 import org.peyilo.libreadview.PageContainer.Gesture
 import org.peyilo.libreadview.PageContainer.PageDirection
 import kotlin.math.abs
@@ -14,17 +15,8 @@ abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
     private var needStartAnim = false                       // 此次手势是否需要触发滑动动画
     private var initDire = PageDirection.NONE               // 初始滑动方向，其确定了要滑动的page
 
-    /**
-     * 动画播放状态（不包含拖动状态的动画），若为true则表示当前动画还没有播放完
-     * 这个状态需要子类维护，只有当isAnimRuning为true时，abortAnim才可能会被调用
-     */
-    protected var isAnimRuning = false
+    private var velocityTracker: VelocityTracker? = null
 
-    /**
-     * 表示当前某个page正在处于被拖动中
-     */
-    protected var isDragging = false
-        private set
 
     /**
      * 当initDire完成初始化且有开启动画的需要，PageContainer就会调用该函数
@@ -39,13 +31,60 @@ abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
     open fun onDragging(initDire: PageDirection, dx: Float, dy: Float) = Unit
 
     /**
+     * 返回值一定小于等于0
+     */
+    protected fun getTopTranslationY(): Float {
+        var topTranslationY = 0F
+        for (i in 0 until pageContainer.childCount) {
+            val page = pageContainer.getChildAt(i)
+            if (page.translationY < topTranslationY) {
+                topTranslationY = page.translationY
+            }
+        }
+        if (topTranslationY > 0) {
+            throw IllegalStateException("getTopTranslationY: topTranslationY is $topTranslationY")
+        }
+        return topTranslationY
+    }
+
+    /**
+     * 返回值一定大于等于0
+     */
+    protected fun getBottomTranslationY(): Float {
+        var bottomTranslationY = 0F
+        for (i in 0 until pageContainer.childCount) {
+            val page = pageContainer.getChildAt(i)
+            if (page.translationY > bottomTranslationY) {
+                bottomTranslationY = page.translationY
+            }
+        }
+        if (bottomTranslationY < 0) {
+            throw IllegalStateException("getBottomTranslationY: bottomTranslationY is $bottomTranslationY")
+        }
+        return bottomTranslationY
+    }
+
+    protected fun canMoveDown() = getBottomTranslationY() != 0F
+    protected fun canMoveUp() = getTopTranslationY() != 0F
+
+    /**
      * 手指抬起后，不会自动触发翻页动画，也就是每次手势结束后，page都并不会对其PageContainer的边界
      * 主要用于实现类似于滚动翻页的效果
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // 初始化 VelocityTracker 实例
+        if (velocityTracker == null) {
+            velocityTracker = VelocityTracker.obtain()
+        }
+
+        // 将事件加入 VelocityTracker
+        velocityTracker?.addMovement(event)
+
         gesture.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                // 当手指按下时清空之前的事件
+                velocityTracker?.clear()
                 onActionDown()
             }
             MotionEvent.ACTION_MOVE -> {
@@ -57,28 +96,46 @@ abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
                         initDire = decideInitDire(dx, dy)
                         if (initDire != PageDirection.NONE) {
                             isSwipeGesture = true
-                            needStartAnim = initDire != PageDirection.NONE
+                            needStartAnim = (initDire == PageDirection.NEXT && canMoveDown())
+                                    || (initDire == PageDirection.PREV && canMoveUp())
                             if (needStartAnim) prepareAnim(initDire)
                         }
                     }
                     if (needStartAnim) {
                         // 跟随手指滑动
-                        isDragging = true
                         onDragging(initDire, dx, dy)
                     }
                 }
                 onActionMove()
             }
             MotionEvent.ACTION_UP -> {
+                // 计算速度
+                velocityTracker?.computeCurrentVelocity(1000) // 1000 表示速度单位是像素/秒
+                val velocityX = velocityTracker?.xVelocity ?: 0f
+                val velocityY = velocityTracker?.yVelocity ?: 0f
+
                 if (isSwipeGesture) {   // 本轮事件构成滑动手势，清除某些状态
                     if (needStartAnim) {
+                        onStartScroll(velocityX, velocityY)
                         needStartAnim = false
                     }
                     isSwipeGesture = false
-                    isDragging = false
                     initDire = PageDirection.NONE
+                } else {
+                    // 触发点击事件回调，点击事件回调有两种：OnClickRegionListener和OnClickListener
+                    // OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时
+                    // OnClickListener.onClick才会执行
+                    pageContainer.apply {
+                        val handled = onClickRegionListener?.let { listener ->
+                            val xPercent = gesture.down.x / width * 100
+                            val yPercent = gesture.up.y / height * 100
+                            listener.onClickRegion(xPercent.toInt(), yPercent.toInt())
+                        } ?: false
+
+                        if (!handled) performClick()
+                    }
                 }
-                onActionUp()
+                onActionUp(velocityX, velocityY)
             }
             MotionEvent.ACTION_CANCEL -> {
                 onActionCancel()
@@ -88,9 +145,11 @@ abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
     }
 
     open fun onActionDown() = Unit
-    open fun onActionUp() = Unit
+    open fun onActionUp(velocityX: Float, velocityY: Float) = Unit
     open fun onActionMove() = Unit
     open fun onActionCancel() = Unit
+
+    open fun onStartScroll(velocityX: Float, velocityY: Float) = Unit
 
     abstract class Horizontal: NoFlipOnReleasePageManager() {
 

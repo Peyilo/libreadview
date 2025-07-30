@@ -1,12 +1,17 @@
 package org.peyilo.libreadview.manager
 
+import android.util.Log
 import android.view.View
+import android.widget.Scroller
 import org.peyilo.libreadview.PageContainer.PageDirection
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 /**
  * 滚动翻页实现
+ * TODO: 实现flipToNextPage、flipToPrevPage
+ * TODO： 支持pageContainer.onFlipListener
  */
 class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
 
@@ -15,6 +20,12 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
     private lateinit var nextPages: List<View>
 
     private var lastdy = 0F
+
+    private val scroller: Scroller by lazy { Scroller(pageContainer.context) }
+
+    private var lastScrollY = 0
+
+    private var isScrolling = false
 
     companion object {
         private const val TAG = "ScrollPageManager"
@@ -41,80 +52,118 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
         }
     }
 
-    override fun prepareAnim(initDire: PageDirection) {
-        if (initDire == PageDirection.NONE)
-            throw IllegalStateException("prepareAnim: initDire is PageDirection.None")
-        lastdy = 0F
+    private fun refreshPages() {
         curPage = pageContainer.getCurPage()
         prevPages = pageContainer.getAllPrevPages()
         nextPages = pageContainer.getAllNextPages()
     }
 
-    private fun getTopTranslationY(): Float {
-        var topTranslationY = 0F
-        prevPages.forEach { prevPage ->
-            if (prevPage.translationY < topTranslationY) {
-                topTranslationY = prevPage.translationY
-            }
-        }
-        curPage?.let {
-           if (curPage!!.translationY < topTranslationY) {
-               topTranslationY = curPage!!.translationY
-           }
-        }
-        return topTranslationY
+    override fun prepareAnim(initDire: PageDirection) {
+        if (initDire == PageDirection.NONE)
+            throw IllegalStateException("prepareAnim: initDire is PageDirection.None")
+        lastdy = 0F
+        refreshPages()
+        Log.d(TAG, "prepareAnim: ")
     }
 
-    private fun getBottomTranslationY(): Float {
-        var bottomTranslationY = 0F
-        nextPages.forEach { nextPage ->
-            if (nextPage.translationY > bottomTranslationY) {
-                bottomTranslationY = nextPage.translationY
+    private fun scrollBy(dy: Float) {
+        var moveDis = dy
+        when {
+            moveDis > 0 -> {
+                val topTranslationY = getTopTranslationY()
+                moveDis = min(moveDis, -topTranslationY)
+                curPage?.translationY += moveDis
+                prevPages.forEach {
+                    it.translationY += moveDis
+                }
+                nextPages.forEach {
+                    it.translationY += moveDis
+                }
+                Log.d(TAG, "scrollBy: $moveDis")
+            }
+            moveDis < 0 -> {
+                val bottomTranslationY = getBottomTranslationY()
+                moveDis = max(moveDis, -bottomTranslationY)
+                curPage?.translationY += moveDis
+                prevPages.forEach {
+                    it.translationY += moveDis
+                }
+                nextPages.forEach {
+                    it.translationY += moveDis
+                }
+                Log.d(TAG, "scrollBy: $moveDis")
             }
         }
-        curPage?.let {
-            if (curPage!!.translationY > bottomTranslationY) {
-                bottomTranslationY = curPage!!.translationY
-            }
-        }
-        return bottomTranslationY
-    }
 
-    private fun canMoveDown() = getBottomTranslationY() != 0F
-    private fun canMoveUp() = getTopTranslationY() != 0F
+        curPage?.let {
+            //  curPage有部分区域移动到屏幕之上的区域，尝试将prevPage进行relayout，放到nextPage之后
+            if (curPage!!.translationY < - pageContainer.height / 2) {
+                pageContainer.nextCarouselLayout()      // 该函数执行以后，page顺序就发生了改变
+                refreshPages()
+                if (pageContainer.itemCount >= 3) {
+                    pageContainer.apply {
+                        getNextPage()?.translationY = curPage!!.translationY + pageContainer.height
+                    }
+                }
+                Log.d(TAG, "onDragging: nextCarouselLayout")
+            } else if (curPage!!.translationY > pageContainer.height / 2) {
+                pageContainer.prevCarouselLayout()
+                refreshPages()
+                pageContainer.apply {
+                    getPrevPage()?.translationY = curPage!!.translationY - pageContainer.height
+                }
+                Log.d(TAG, "onDragging: prevCarouselLayout")
+            }
+        }
+    }
 
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
         if (initDire == PageDirection.NONE)
             throw IllegalStateException("onDragging: initDire is PageDirection.None")
-
-        var moveDis = dy - lastdy
-        if (moveDis > 0) {
-            val topTranslationY = getTopTranslationY()
-            moveDis = min(moveDis, -topTranslationY)
-            if (moveDis > 0) {
-                curPage?.translationY += moveDis
-                prevPages.forEach {
-                    it.translationY += moveDis
-                }
-                nextPages.forEach {
-                    it.translationY += moveDis
-                }
-            }
-        } else {
-            val bottomTranslationY = getBottomTranslationY()
-            moveDis = max(moveDis, -bottomTranslationY)
-            if (moveDis < 0) {
-                curPage?.translationY += moveDis
-                prevPages.forEach {
-                    it.translationY += moveDis
-                }
-                nextPages.forEach {
-                    it.translationY += moveDis
-                }
-            }
-        }
-
+        Log.d(TAG, "onDragging: ")
+        scrollBy(dy - lastdy)
         lastdy = dy
     }
 
+    override fun onStartScroll(velocityX: Float, velocityY: Float) {
+        super.onStartScroll(velocityX, velocityY)
+        // 计算惯性滚动
+        if (abs(velocityY) > 0) {
+            lastScrollY = curPage!!.translationY.toInt()
+            scroller.fling(
+                0, lastScrollY,
+                0, velocityY.toInt(),
+                0, 0,
+                -pageContainer.height, pageContainer.height
+            )
+            pageContainer.invalidate() // 开始滚动
+            isScrolling = true
+        }
+    }
+
+    override fun onActionDown() {
+        super.onActionDown()
+        // 如果处于滚动状态，结束滚动动画
+        if (isScrolling) {
+            scroller.forceFinished(true)
+            isScrolling = false
+        }
+    }
+
+    override fun computeScroll() {
+        super.computeScroll()
+
+        // 判断滚动是否完成
+        if (scroller.computeScrollOffset()) {
+            // 获取当前滚动偏移量
+            val deltaY = scroller.currY - lastScrollY
+            lastScrollY = scroller.currY
+            scrollBy( deltaY.toFloat())
+
+            // 继续滚动，直到滚动完成
+            pageContainer.invalidate()
+        } else {
+            isScrolling = false
+        }
+    }
 }

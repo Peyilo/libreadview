@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.ReadPage
+import org.peyilo.libreadview.manager.IBookSlidePageManager
 import org.peyilo.libreadview.manager.ScrollPageManager
+import org.peyilo.libreadview.manager.SimulationPageManagers
 import kotlin.random.Random
 
 class PageContainerActivity : AppCompatActivity() {
@@ -27,7 +29,7 @@ class PageContainerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_page_container)
         supportActionBar?.hide()
 
-        repeat(1000) {
+        repeat(10000) {
             val randomColor = generateRandomColor()
 //            val randomColor = Color.WHITE
             colors.add(Pair(randomColor, it + 1))
