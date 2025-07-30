@@ -1,4 +1,4 @@
-package org.peyilo.libreadview
+package org.peyilo.readview.ui
 
 import android.content.Context
 import android.util.AttributeSet
@@ -6,26 +6,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import org.peyilo.readview.R
 
-/**
- * 一个用展示小说内容的页面
- * 页面中需要支持各种各样的视图，如video、picture、text、button
- */
-class ReadPage (
+class GridPage (
     context: Context, attrs: AttributeSet? = null
 ): ViewGroup(context, attrs) {
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.item_read_page, this)
+        LayoutInflater.from(context).inflate(R.layout.gridpage_layout, this)
     }
 
-    val root: View = findViewById(R.id.page_root)
-    val header: TextView = root.findViewById(R.id.page_header)
-    val footer: View = root.findViewById(R.id.page_footer)
+    val root: View = findViewById(R.id.gridpage_root)
+    val header: TextView = root.findViewById<TextView>(R.id.gridpage_header)
+    val footer: View = root.findViewById(R.id.gridpage_footer)
 
-    val content: ReadContent = root.findViewById(R.id.page_content)
-    val progress: TextView = root.findViewById(R.id.page_footer_progress)
-    val clock: TextView = root.findViewById(R.id.page_footer_clock)
+    val content: GridNumberView = root.findViewById(R.id.gridpage_content)
+    val progress: TextView = root.findViewById(R.id.gridpage_footer_progress)
+    val clock: TextView = root.findViewById(R.id.gridpage_footer_clock)
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         if (childCount != 1) {

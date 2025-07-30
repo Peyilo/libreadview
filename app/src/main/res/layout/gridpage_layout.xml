@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/gridpage_root">
+
+    <TextView
+        android:id="@+id/gridpage_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:gravity="center"
+        android:textSize="11sp"
+        android:lines="1"
+        android:paddingTop="15dp"
+        android:paddingBottom="10dp"/>
+
+    <org.peyilo.readview.ui.GridNumberView
+        android:id="@+id/gridpage_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/gridpage_footer"
+        android:layout_below="@id/gridpage_header"
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="0dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="8dp"
+        android:paddingStart="10dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="10dp" />
+
+    <RelativeLayout
+        android:id="@+id/gridpage_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="6dp">
+        <TextView
+            android:id="@+id/gridpage_footer_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:text="这是一个表示翻页进度的TextView"/>
+        <TextClock
+            android:id="@+id/gridpage_footer_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:format24Hour="HH:mm"
+            android:textSize="11sp"
+            tools:ignore="RelativeOverlap" />
+    </RelativeLayout>
+
+</RelativeLayout>

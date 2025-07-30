@@ -63,7 +63,6 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
             throw IllegalStateException("prepareAnim: initDire is PageDirection.None")
         lastdy = 0F
         refreshPages()
-        Log.d(TAG, "prepareAnim: ")
     }
 
     private fun scrollBy(dy: Float) {
@@ -79,7 +78,6 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
                 nextPages.forEach {
                     it.translationY += moveDis
                 }
-                Log.d(TAG, "scrollBy: $moveDis")
             }
             moveDis < 0 -> {
                 val bottomTranslationY = getBottomTranslationY()
@@ -91,7 +89,6 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
                 nextPages.forEach {
                     it.translationY += moveDis
                 }
-                Log.d(TAG, "scrollBy: $moveDis")
             }
         }
 
@@ -120,7 +117,6 @@ class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
         if (initDire == PageDirection.NONE)
             throw IllegalStateException("onDragging: initDire is PageDirection.None")
-        Log.d(TAG, "onDragging: ")
         scrollBy(dy - lastdy)
         lastdy = dy
     }

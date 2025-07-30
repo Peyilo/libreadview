@@ -9,11 +9,12 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
 
-class CenterNumberView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) {
+/**
+ * 在页面正中绘制一个数字，并且同时绘制网格
+ */
+class GridNumberView (
+    context: Context, attrs: AttributeSet? = null
+): View(context, attrs) {
 
     var number: Int = 0
         set(value) {
@@ -21,15 +22,41 @@ class CenterNumberView @JvmOverloads constructor(
             invalidate()
         }
 
+    // 绘制细线网格
+    var cellWidth = 40
+    var cellHeight = 40
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK
         textAlign = Paint.Align.CENTER
+    }
+
+    val gridPaint = Paint().apply {
+        color = Color.BLACK
+        strokeWidth = 1f
+        style = Paint.Style.STROKE
+        isAntiAlias = true
     }
 
     private val textBounds = Rect()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+
+        val rows = height / cellHeight
+        val cols = width / cellWidth
+
+        // 绘制纵向线
+        for (i in 0..cols) {
+            val x = i * cellWidth.toFloat()
+            canvas.drawLine(x, 0f, x, height.toFloat(), gridPaint)
+        }
+
+        // 绘制横向线
+        for (i in 0..rows) {
+            val y = i * cellHeight.toFloat()
+            canvas.drawLine(0f, y, width.toFloat(), y, gridPaint)
+        }
 
         val text = number.toString()
         val width = width.toFloat()
@@ -57,5 +84,8 @@ class CenterNumberView @JvmOverloads constructor(
             height / 2f + textHeight / 2f,
             paint
         )
+
+
     }
+
 }
