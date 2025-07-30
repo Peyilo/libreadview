@@ -1,4 +1,4 @@
-package org.peyilo.libreadview
+package org.peyilo.libreadview.ui
 
 import android.content.Context
 import android.util.AttributeSet
@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import org.peyilo.libreadview.R
 
 /**
  * 一个用展示小说内容的页面

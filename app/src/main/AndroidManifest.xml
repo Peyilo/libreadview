@@ -11,6 +11,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ReadView">
         <activity
+            android:name=".ReadViewActivity"
+            android:exported="false" />
+        <activity
             android:name=".PageContainerActivity"
             android:exported="false" />
         <activity

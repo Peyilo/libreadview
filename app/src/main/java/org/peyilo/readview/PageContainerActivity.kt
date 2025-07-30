@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 class PageContainerActivity : AppCompatActivity() {
 
-    private lateinit var pageContainerTop: PageContainer
+    private lateinit var pageContainer: PageContainer
     private val colors = mutableListOf<Pair<Int, Int>>()
 
     private fun generateRandomColor(): Int {
@@ -34,15 +34,15 @@ class PageContainerActivity : AppCompatActivity() {
             colors.add(Pair(randomColor, it + 1))
         }
 
-        pageContainerTop = findViewById(R.id.pageContainer)
-        pageContainerTop.initPageIndex(1)
-        pageContainerTop.pageManager = SimulationPageManagers.Style1()
+        pageContainer = findViewById(R.id.pageContainer)
+        pageContainer.initPageIndex(1)
+        pageContainer.pageManager = SimulationPageManagers.Style1()
 
-        pageContainerTop.adapter = ColorAdapter(colors)
-        pageContainerTop.setOnClickRegionListener{ xPercent, _ ->
+        pageContainer.adapter = ColorAdapter(colors)
+        pageContainer.setOnClickRegionListener{ xPercent, _ ->
             when (xPercent) {
-                in 0..30 -> pageContainerTop.flipToPrevPage()
-                in 70..100 -> pageContainerTop.flipToNextPage()
+                in 0..30 -> pageContainer.flipToPrevPage()
+                in 70..100 -> pageContainer.flipToNextPage()
                 else -> return@setOnClickRegionListener false
             }
             true

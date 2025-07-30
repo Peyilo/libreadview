@@ -9,29 +9,16 @@
     tools:ignore="HardcodedText"
     android:paddingTop="40dp">
 
-    <Button android:id="@+id/btn1"
+    <Button android:id="@+id/btn_pagecontainer_demo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="SimulationView"/>
+        android:text="PageContainer Demo"
+        android:textAllCaps="false"/>
 
-    <Button android:id="@+id/btn2"
+    <Button android:id="@+id/btn_readview_demo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="MyView"/>
-
-    <Button android:id="@+id/btn3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="RecyclerView"/>
-
-    <Button android:id="@+id/btn4"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="PageContainer"/>
-
-    <Button android:id="@+id/btn5"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Button 5"/>
+        android:text="ReadView Demo"
+        android:textAllCaps="false"/>
 
 </LinearLayout>

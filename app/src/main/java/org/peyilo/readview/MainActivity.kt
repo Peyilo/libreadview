@@ -11,20 +11,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         supportActionBar?.hide()
 
-        findViewById<Button>(R.id.btn1).setOnClickListener {
-            startActivity(Intent(this@MainActivity, SecondActivity::class.java))
-        }
-
-//        findViewById<Button>(R.id.btn2).setOnClickListener {
-//
-//        }
-
-        findViewById<Button>(R.id.btn3).setOnClickListener {
-            startActivity(Intent(this@MainActivity, FourthActivity::class.java))
-        }
-
-        findViewById<Button>(R.id.btn4).setOnClickListener {
+        findViewById<Button>(R.id.btn_pagecontainer_demo).setOnClickListener {
             startActivity(Intent(this@MainActivity, PageContainerActivity::class.java))
         }
+
+        findViewById<Button>(R.id.btn_readview_demo).setOnClickListener {
+            startActivity(Intent(this@MainActivity, ReadViewActivity::class.java))
+        }
+
     }
 }

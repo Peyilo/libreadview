@@ -16,7 +16,7 @@
         android:paddingTop="30dp"
         android:paddingBottom="20dp"/>
 
-    <org.peyilo.libreadview.ReadContent
+    <org.peyilo.libreadview.ui.ReadContent
         android:id="@+id/page_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
