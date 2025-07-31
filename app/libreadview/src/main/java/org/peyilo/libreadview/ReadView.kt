@@ -49,9 +49,18 @@ class ReadView(
 
     private fun setPlaceholderPage(text: String) {
         post {
+            val size = pages.size
             pages.clear()       // 先将“加载目录中”视图清除
             pages.add(Pair(PageType.PLACEHOLDER_PAGE, text))
-            populateViews()
+            when (size) {
+                0 -> {
+                    adapter.notifyItemInserted(0)
+                }
+                1 -> {
+                    adapter.notifyItemChanged(0)
+                }
+                else -> adapter.notifyDataSetChanged()
+            }
         }
     }
 
@@ -91,9 +100,7 @@ class ReadView(
                                 pages.add(Pair(PageType.READ_PAGE, page))
                             }
                         }
-//                        pages.add(Pair(PageType.READ_PAGE, readBook.getCurPage()))
-//                        pages.add(Pair(PageType.READ_PAGE, readBook.getNextPage()))
-                        populateViews()
+                        adapter.notifyDataSetChanged()
                     }
                 } else {
                     setPlaceholderPage("章节加载失败......")

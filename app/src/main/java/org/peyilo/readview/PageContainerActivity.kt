@@ -29,8 +29,8 @@ class PageContainerActivity : AppCompatActivity() {
         supportActionBar?.hide()
 
         repeat(10000) {
-//            val randomColor = generateRandomColor()
-            val randomColor = Color.WHITE
+            val randomColor = generateRandomColor()
+//            val randomColor = Color.WHITE
             colors.add(Pair(randomColor, it + 1))
         }
 

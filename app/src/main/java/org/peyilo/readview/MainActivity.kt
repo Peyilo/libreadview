@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-//        recyclerView!!.adapter.notifyItemMoved()
+//        recyclerView!!.adapter
 
     }
 

@@ -2,6 +2,7 @@ package org.peyilo.libreadview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.database.Observable
 import android.graphics.Canvas
 import android.graphics.PointF
 import android.os.Parcel
@@ -69,8 +70,14 @@ open class PageContainer(
     var adapter: Adapter<out ViewHolder>
         get() = _adapter ?: throw IllegalStateException("Adapter is not initialized. Did you forget to set it?")
         set(value) {
+            _adapter?.apply {
+                unregisterAll()         // 注销全部观察者
+            }
             _adapter = value
-            populateViews()
+            _adapter!!.apply {
+                registerAdapterDataObserver(PageDataObserver())
+                notifyDataSetChanged()
+            }
         }
     @Suppress("UNCHECKED_CAST")
     private val viewHolderAdapter: Adapter<ViewHolder> get() = (adapter as Adapter<ViewHolder>)
@@ -109,11 +116,15 @@ open class PageContainer(
     fun initPageIndex(@IntRange(from = 1) pageIndex: Int) {
         curPageIndex = pageIndex
         if (_adapter != null) {
-            populateViews()
+            // TODO：不应该通知观察者数据集改变了，这样开销很大
+            _adapter!!.notifyDataSetChanged()
         }
     }
 
     companion object {
+
+        private const val TAG = "PageContainer"
+
         /**
          * 给定当前页 index、展示页数 MAX_PAGES、总页数 numPages，
          * 返回一个以当前页为中心、但页码范围在 [1, numPages] 之间的页码列表。
@@ -137,26 +148,7 @@ open class PageContainer(
 
     }
 
-    /**
-     * 设置adapter的时候，初始化Child View
-     */
-    protected fun populateViews() {
-        removeAllViews()
-        _adapter ?: return
-        pageCache.setAdapter(adapter)
-        val count = itemCount
-        // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
-        curPageIndex = if (count == 0) 1 else curPageIndex.coerceIn(1, count)
-        val pageRange = getPageRange(curPageIndex, maxAttachedPage, count)
-        pageRange.reversed().forEach { pageIndex ->
-            val position = pageIndex - 1            // 页码转position
-            val holder = pageCache.getViewHolder(position)
-            viewHolderAdapter.onBindViewHolder(holder, position)
-            addView(holder.itemView)
-            pageCache.attach(holder)
-        }
-        requestLayout()
-    }
+
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
@@ -379,6 +371,9 @@ open class PageContainer(
             private const val TAG = "PageContainer.PageCache"
         }
 
+        /**
+         * 清空全部缓存，并且设置新的adapter
+         */
         fun setAdapter(adapter: Adapter<out VH>) {
             _adapter?.let {
                 clear()
@@ -483,11 +478,250 @@ open class PageContainer(
         open fun onRecycled() = Unit
     }
 
+    /**
+     * 观察者模式：观察者
+     */
+    abstract class AdapterDataObserver {
+        open fun onChanged() {
+            // Do nothing
+        }
+
+        open fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+            // do nothing
+        }
+
+        open fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+            // do nothing
+        }
+
+        open fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+            // do nothing
+        }
+
+        open fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
+            // do nothing
+        }
+    }
+
+    /**
+     * 观察者模式：被观察者
+     */
+    class AdapterDataObservable: Observable<AdapterDataObserver>() {
+
+        fun hasObservers(): Boolean {
+            return !mObservers.isEmpty()
+        }
+
+        fun notifyChanged() {
+            // since onChanged() is implemented by the app, it could do anything, including
+            // removing itself from {@link mObservers} - and that could cause problems if
+            // an iterator is used on the ArrayList {@link mObservers}.
+            // to avoid such problems, just march thru the list in the reverse order.
+            for (i in mObservers.indices.reversed()) {
+                mObservers[i].onChanged()
+            }
+        }
+
+        fun notifyItemRangeChanged(positionStart: Int, itemCount: Int) {
+            for (i in mObservers.indices.reversed()) {
+                mObservers[i].onItemRangeChanged(positionStart, itemCount)
+            }
+        }
+
+        fun notifyItemRangeInserted(positionStart: Int, itemCount: Int) {
+            // since onItemRangeInserted() is implemented by the app, it could do anything,
+            // including removing itself from {@link mObservers} - and that could cause problems if
+            // an iterator is used on the ArrayList {@link mObservers}.
+            // to avoid such problems, just march thru the list in the reverse order.
+            for (i in mObservers.indices.reversed()) {
+                mObservers[i].onItemRangeInserted(positionStart, itemCount)
+            }
+        }
+
+        fun notifyItemRangeRemoved(positionStart: Int, itemCount: Int) {
+            // since onItemRangeRemoved() is implemented by the app, it could do anything, including
+            // removing itself from {@link mObservers} - and that could cause problems if
+            // an iterator is used on the ArrayList {@link mObservers}.
+            // to avoid such problems, just march thru the list in the reverse order.
+            for (i in mObservers.indices.reversed()) {
+                mObservers[i].onItemRangeRemoved(positionStart, itemCount)
+            }
+        }
+
+        fun notifyItemMoved(fromPosition: Int, toPosition: Int) {
+            for (i in mObservers.indices.reversed()) {
+                mObservers[i].onItemRangeMoved(fromPosition, toPosition, 1)
+            }
+        }
+    }
+
     abstract class Adapter<VH : ViewHolder> {
+        // 通过AdapterDataObservable()提供观察者模式的实现
+        private val mObservable = AdapterDataObservable()
+
         abstract fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH
         abstract fun onBindViewHolder(holder: VH, @IntRange(from = 0) position: Int)
         abstract fun getItemCount(): Int
         open fun getItemViewType(@IntRange(from = 0) position: Int) = 0
+
+        /**
+         * Register a new observer to listen for data changes.
+         *
+         * @param observer Observer to register
+         *
+         */
+        fun registerAdapterDataObserver(observer: AdapterDataObserver) {
+            mObservable.registerObserver(observer)
+        }
+
+        /**
+         * Unregister an observer currently listening for data changes.
+         *
+         *
+         * The unregistered observer will no longer receive events about changes
+         * to the adapter.
+         *
+         * @param observer Observer to unregister
+         *
+         */
+        fun unregisterAdapterDataObserver(observer: AdapterDataObserver) {
+            mObservable.unregisterObserver(observer)
+        }
+
+        fun unregisterAll() {
+            mObservable.unregisterAll()
+        }
+
+        fun notifyDataSetChanged() {
+            mObservable.notifyChanged()
+        }
+
+        fun notifyItemChanged(position: Int) {
+            mObservable.notifyItemRangeChanged(position, 1)
+        }
+
+        fun notifyItemRangeChanged(positionStart: Int, itemCount: Int) {
+            mObservable.notifyItemRangeChanged(positionStart, itemCount)
+        }
+
+        fun notifyItemInserted(position: Int) {
+            mObservable.notifyItemRangeInserted(position, 1)
+        }
+
+        fun notifyItemRangeInserted(positionStart: Int, itemCount: Int) {
+            mObservable.notifyItemRangeInserted(positionStart, itemCount)
+        }
+
+        /**
+         * Notify any registered observers that the item reflected at fromPosition has been moved to toPosition.
+         *
+         * @param fromPosition Previous position of the item.
+         * @param toPosition New position of the item.
+         */
+        fun notifyItemMoved(fromPosition: Int, toPosition: Int) {
+            mObservable.notifyItemMoved(fromPosition, toPosition)
+        }
+
+        /**
+         * Notify any registered observers that the item previously located at position has been removed from the data set.
+         *
+         * @param position Position of the item that has now been removed
+         */
+        fun notifyItemRemoved(position: Int) {
+            mObservable.notifyItemRangeRemoved(position, 1)
+        }
+
+        fun notifyItemRangeRemoved(positionStart: Int, itemCount: Int) {
+            mObservable.notifyItemRangeRemoved(positionStart, itemCount)
+        }
+
+    }
+
+    private inner class PageDataObserver : AdapterDataObserver() {
+
+        /**
+         * 这会移除PageContainer中的全部child，并且为pageCache设置新的adapter，这会导致pageCache中的缓存全部被清空。
+         * 同时，还会根据设置的adapter，往pageContainer中添加新的child
+         */
+        override fun onChanged() {
+            super.onChanged()
+            removeAllViews()
+            _adapter ?: return
+            pageCache.setAdapter(adapter)
+            val count = itemCount
+            // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
+            curPageIndex = if (count == 0) 1 else curPageIndex.coerceIn(1, count)
+            val pageRange = getPageRange(curPageIndex, maxAttachedPage, count)
+            pageRange.reversed().forEach { pageIndex ->
+                val position = pageIndex - 1            // 页码转position
+                val holder = pageCache.getViewHolder(position)
+                viewHolderAdapter.onBindViewHolder(holder, position)
+                addView(holder.itemView)
+                pageCache.attach(holder)
+            }
+            requestLayout()
+        }
+
+        /**
+         * page数量没有发生改变，只是某些位置page的内容改变了，注意：page的类型也可能发生了改变。
+         * 因此，仅当改变的page处于attach状态下，才需要进行视图更新
+         */
+        override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+            super.onItemRangeChanged(positionStart, itemCount)
+            // 先根据curPageIndex获取目前处于attach状态下的page的indices
+            val pageRange = getPageRange(curPageIndex, maxAttachedPage, itemCount)
+            val attachedPages = mutableSetOf<Int>()
+            pageRange.forEach {
+                attachedPages.add(it - 1)
+            }
+
+            // 然后，再根据positionStart和itemCount，获取需要更新的page的indices
+            val updatedItems = (positionStart until positionStart + itemCount).toSet()
+
+            // 取两个部分的交集，即需要视图更新的page的indices
+            val pagesToUpdate = attachedPages.intersect(updatedItems)
+
+            // 更新pagesToUpdate对应的pages
+            // TODO: 受限于现有的设计，一旦交集不为空，只能更新全部attach状态的pages
+            if (pagesToUpdate.isNotEmpty()) {
+                Log.d(TAG, "onItemRangeChanged: update attached pages.")
+                val removedPages = mutableListOf<View>()
+                for(i in 0 until childCount) {
+                    val child = getChildAt(i)
+                    removedPages.add(child)
+                    pageCache.recycle(child)
+                }
+                removeAllViews()
+                pageRange.reversed().forEach { pageIndex ->
+                    val position = pageIndex - 1            // 页码转position
+                    val holder = pageCache.getViewHolder(position)
+                    viewHolderAdapter.onBindViewHolder(holder, position)
+                    addView(holder.itemView)
+                    pageCache.attach(holder)
+                }
+                requestLayout()
+            }
+        }
+
+        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+            super.onItemRangeInserted(positionStart, itemCount)
+            onChanged()
+        }
+
+        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+            super.onItemRangeRemoved(positionStart, itemCount)
+            onChanged()
+        }
+
+        override fun onItemRangeMoved(
+            fromPosition: Int,
+            toPosition: Int,
+            itemCount: Int
+        ) {
+            super.onItemRangeMoved(fromPosition, toPosition, itemCount)
+            onChanged()
+        }
+
     }
 
     override fun computeScroll() {
@@ -557,33 +791,6 @@ open class PageContainer(
     override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
         pageManager.dispatchDraw(canvas)
-    }
-
-    interface OnClickRegionListener {
-        /**
-         * 点击事件回调
-         * OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时，OnClickListener.onClick才会执行
-         * @param xPercent 点击的位置在x轴方向上的百分比，例如xPercent=50，表示点击的位置为屏幕x轴方向上的中间
-         * @param yPercent 点击的位置在y轴方向上的百分比
-         * @return 返回true表示事件已被处理，将不会再调用OnClickListener.onClick；否则，将会调用OnClickListener.onClick
-         */
-        fun onClickRegion(xPercent: Int, yPercent: Int): Boolean
-    }
-
-    /**
-     * 设置点击区域事件回调
-     */
-    fun setOnClickRegionListener(listener: OnClickRegionListener) {
-        this.onClickRegionListener = listener
-    }
-
-    /**
-     * 设置点击区域事件回调
-     */
-    fun setOnClickRegionListener(listener: (xPercent: Int, yPercent: Int) -> Boolean) {
-        this.onClickRegionListener = object : OnClickRegionListener {
-            override fun onClickRegion(xPercent: Int, yPercent: Int): Boolean = listener(xPercent, yPercent)
-        }
     }
 
     /**
@@ -675,6 +882,17 @@ open class PageContainer(
         return res
     }
 
+    interface OnClickRegionListener {
+        /**
+         * 点击事件回调
+         * OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时，OnClickListener.onClick才会执行
+         * @param xPercent 点击的位置在x轴方向上的百分比，例如xPercent=50，表示点击的位置为屏幕x轴方向上的中间
+         * @param yPercent 点击的位置在y轴方向上的百分比
+         * @return 返回true表示事件已被处理，将不会再调用OnClickListener.onClick；否则，将会调用OnClickListener.onClick
+         */
+        fun onClickRegion(xPercent: Int, yPercent: Int): Boolean
+    }
+
     interface OnFlipListener {
         /**
          * 监听翻页事件，当翻页执行完以后，就会调用该回调
@@ -682,6 +900,22 @@ open class PageContainer(
          * @param curPageIndex 翻页事件完成以后得当前页码
          */
         fun onFlip(flipDirection: PageDirection, @IntRange(from = 1) curPageIndex: Int)
+    }
+
+    /**
+     * 设置点击区域事件回调
+     */
+    fun setOnClickRegionListener(listener: OnClickRegionListener) {
+        this.onClickRegionListener = listener
+    }
+
+    /**
+     * 设置点击区域事件回调
+     */
+    fun setOnClickRegionListener(listener: (xPercent: Int, yPercent: Int) -> Boolean) {
+        this.onClickRegionListener = object : OnClickRegionListener {
+            override fun onClickRegion(xPercent: Int, yPercent: Int): Boolean = listener(xPercent, yPercent)
+        }
     }
 
     /**
