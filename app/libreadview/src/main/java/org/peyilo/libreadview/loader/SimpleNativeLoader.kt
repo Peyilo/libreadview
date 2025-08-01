@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 
 class SimpleNativeLoader(file: File): BookLoader {
 
-    private val defaultTitlePattern by lazy { Pattern.compile("(^\\s*第)(.{1,7})[章卷](\\s*)(.*)") }
+    private val defaultTitleRegex by lazy { Regex("(^\\s*第)(.{1,7})[章卷](\\s*)(.*)") }
 
     private val reader: BufferedReader by lazy {
         BufferedReader(
@@ -18,10 +18,18 @@ class SimpleNativeLoader(file: File): BookLoader {
         )
     }
 
-    private val titlePatternList by lazy { mutableListOf<Pattern>() }
+    private val titlePatternList by lazy { mutableListOf<Regex>() }
 
     companion object {
         private const val UTF8_BOM_PREFIX = "\uFEFF"       // ZWNBSP字符，UTF-8带BOM格式
+    }
+
+    fun addTitleRegex(regex: String) {
+        titlePatternList.add(Regex(regex))
+    }
+
+    fun clearTitleRegex() {
+        titlePatternList.clear()
     }
 
     /**
@@ -29,11 +37,14 @@ class SimpleNativeLoader(file: File): BookLoader {
      * @param line 需要判断的目标字符串
      */
     private fun isTitle(line: String): Boolean {
+        val line = line.trim()
         if (titlePatternList.isEmpty()) {
-            if (defaultTitlePattern.matcher(line).matches()) return true
+            if (defaultTitleRegex.matches(line))
+                return true
         } else {
             titlePatternList.forEach {
-                if (it.matcher(line).matches()) return true
+                if (it.matches(line))
+                    return true
             }
         }
         return false

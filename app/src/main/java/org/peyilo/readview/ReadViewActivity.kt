@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.ReadView
+import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.IBookSlidePageManager
 import java.io.File
 
@@ -27,7 +28,12 @@ class ReadViewActivity : AppCompatActivity() {
             val selectedFile = File(it)
             Log.d("ReadViewActivity", "File selected: ${selectedFile.absolutePath}")
 
-            readview.openFile(selectedFile)
+            readview.openBook(
+                SimpleNativeLoader(selectedFile).apply {
+                    addTitleRegex("序·故事开始前的故事")
+                    addTitleRegex("^\\d+\\..+\n")
+                }
+            )
         }
     }
 }

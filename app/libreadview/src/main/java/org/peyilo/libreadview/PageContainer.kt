@@ -74,7 +74,8 @@ open class PageContainer(
                 unregisterAll()         // 注销全部观察者
             }
             _adapter = value
-            _adapter!!.apply {
+            pageCache.setAdapter(adapter)
+            adapter.apply {
                 registerAdapterDataObserver(PageDataObserver())
                 notifyDataSetChanged()
             }
@@ -409,6 +410,7 @@ open class PageContainer(
                 viewHolder.viewType = viewType
                 Log.d(TAG, "getViewHolder: create new page")
             }
+            viewHolder.position = position
 
             return viewHolder
         }
@@ -456,6 +458,7 @@ open class PageContainer(
         }
 
         fun getAttachedPageType(view: View): Int = getAttachedPage(view).viewType
+        fun getAttachedPagePosition(view: View): Int = getAttachedPage(view).position
 
         fun getAllPages(): List<View> {
             val res = mutableListOf<View>()
@@ -472,6 +475,8 @@ open class PageContainer(
     abstract class ViewHolder(val itemView: View) {
         internal var viewType = 0
 
+        internal var position = 0
+
         /**
          * ViewHolder被清除的时候，会调用这个函数，可以在这里做一下清除工作
          */
@@ -482,7 +487,7 @@ open class PageContainer(
      * 观察者模式：观察者
      */
     abstract class AdapterDataObserver {
-        open fun onChanged() {
+        open fun onDatasetChanged() {
             // Do nothing
         }
 
@@ -498,9 +503,6 @@ open class PageContainer(
             // do nothing
         }
 
-        open fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
-            // do nothing
-        }
     }
 
     /**
@@ -512,13 +514,13 @@ open class PageContainer(
             return !mObservers.isEmpty()
         }
 
-        fun notifyChanged() {
+        fun notifyDatasetChanged() {
             // since onChanged() is implemented by the app, it could do anything, including
             // removing itself from {@link mObservers} - and that could cause problems if
             // an iterator is used on the ArrayList {@link mObservers}.
             // to avoid such problems, just march thru the list in the reverse order.
             for (i in mObservers.indices.reversed()) {
-                mObservers[i].onChanged()
+                mObservers[i].onDatasetChanged()
             }
         }
 
@@ -548,11 +550,6 @@ open class PageContainer(
             }
         }
 
-        fun notifyItemMoved(fromPosition: Int, toPosition: Int) {
-            for (i in mObservers.indices.reversed()) {
-                mObservers[i].onItemRangeMoved(fromPosition, toPosition, 1)
-            }
-        }
     }
 
     abstract class Adapter<VH : ViewHolder> {
@@ -593,7 +590,7 @@ open class PageContainer(
         }
 
         fun notifyDataSetChanged() {
-            mObservable.notifyChanged()
+            mObservable.notifyDatasetChanged()
         }
 
         fun notifyItemChanged(position: Int) {
@@ -610,16 +607,6 @@ open class PageContainer(
 
         fun notifyItemRangeInserted(positionStart: Int, itemCount: Int) {
             mObservable.notifyItemRangeInserted(positionStart, itemCount)
-        }
-
-        /**
-         * Notify any registered observers that the item reflected at fromPosition has been moved to toPosition.
-         *
-         * @param fromPosition Previous position of the item.
-         * @param toPosition New position of the item.
-         */
-        fun notifyItemMoved(fromPosition: Int, toPosition: Int) {
-            mObservable.notifyItemMoved(fromPosition, toPosition)
         }
 
         /**
@@ -643,11 +630,8 @@ open class PageContainer(
          * 这会移除PageContainer中的全部child，并且为pageCache设置新的adapter，这会导致pageCache中的缓存全部被清空。
          * 同时，还会根据设置的adapter，往pageContainer中添加新的child
          */
-        override fun onChanged() {
-            super.onChanged()
+        override fun onDatasetChanged() {
             removeAllViews()
-            _adapter ?: return
-            pageCache.setAdapter(adapter)
             val count = itemCount
             // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
             curPageIndex = if (count == 0) 1 else curPageIndex.coerceIn(1, count)
@@ -659,7 +643,6 @@ open class PageContainer(
                 addView(holder.itemView)
                 pageCache.attach(holder)
             }
-            requestLayout()
         }
 
         /**
@@ -667,9 +650,8 @@ open class PageContainer(
          * 因此，仅当改变的page处于attach状态下，才需要进行视图更新
          */
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
-            super.onItemRangeChanged(positionStart, itemCount)
             // 先根据curPageIndex获取目前处于attach状态下的page的indices
-            val pageRange = getPageRange(curPageIndex, maxAttachedPage, itemCount)
+            val pageRange = getPageRange(curPageIndex, maxAttachedPage, this@PageContainer.itemCount)
             val attachedPages = mutableSetOf<Int>()
             pageRange.forEach {
                 attachedPages.add(it - 1)
@@ -681,45 +663,49 @@ open class PageContainer(
             // 取两个部分的交集，即需要视图更新的page的indices
             val pagesToUpdate = attachedPages.intersect(updatedItems)
 
-            // 更新pagesToUpdate对应的pages
-            // TODO: 受限于现有的设计，一旦交集不为空，只能更新全部attach状态的pages
-            if (pagesToUpdate.isNotEmpty()) {
-                Log.d(TAG, "onItemRangeChanged: update attached pages.")
-                val removedPages = mutableListOf<View>()
-                for(i in 0 until childCount) {
-                    val child = getChildAt(i)
-                    removedPages.add(child)
+            if (pagesToUpdate.isEmpty()) return
+
+            // 遍历所有的child，更新pagesToUpdate中对应的page
+            val childCount = childCount
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
+                val cache = pageCache.getAttachedPage(child)
+                // 不在pagesToUpdate中，直接跳过
+                if (!pagesToUpdate.contains(cache.position)) continue
+
+                // page的type并没有改变
+                if (viewHolderAdapter.getItemViewType(cache.position) == cache.viewType) {
+                    viewHolderAdapter.onBindViewHolder(cache, cache.position)
+                } else {
+                    // page的type发生了改变: 先移除child，然后再创建新的viewholder，然后添加进children view中
+                    removeView(child)
                     pageCache.recycle(child)
-                }
-                removeAllViews()
-                pageRange.reversed().forEach { pageIndex ->
-                    val position = pageIndex - 1            // 页码转position
-                    val holder = pageCache.getViewHolder(position)
-                    viewHolderAdapter.onBindViewHolder(holder, position)
-                    addView(holder.itemView)
+                    val holder = pageCache.getViewHolder(cache.position)
+                    viewHolderAdapter.onBindViewHolder(holder, cache.position)
+                    addView(holder.itemView, i)     // 添加回原本的位置
                     pageCache.attach(holder)
                 }
-                requestLayout()
             }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            super.onItemRangeInserted(positionStart, itemCount)
-            onChanged()
+            // 先根据curPageIndex获取目前处于attach状态下的page的indices
+            val pageRange = getPageRange(curPageIndex, maxAttachedPage, this@PageContainer.itemCount)
+            // 所有插入的pages，都在attachedPages之后，因此不会对已有视图有任何影响
+            if (positionStart >= pageRange[pageRange.size - 1]) return
+
+            // 如果插入的pages位于attachedPages之前，或者刚好在之中，则直接更新全部
+            onDatasetChanged()
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            super.onItemRangeRemoved(positionStart, itemCount)
-            onChanged()
-        }
+            // 先根据curPageIndex获取目前处于attach状态下的page的indices
+            val pageRange = getPageRange(curPageIndex, maxAttachedPage, this@PageContainer.itemCount)
+            // 所有插入的pages，都在attachedPages之后，因此不会对已有视图有任何影响
+            if (positionStart >= pageRange[pageRange.size - 1]) return
 
-        override fun onItemRangeMoved(
-            fromPosition: Int,
-            toPosition: Int,
-            itemCount: Int
-        ) {
-            super.onItemRangeMoved(fromPosition, toPosition, itemCount)
-            onChanged()
+            // 如果插入的pages位于attachedPages之前，或者刚好在之中，则直接更新全部
+            onDatasetChanged()
         }
 
     }

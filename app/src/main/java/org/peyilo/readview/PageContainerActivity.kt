@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.PageContainer
+import org.peyilo.libreadview.manager.IBookSlidePageManager
 import org.peyilo.libreadview.manager.ScrollPageManager
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
@@ -36,7 +37,7 @@ class PageContainerActivity : AppCompatActivity() {
 
         pageContainer = findViewById(R.id.pageContainer)
         pageContainer.initPageIndex(1)
-        pageContainer.pageManager = ScrollPageManager()
+        pageContainer.pageManager = IBookSlidePageManager()
 
         pageContainer.adapter = ColorAdapter(colors)
         pageContainer.setOnClickRegionListener{ xPercent, _ ->

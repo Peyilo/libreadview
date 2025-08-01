@@ -134,4 +134,12 @@ class ExampleInstrumentedTest {
         assert(pageRange[2] == 10)
     }
 
+    @Test
+    fun testRegex() {
+        val titleRegex = Regex("序·故事开始前的故事")
+
+        val title = "序·故事开始前的故事"
+        assert(titleRegex.matches(title))
+    }
+
 }
