@@ -148,7 +148,7 @@ class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
                 height -= (config.contentTextSize + config.lineMargin).toInt()
             }
             base += config.paraMargin - config.lineMargin
-            height -= config.paraMargin.toInt()      // 处理段落的额外间距
+            height -= config.paraMargin - config.lineMargin      // 处理段落的额外间距
         }
         chap.pages.add(page)
     }

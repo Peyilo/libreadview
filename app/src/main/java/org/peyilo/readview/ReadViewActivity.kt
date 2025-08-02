@@ -34,7 +34,7 @@ class ReadViewActivity : AppCompatActivity() {
                     addTitleRegex("^\\d+\\..+")
                 },
 //                SimpleTextLoader("你好啊"),
-                chapIndex = 20,
+                chapIndex = 1,
                 pageIndex = 1,
             )
         }

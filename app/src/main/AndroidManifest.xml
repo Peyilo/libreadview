@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+
 
     <application
         android:allowBackup="true"
@@ -14,6 +16,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ReadView">
+        <profileable android:shell="true"
+            tools:targetApi="29" />
         <activity
             android:name=".PageChangeActivity"
             android:exported="false" />
@@ -22,15 +26,6 @@
             android:exported="false" />
         <activity
             android:name=".PageContainerActivity"
-            android:exported="false" />
-        <activity
-            android:name=".FourthActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ThirdActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SecondActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

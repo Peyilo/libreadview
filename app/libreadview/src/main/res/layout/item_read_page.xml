@@ -13,7 +13,7 @@
         android:gravity="center"
         android:textSize="11sp"
         android:lines="1"
-        android:paddingTop="30dp"
+        android:paddingTop="60dp"
         android:paddingBottom="20dp"/>
 
     <org.peyilo.libreadview.ui.ReadContent
@@ -23,9 +23,7 @@
         android:layout_above="@id/page_footer"
         android:layout_below="@id/page_header"
         android:layout_marginTop="0dp"
-        android:layout_marginBottom="0dp"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="8dp"
+        android:layout_marginBottom="20dp"
         android:paddingStart="10dp"
         android:paddingTop="10dp"
         android:paddingEnd="10dp"
@@ -39,7 +37,8 @@
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingHorizontal="20dp"
-        android:paddingVertical="6dp">
+        android:paddingVertical="6dp"
+        android:layout_marginBottom="20dp">
         <TextView
             android:id="@+id/page_footer_progress"
             android:layout_width="wrap_content"

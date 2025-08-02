@@ -11,4 +11,7 @@ class RangeData: AdditionalData() {
 
     val size get() = to - from
 
+    override fun toString(): String {
+        return "(from=$from, to=$to)"
+    }
 }
