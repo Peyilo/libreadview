@@ -22,7 +22,6 @@ import kotlin.math.max
  * > pageContainer.pageManager = CoverPageManager()
  * > pageContainer.adapter = MyAdapter()
  *
- * TODO: 考虑使用观察者模式实现动态添加item，为page的动态添加、删除、修改提供支持
  * TODO: 测试100种类型以上page时的回收复用表现
  * TODO: 对于水平翻页的PageManager，考虑支持向上或向下的手势，以实现类似于起点阅读、番茄小说类似的书签、段评功能
  * TODO：横屏、竖屏状态改变时，需要保存状态、并恢复状态
@@ -732,8 +731,13 @@ open class PageContainer(
                     curPageIndex += itemCount
                     onDatasetChanged()
                 }
-                positionStart <= curPageIndex - 1 -> {
+                // 插入起始位置位于curPage之前
+                positionStart < curPageIndex - 1 -> {
                     curPageIndex += itemCount
+                    onDatasetChanged()
+                }
+                // 插入位置就位于curPage的位置
+                positionStart == curPageIndex - 1 -> {
                     onDatasetChanged()
                 }
                 else -> throw IllegalStateException()
@@ -785,6 +789,10 @@ open class PageContainer(
             }
         }
 
+    }
+
+    internal open fun onFlip(flipDirection: PageDirection, @IntRange(from = 1) curPageIndex: Int) {
+        onFlipListener?.onFlip(flipDirection, curPageIndex)
     }
 
     override fun computeScroll() {

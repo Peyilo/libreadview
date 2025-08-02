@@ -1,5 +1,6 @@
 package org.peyilo.libreadview
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IntRange
 import org.peyilo.libreadview.data.novel.BookData
+import org.peyilo.libreadview.data.novel.RangeData
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.loader.SimpleNativeLoader
@@ -53,11 +55,11 @@ class ReadView(
     /**
      * 预处理章节数：需要预处理当前章节之前的preprocessBefore个章节
      */
-    private var mPreprocessBefore = 0
+    private var mPreprocessBefore = 1
     /**
      * 预处理章节数：需要预处理当前章节之后的preprocessBehind个章节
      */
-    private var mPreprocessBehind = 0
+    private var mPreprocessBehind = 1
 
     private var mBookData: BookData? = null
 
@@ -67,19 +69,22 @@ class ReadView(
     private lateinit var mContentParser: ContentParser
     private lateinit var mPageContentProvider: PageContentProvider
 
-    private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
-    private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
-    private val mLocksForChap = mutableMapOf<Int, Any>()
-
     private val mThreadPool by lazy { Executors.newFixedThreadPool(10) }
 
     private var mAttachedToWindow = false
 
 
+    private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
+    private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
+    private val mLocksForChap = mutableMapOf<Int, Any>()
+
+    private val mChapPageCountRecorder = mutableMapOf<Int, Int>()
+
     private enum class ChapStatus {
         Unload,                 // 未加载
         Nonpaged,               // 未分页
-        Finished                // 全部完成
+        Uninflated,             // 未填充
+        Finished                // 加载、分页完成
     }
 
 
@@ -114,26 +119,31 @@ class ReadView(
 
     /**
      * 多个线程调用该函数加载相同章节时，会触发竞态条件，因而需要对该章节的状态进行同步
+     * 只加载没有处于Unload状态下的章节
+     * 这个函数是线程安全的
      */
-    private fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean {
-        synchronized(mLocksForChap[chapIndex]!!) {
-            if (mChapStatusTable[chapIndex] == ChapStatus.Unload) {      // 未加载
-                try {
-                    val chapData = mBookData!!.getChap(chapIndex)
-                    mBookLoader.loadChap(chapData)
-                    mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
-                    mChapStatusTable[chapIndex] = ChapStatus.Nonpaged        // 更新状态
-                    Log.d(TAG, "loadChap: $chapIndex")
-                } catch (e: Exception) {        // 加载失败
-                    Log.d(TAG, "loadChap: ${e.stackTrace}")
-                    return false
-                }
+    private fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        if (mChapStatusTable[chapIndex] == ChapStatus.Unload) {      // 未加载
+            try {
+                val chapData = mBookData!!.getChap(chapIndex)
+                mBookLoader.loadChap(chapData)
+                mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
+                mChapStatusTable[chapIndex] = ChapStatus.Nonpaged        // 更新状态
+                Log.d(TAG, "loadChap: $chapIndex")
+                return true
+            } catch (e: Exception) {        // 加载失败
+                Log.d(TAG, "loadChap: ${e.stackTrace}")
             }
         }
-        return true
+        return false
     }
 
-    private fun splitChap(@IntRange(from = 1) chapIndex: Int) {
+    /**
+     * 分割指定章节，分割结果保存在mReadChapterTable中
+     * 线程安全的
+     */
+    private fun splitChap(@IntRange(from = 1) chapIndex: Int): Boolean {
         synchronized(mLocksForChap[chapIndex]!!) {
             when (mChapStatusTable[chapIndex]!!) {
                 ChapStatus.Unload -> {
@@ -142,12 +152,50 @@ class ReadView(
                 ChapStatus.Nonpaged -> {
                     val readChapter = mReadChapterTable[chapIndex]!!
                     mPageContentProvider.split(readChapter)
-                    mChapStatusTable[chapIndex] = ChapStatus.Finished
+                    mChapStatusTable[chapIndex] = ChapStatus.Uninflated
                     Log.d(TAG, "splitChap: $chapIndex")
+                    return true
+                }
+                ChapStatus.Finished, ChapStatus.Uninflated -> Unit
+            }
+        }
+        return false
+    }
+
+    /**
+     * 在章节加载并分页完成以后，可以调用该函数将分割完的pages填充到adapterData中
+     *
+     */
+    private fun inflateChap(@IntRange(from = 1) chapIndex: Int): Boolean {
+        synchronized(mLocksForChap[chapIndex]!!) {
+            when (mChapStatusTable[chapIndex]!!) {
+                ChapStatus.Unload -> {
+                    throw IllegalStateException("章节[$chapIndex]未完成加载，不能进行填充!")
+                }
+                ChapStatus.Nonpaged -> {
+                    throw IllegalStateException("章节[$chapIndex]未完成分页，不能进行填充!")
+                }
+                ChapStatus.Uninflated -> {
+                    val chapRange = getChapRange(chapIndex)
+                    assert(chapRange.size == 1 && mAdapterData.getPageType(chapRange.from) == PageType.CHAP_LOAD_PAGE)
+                    this@ReadView.mAdapterData.removeAt(chapRange.from)
+                    adapter.notifyItemRemoved(chapRange.from)
+                    mReadChapterTable[chapIndex]?.apply {
+                        this@ReadView.mAdapterData.insert(
+                            chapRange.from, PageType.READ_PAGE,
+                            pages
+                        )
+                        adapter.notifyItemRangeInserted(chapRange.from, pages.size)
+                        mChapPageCountRecorder[chapIndex] = pages.size
+                    }
+                    mChapStatusTable[chapIndex] = ChapStatus.Finished
+                    Log.d(TAG, "inflateChap: $chapIndex")
+                    return true
                 }
                 ChapStatus.Finished -> Unit
             }
         }
+        return false
     }
 
     private fun preprocess(chapIndex: Int, process: (index: Int) -> Unit) {
@@ -181,6 +229,36 @@ class ReadView(
 
     private fun splitCurChap() = preSplit(mCurChapIndex)
 
+    /**
+     * 初始化目录，并且预加载并分割章节
+     * @param pageIndex page在指定的章节中的位置
+     */
+    private fun initBook(chapIndex: Int, pageIndex: Int) = startTask {
+        val initTocRes = initToc()                     // initToc()是一个耗时任务，不能在主线程执行
+        if (initTocRes) {
+            // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
+            // 由于涉及UI更新，需要在主线程执行
+            curPageIndex = chapIndex
+            showAllChapLoadPage()
+            val loadChapRes = loadCurChap()
+            if (loadChapRes) {
+                // 等待视图宽高数据，用来分页
+                while (!mAttachedToWindow) {
+                    Thread.sleep(100)
+                }
+                mReadConfig.setContentDimen(width, height)          // TODO：不应该使用ReadView的宽高，应该使用ReadContent的宽高，这里只是为了方便测试
+                splitCurChap()
+                post {
+                    loadAndRefresh(chapIndex, pageIndex)
+                }
+            } else {
+                showMessagePage("章节加载失败......")
+            }
+        } else {
+            showMessagePage("目录加载失败......")
+        }
+    }
+
 
     fun openBook(
         loader: BookLoader,
@@ -191,47 +269,11 @@ class ReadView(
         this.mContentParser = SimpleContentParser()
         this.mPageContentProvider = SimlpePageContentProvider(this.mReadConfig)
         this.mCurChapIndex = chapIndex
-        this.curPageIndex = pageIndex
 
         // 进行目录初始化准备工作，如：显示“加载目录中”视图
         showMessagePage("加载目录中......")
 
-        startTask {
-            val initTocRes = initToc()                     // initToc()是一个耗时任务，不能在主线程执行
-            if (initTocRes) {
-                // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
-                // 由于涉及UI更新，需要在主线程执行
-                curPageIndex = chapIndex
-                showAllChapLoadPage()
-                val loadChapRes = loadCurChap()
-                if (loadChapRes) {
-                    // 等待视图宽高数据，用来分页
-                    while (!mAttachedToWindow) {
-                        Thread.sleep(100)
-                    }
-                    mReadConfig.setContentDimen(width, height)          // TODO：不应该使用ReadView的宽高，应该使用ReadContent的宽高，这里只是为了方便测试
-                    splitCurChap()
-                    post {
-                        this@ReadView.mAdapterData.removeAt(chapIndex - 1)
-                        adapter.notifyItemRemoved(chapIndex - 1)
-                        mReadChapterTable[chapIndex]?.apply {
-                            this@ReadView.mAdapterData.insert(
-                                chapIndex - 1, PageType.READ_PAGE,
-                                pages
-                            )
-                            adapter.notifyItemRangeInserted(chapIndex - 1, pages.size)
-                        }
-                        curPageIndex = chapIndex
-                        adapter.notifyDataSetChanged()
-                        // TODO: 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
-                    }
-                } else {
-                    showMessagePage("章节加载失败......")
-                }
-            } else {
-                showMessagePage("目录加载失败......")
-            }
-        }
+        initBook(chapIndex, pageIndex)
     }
 
     fun openFile(
@@ -257,8 +299,52 @@ class ReadView(
         for (i in 1..mBookData!!.chapCount) {
             val chap = mBookData!!.getChap(i)
             mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(chap.title ?: "", i))
+            mChapPageCountRecorder[i] = 1
         }
         adapter.notifyDataSetChanged()
+    }
+
+    /**
+     * 获取指定章节在adapterData中的位置, 如adapterData中position为0就对应为RangeData中的0
+     */
+    private fun getChapRange(chapIndex: Int): RangeData = RangeData().apply {
+        var counter = 0
+        for (i in 1 until chapIndex) {
+            counter += mChapPageCountRecorder[i]!!
+        }
+        from = counter
+        to = from + mChapPageCountRecorder[chapIndex]!!
+    }
+
+    private fun findChapByPosition(position: Int): Pair<Int, Int> {
+        val position = position + 1
+        var start = 0
+        var chapIndex = 0
+        for (i in 1 .. mBookData!!.chapCount) {
+            val temp = start + mChapPageCountRecorder[i]!!
+            if (temp < position) {
+                start = temp
+            } else {
+                chapIndex = i
+                break
+            }
+        }
+        return Pair(chapIndex, position - start)
+    }
+
+    private fun loadAndRefresh(chapIndex: Int, pageIndex: Int) {
+        var chapRange = getChapRange(chapIndex)
+        val needJumpPage = curPageIndex - 1 == chapRange.from
+        preprocess(chapIndex) {
+            inflateChap(it)
+        }
+        // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
+        // 这样也就没必要，跳转到指定pageIndex了
+        if (needJumpPage) {
+            chapRange = getChapRange(chapIndex)
+            curPageIndex = chapRange.from + pageIndex
+            adapter.notifyDataSetChanged()
+        }
     }
 
     private enum class PageType {
@@ -285,6 +371,7 @@ class ReadView(
             return PageViewHolder(page)
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
             val type = mAdapterData.getPageType(position)
             when (type) {
@@ -302,6 +389,9 @@ class ReadView(
                 PageType.READ_PAGE -> {
                     val page = holder.itemView as ReadPage
                     val pageData = mAdapterData.getPageContent(position) as PageData
+                    val indexPair = findChapByPosition(position)
+                    page.header.text = mBookData!!.getChap(indexPair.first).title
+                    page.progress.text = "${indexPair.second}/${mChapPageCountRecorder[indexPair.first]}"
                     page.content.setContent(pageData)
                     page.content.provider = mPageContentProvider
                 }
@@ -346,5 +436,48 @@ class ReadView(
         fun removeAt(i: Int): Pair<PageType, Any> = pages.removeAt(i)
 
     }
+
+    /**
+     * 翻页成功时，会回调这个函数
+     */
+    override fun onFlip(flipDirection: PageDirection, curPageIndex: Int) {
+        super.onFlip(flipDirection, curPageIndex)
+        val indexPair = findChapByPosition(curPageIndex - 1)
+        if (indexPair.second == 1 && flipDirection == PageDirection.NEXT
+            || indexPair.second == mChapPageCountRecorder[indexPair.first] && flipDirection == PageDirection.PREV
+            ) {
+            onCurChapChanged(flipDirection, curPageIndex, indexPair.first, indexPair.second)
+        }
+
+        Log.d(TAG, "curPageIndex: $curPageIndex")
+    }
+
+    /**
+     *
+     */
+    private fun onCurChapChanged(
+        flipDirection: PageDirection, curPageIndex: Int,
+        curChapIndex: Int, curPageIndexInChap: Int) {
+        Log.d(TAG, "onCurChapChanged: curChapIndex: $curChapIndex, curPageIndexInChap: $curPageIndexInChap")
+
+        preprocess(curChapIndex) {
+            loadChap(it)
+            splitChap(it)
+            post {
+                if (inflateChap(it) && curChapIndex == it
+                    && curChapIndex == findChapByPosition(this@ReadView.curPageIndex).first) {
+                    val chapRange = getChapRange(it)
+                    if (flipDirection == PageDirection.PREV) {
+                        this@ReadView.curPageIndex = chapRange.to
+                    } else {
+                        // NEXT
+                        this@ReadView.curPageIndex = chapRange.from + 1
+                    }
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        }
+    }
+
 
 }

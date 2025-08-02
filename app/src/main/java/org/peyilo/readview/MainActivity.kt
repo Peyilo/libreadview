@@ -1,6 +1,7 @@
 package org.peyilo.readview
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -11,6 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +30,35 @@ class MainActivity : AppCompatActivity() {
 
     private var selectedFile: File? = null
 
+    fun copyAssetToInternalStorage(context: Context, assetFileName: String): File? {
+        val assetManager = context.assets
+
+        // 获取应用的内部存储路径
+        val outputFile = File(context.filesDir, assetFileName.split("/").last())
+
+        try {
+            // 打开 assets 文件流
+            val inputStream: InputStream = assetManager.open(assetFileName)
+            val outputStream: OutputStream = FileOutputStream(outputFile)
+
+            // 将文件内容从 assets 复制到内部存储
+            val buffer = ByteArray(1024)
+            var length: Int
+            while (inputStream.read(buffer).also { length = it } > 0) {
+                outputStream.write(buffer, 0, length)
+            }
+
+            // 关闭流
+            inputStream.close()
+            outputStream.close()
+
+            return outputFile
+        } catch (e: IOException) {
+            e.printStackTrace()
+            return null
+        }
+    }
+
     private var recyclerView: RecyclerView? = null
 
     @SuppressLint("SdCardPath")
@@ -39,7 +72,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btn_select_file).setOnClickListener {
-            selectFileLauncher.launch(arrayOf("*/*"))
+//            selectFileLauncher.launch(arrayOf("*/*"))
+            selectedFile = copyAssetToInternalStorage(this@MainActivity, "txts/关于转生后我成为枕头公主这件事.txt")
         }
 
         findViewById<Button>(R.id.btn_readview_demo).setOnClickListener {

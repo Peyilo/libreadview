@@ -163,17 +163,17 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
                                 startNextAnim()
                                 pageContainer.nextCarouselLayout()
                                 onNextCarouselLayout()
-                                pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
+                                pageContainer.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
                             }
                             PageDirection.PREV -> {
                                 startPrevAnim()
                                 pageContainer.prevCarouselLayout()
                                 onPrevCarouselLayout()
-                                pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
+                                pageContainer.onFlip(PageDirection.PREV, pageContainer.curPageIndex)
                             }
                             PageDirection.NONE -> {
                                 startResetAnim(initDire)
-                                pageContainer.onFlipListener?.onFlip(PageDirection.NONE, pageContainer.curPageIndex)
+                                pageContainer.onFlip(PageDirection.NONE, pageContainer.curPageIndex)
                             }
                         }
                         needStartAnim = false
@@ -213,7 +213,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         startNextAnim()
         pageContainer.nextCarouselLayout()
         onNextCarouselLayout()
-        pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
+        pageContainer.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
         lastAnimTimestamp = System.currentTimeMillis()
     }
 
@@ -225,7 +225,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         startPrevAnim()
         pageContainer.prevCarouselLayout()
         onPrevCarouselLayout()
-        pageContainer.onFlipListener?.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
+        pageContainer.onFlip(PageDirection.PREV, pageContainer.curPageIndex)
         lastAnimTimestamp = System.currentTimeMillis()
     }
 
