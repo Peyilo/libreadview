@@ -9,7 +9,7 @@ import org.peyilo.libreadview.PageContainer.PageDirection
 import kotlin.math.abs
 import kotlin.math.hypot
 
-abstract class FlipOnReleasePageContainer: DirectionalPageManager() {
+abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
 
     private var _scroller: Scroller? = null
     protected val scroller: Scroller
@@ -278,7 +278,7 @@ abstract class FlipOnReleasePageContainer: DirectionalPageManager() {
     abstract fun onPrevCarouselLayout()
 
 
-    abstract class Horizontal: FlipOnReleasePageContainer() {
+    abstract class Horizontal: FlipOnReleaseLayoutContainer() {
 
         private var lastX: Float = 0F                       // 上次的触摸点的y坐标
         private var lastRealTimeDire = PageDirection.NONE   // 上次的实时移动方向
@@ -329,7 +329,7 @@ abstract class FlipOnReleasePageContainer: DirectionalPageManager() {
 
     }
 
-    abstract class Vertical: FlipOnReleasePageContainer() {
+    abstract class Vertical: FlipOnReleaseLayoutContainer() {
 
         private var lastY: Float = 0F                       // 上次的触摸点的y坐标
         private var lastRealTimeDire = PageDirection.NONE   // 上次的实时移动方向

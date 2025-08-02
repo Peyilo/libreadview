@@ -9,7 +9,7 @@ import kotlin.math.min
  * 仿Apple iBook的Slide翻页实现
  * 实际上是：覆盖(cover)翻页和平移(slide)翻页的结合
  */
-class IBookSlidePageManager: CoverShadowPageManager(), AnimatedPageManager {
+class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
 
     private var primaryView: View? = null
     private var followedView: View? = null
@@ -133,6 +133,31 @@ class IBookSlidePageManager: CoverShadowPageManager(), AnimatedPageManager {
     override fun onPrevCarouselLayout() {
         pageContainer.apply {
             getPrevPage()?.translationX = -width.toFloat()  // 这里的PrevPage可能不存在的，如果存在就处理translationX，否则不处理
+        }
+    }
+
+    override fun onAddPage(view: View, position: Int) {
+        super.onAddPage(view, position)
+        when {
+            pageContainer.itemCount >= 3 -> {
+                if (position == 2 && pageContainer.curPageIndex != 1) {
+                    view.translationX = -pageContainer.width.toFloat()
+                } else if (position == 1 && pageContainer.curPageIndex == pageContainer.itemCount)
+                    view.translationX = -pageContainer.width.toFloat()
+                else {
+                    view.translationX = 0F
+                }
+            }
+            pageContainer.itemCount == 2 -> {
+                if (position == 1 && pageContainer.curPageIndex == 2) {
+                    view.translationX = -pageContainer.width.toFloat()
+                } else {
+                    view.translationX = 0F
+                }
+            }
+            pageContainer.itemCount == 1 -> {
+                view.translationX = 0F
+            }
         }
     }
 

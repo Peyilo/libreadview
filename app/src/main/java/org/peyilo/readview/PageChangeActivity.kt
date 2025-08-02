@@ -5,13 +5,14 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
 
-class PageContainerActivity : AppCompatActivity() {
+class PageChangeActivity : AppCompatActivity() {
 
     private lateinit var pageContainer: PageContainer
     private val colors = mutableListOf<Pair<Int, Int>>()
@@ -23,12 +24,14 @@ class PageContainerActivity : AppCompatActivity() {
         return Color.rgb(red, green, blue)          // 不透明随机颜色
     }
 
+    private var state = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_page_container)
+        setContentView(R.layout.activity_page_change)
         supportActionBar?.hide()
 
-        repeat(10000) {
+        repeat(0) {
             val randomColor = generateRandomColor()
 //            val randomColor = Color.WHITE
             colors.add(Pair(randomColor, it + 1))
@@ -37,16 +40,31 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer = findViewById(R.id.pageContainer)
         pageContainer.initPageIndex(1)
         pageContainer.layoutManager = IBookSlideLayoutManager()
-
         pageContainer.adapter = ColorAdapter(colors)
-        pageContainer.setOnClickRegionListener{ xPercent, _ ->
-            when (xPercent) {
-                in 0..30 -> pageContainer.flipToPrevPage()
-                in 70..100 -> pageContainer.flipToNextPage()
-                else -> return@setOnClickRegionListener false
+
+
+        findViewById<Button>(R.id.btn_update).setOnClickListener {
+            val size = colors.size
+            repeat(size) {
+                val randomColor =  if (state) Color.WHITE else generateRandomColor()
+                val number = colors[it].second
+                colors.removeAt(it)
+                colors.add(it, Pair(randomColor, number))
             }
-            true
+            state = !state
+            pageContainer.adapter.notifyItemRangeChanged(0, colors.size)
         }
+
+        findViewById<Button>(R.id.btn_insert).setOnClickListener {
+            colors.add(Pair(Color.WHITE, 0))
+            pageContainer.adapter.notifyItemInserted(colors.size)
+        }
+
+        findViewById<Button>(R.id.btn_remove).setOnClickListener {
+            colors.removeAt(0)
+            pageContainer.adapter.notifyItemRemoved(0)
+        }
+
     }
 
     class ColorAdapter(private val items: List<Pair<Int, Int>>) :
@@ -70,4 +88,5 @@ class PageContainerActivity : AppCompatActivity() {
 
         override fun getItemCount(): Int = items.size
     }
+
 }

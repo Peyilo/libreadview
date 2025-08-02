@@ -7,7 +7,7 @@ import org.peyilo.libreadview.PageContainer.PageDirection
 import kotlin.math.abs
 import kotlin.math.hypot
 
-abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
+abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
 
     protected val gesture: Gesture = Gesture()
 
@@ -151,7 +151,7 @@ abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
 
     open fun onStartScroll(velocityX: Float, velocityY: Float) = Unit
 
-    abstract class Horizontal: NoFlipOnReleasePageManager() {
+    abstract class Horizontal: NoFlipOnReleaseLayoutManager() {
 
         // 设置page的初始位置
         override fun initPagePosition() {
@@ -176,7 +176,7 @@ abstract class NoFlipOnReleasePageManager: DirectionalPageManager() {
 
     }
 
-    abstract class Vertical: NoFlipOnReleasePageManager() {
+    abstract class Vertical: NoFlipOnReleaseLayoutManager() {
 
         // 设置page的初始位置
         override fun initPagePosition() {

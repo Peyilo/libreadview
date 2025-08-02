@@ -40,7 +40,7 @@ class SimulationPageManagers {
      * TODO：尽可能不在绘制中创建大量的PointF对象，由于对象全部保存在堆上，可能造成频繁地GC
      * TODO: 向上翻页时，动画实在过于简陋，尝试采用iOS iBook那种实现
      */
-    open class Style1: FlipOnReleasePageContainer.Horizontal(), AnimatedPageManager {
+    open class Style1: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLayoutManager {
 
         protected val containerWidth get() = pageContainer.width      // 容器的宽度
         protected val containerHeight get() = pageContainer.height    // 容器的高度
@@ -80,7 +80,7 @@ class SimulationPageManagers {
          * 绘制区域C要用到的: 叠加灰色调遮罩、矩阵变换
          */
         protected val backShadowPaint = Paint().apply {
-            color = Color.argb(45, 0, 0, 0) // 半透明黑（也可以用灰）
+            color = Color.argb(10, 0, 0, 0) // 半透明黑（也可以用灰）
         }
         private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
         private val regionCMatrix = Matrix()
@@ -837,7 +837,7 @@ class SimulationPageManagers {
         }
     }
 
-    class Style2: FlipOnReleasePageContainer.Horizontal(), AnimatedPageManager {
+    class Style2: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLayoutManager {
 
         override fun prepareAnim(initDire: PageDirection) {
             TODO("Not yet implemented")

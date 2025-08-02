@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.ReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
-import org.peyilo.libreadview.manager.IBookSlidePageManager
+import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import java.io.File
 
 class ReadViewActivity : AppCompatActivity() {
@@ -22,7 +22,7 @@ class ReadViewActivity : AppCompatActivity() {
 
         readview = findViewById(R.id.readview)
 
-        readview.pageManager = IBookSlidePageManager()
+        readview.layoutManager = IBookSlideLayoutManager()
 
         filePath?.let {
             val selectedFile = File(it)
@@ -31,8 +31,11 @@ class ReadViewActivity : AppCompatActivity() {
             readview.openBook(
                 SimpleNativeLoader(selectedFile).apply {
                     addTitleRegex("序·故事开始前的故事")
-                    addTitleRegex("^\\d+\\..+\n")
-                }
+                    addTitleRegex("^\\d+\\..+")
+                },
+//                SimpleTextLoader("你好啊"),
+                chapIndex = 20,
+                pageIndex = 1,
             )
         }
     }

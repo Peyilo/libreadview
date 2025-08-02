@@ -14,7 +14,7 @@ import kotlin.math.min
  * TODO： 支持pageContainer.onFlipListener
  * TODO: 如果PageContainer中一开始没有child，之后添加新的child，由于没有触发initPagePosition，导致所有的child都叠在一起，也就是
  */
-class ScrollPageManager: NoFlipOnReleasePageManager.Vertical() {
+class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
 
     private var curPage: View? = null
     private lateinit var prevPages: List<View>

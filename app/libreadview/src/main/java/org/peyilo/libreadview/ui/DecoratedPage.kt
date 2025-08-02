@@ -6,28 +6,23 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.graphics.toColorInt
 
-/**
- * 加载目录时、加载章节、加载失败要显示的视图
- */
-class PlaceholderPage(
+open class DecoratedPage(
     context: Context, attrs: AttributeSet? = null
 ): View(context, attrs) {
 
-    var text: String = ""
-
-    private val textPaint = Paint().apply {
-        textSize = 48F
-        color = Color.BLACK
+    init {
+        setBackgroundColor(Color.WHITE)
     }
 
     private val linePaint = Paint().apply {
-        strokeWidth = 1F
-        color = Color.GRAY
+        strokeWidth = 3F
+        color = "#D7D7D7".toColorInt()
     }
 
-    private val lineMargin = 30F
-    private val lineWidth = 10F
+    private val lineMargin = 50F
+    private val lineWidth = 15F
 
     /**
      * 绘制边框
@@ -65,18 +60,6 @@ class PlaceholderPage(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawBorder(canvas)
-
-        if (text.isNotEmpty()) {
-            val width = width.toFloat()
-            val height = height.toFloat()
-            val textWidth = textPaint.measureText(text)
-            val textHeight = textPaint.fontMetrics.bottom - textPaint.fontMetrics.top
-
-            val x = width / 2 - textWidth / 2
-            val y = height / 2 - textHeight / 2
-
-            canvas.drawText(text, x, y, textPaint)
-        }
     }
 
 }

@@ -134,12 +134,14 @@ class ExampleInstrumentedTest {
         assert(pageRange[2] == 10)
     }
 
+    private fun assertRegexMatchs(str: String, regex: String) {
+        assert(Regex(regex).matches( str))
+    }
+
     @Test
     fun testRegex() {
-        val titleRegex = Regex("序·故事开始前的故事")
-
-        val title = "序·故事开始前的故事"
-        assert(titleRegex.matches(title))
+        assertRegexMatchs("序·故事开始前的故事", "序·故事开始前的故事")
+        assertRegexMatchs("3.摔倒的惩罚", "^\\d+\\..+")
     }
 
 }

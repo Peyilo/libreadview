@@ -27,4 +27,10 @@
         android:text="ReadView Demo"
         android:textAllCaps="false"/>
 
+    <Button android:id="@+id/btn_page_change_demo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Page Change"
+        android:textAllCaps="false"/>
+
 </LinearLayout>

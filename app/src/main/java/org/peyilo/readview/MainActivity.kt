@@ -1,5 +1,6 @@
 package org.peyilo.readview
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity() {
 
     private var recyclerView: RecyclerView? = null
 
+    @SuppressLint("SdCardPath")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -48,6 +50,10 @@ class MainActivity : AppCompatActivity() {
 
             // 启动 ReadViewActivity
             startActivity(intent)
+        }
+
+        findViewById<Button>(R.id.btn_page_change_demo).setOnClickListener {
+            startActivity(Intent(this@MainActivity, PageChangeActivity::class.java))
         }
 
 //        recyclerView!!.adapter

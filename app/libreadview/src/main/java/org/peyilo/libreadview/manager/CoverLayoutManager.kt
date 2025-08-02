@@ -8,7 +8,7 @@ import kotlin.math.min
 /**
  * 覆盖翻页实现
  */
-class CoverPageManager: CoverShadowPageManager(), AnimatedPageManager {
+class CoverLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
 
     private var draggedView: View? = null           // 当前滑动手势选中的page
 

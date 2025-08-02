@@ -1,9 +1,9 @@
 package org.peyilo.libreadview.manager
 
 import org.peyilo.libreadview.PageContainer.PageDirection
-import org.peyilo.libreadview.PageContainer.PageManager
+import org.peyilo.libreadview.PageContainer.LayoutManager
 
-abstract class DirectionalPageManager: PageManager() {
+abstract class DirectionalLayoutManager: LayoutManager() {
 
     /**
      * 在某次手势中，一旦滑动的距离超过一定距离（scaledTouchSlop），说明就是滑动手势，然后就会调用该函数
