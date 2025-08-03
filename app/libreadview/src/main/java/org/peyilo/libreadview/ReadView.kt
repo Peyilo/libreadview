@@ -37,12 +37,6 @@ class ReadView(
     }
 
     /**
-     * 当前章节序号
-     */
-    @IntRange(from = 1)
-    private var mCurChapIndex = 1
-
-    /**
      * 预处理章节数：需要预处理当前章节之前的preprocessBefore个章节
      */
     private var mPreprocessBefore = 0
@@ -59,7 +53,9 @@ class ReadView(
     private lateinit var mContentParser: ContentParser
     private lateinit var mPageContentProvider: PageContentProvider
 
-    private val mThreadPool by lazy { Executors.newFixedThreadPool(3) }
+    private val mThreadPool by lazy {
+        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
+    }
 
     private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
@@ -120,21 +116,22 @@ class ReadView(
      * 只加载没有处于Unload状态下的章节
      * 这个函数是线程安全的
      */
-    private fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean
-    = synchronized(mLocksForChap[chapIndex]!!) {
-        if (mChapStatusTable[chapIndex] == ChapStatus.Unload) {      // 未加载
-            try {
-                val chapData = mBookData!!.getChap(chapIndex)
-                mBookLoader.loadChap(chapData)
-                mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
-                mChapStatusTable[chapIndex] = ChapStatus.Nonpaged        // 更新状态
-                Log.d(TAG, "loadChap: $chapIndex")
-                return true
-            } catch (e: Exception) {        // 加载失败
-                Log.d(TAG, "loadChap: ${e.stackTrace}")
+    private fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean {
+        synchronized(mLocksForChap[chapIndex]!!) {
+            if (mChapStatusTable[chapIndex] == ChapStatus.Unload) {      // 未加载
+                try {
+                    val chapData = mBookData!!.getChap(chapIndex)
+                    mBookLoader.loadChap(chapData)
+                    mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
+                    mChapStatusTable[chapIndex] = ChapStatus.Nonpaged        // 更新状态
+                    Log.d(TAG, "loadChap: $chapIndex")
+                    return true
+                } catch (e: Exception) {        // 加载失败
+                    Log.d(TAG, "loadChap: ${e.stackTrace}")
+                }
             }
+            return false
         }
-        return false
     }
 
     /**
@@ -224,10 +221,6 @@ class ReadView(
         splitChap(it)
     }
 
-    private fun loadCurChap(): Boolean = preload(mCurChapIndex)
-
-    private fun splitCurChap() = preSplit(mCurChapIndex)
-
 
     /**
      * 在不addview的情况下，获取ReadPage.content的宽高，以便于进行分页。
@@ -282,27 +275,27 @@ class ReadView(
         if (initTocRes) {
             // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
             // 由于涉及UI更新，需要在主线程执行
-            curPageIndex = chapIndex
+            mCurPageIndex = chapIndex
             showAllChapLoadPage()
-            Log.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$curPageIndex")
-            val loadChapRes = loadCurChap()
+            Log.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$mCurPageIndex")
+            val loadChapRes = loadChap(chapIndex)
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
                 // 等待视图布局完成，然后获取视图的宽高
                 mReadConfig.waitForInitialized()
-                splitCurChap()
+                splitChap(chapIndex)
                 post {
                     var chapRange = getChapRange(chapIndex)
-                    val needJumpPage = curPageIndex - 1 == chapRange.from
+                    val needJumpPage = mCurPageIndex - 1 == chapRange.from
                     preprocess(chapIndex) {
                         inflateChap(it)
                     }
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
-                    Log.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $curPageIndex, chapRange = $chapRange")
+                    Log.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurPageIndex, chapRange = $chapRange")
                     if (needJumpPage) {
                         chapRange = getChapRange(chapIndex)
-                        curPageIndex = chapRange.from + pageIndex
+                        mCurPageIndex = chapRange.from + pageIndex
                         adapter.notifyDataSetChanged()
                     }
                 }
@@ -324,7 +317,6 @@ class ReadView(
         this.mBookLoader = loader
         this.mContentParser = SimpleContentParser()
         this.mPageContentProvider = SimlpePageContentProvider(this.mReadConfig)
-        this.mCurChapIndex = chapIndex
 
         // 进行目录初始化准备工作，如：显示“加载目录中”视图
         showMessagePage("加载目录中......")
@@ -372,6 +364,9 @@ class ReadView(
         to = from + mChapPageCountRecorder[chapIndex]!!
     }
 
+    /**
+     * 返回一个pair，第一个表示章节索引，第二个表示position对应的item属于章节中的第几页。两个都是从1开始算
+     */
     private fun findChapByPosition(position: Int): Pair<Int, Int> {
         val position = position + 1
         var start = 0
@@ -490,42 +485,59 @@ class ReadView(
         if (indexPair.second == 1 && flipDirection == PageDirection.NEXT
             || indexPair.second == mChapPageCountRecorder[indexPair.first] && flipDirection == PageDirection.PREV
             ) {
-            onCurChapChanged(flipDirection, curPageIndex, indexPair.first, indexPair.second)
+            onCurChapChanged(indexPair.first, indexPair.second)
         }
 
         Log.d(TAG, "curPageIndex: $curPageIndex")
     }
 
     /**
-     *
+     * 当章节发生改变，就会回调这个函数
      */
-    private fun onCurChapChanged(
-        flipDirection: PageDirection, curPageIndex: Int,
-        curChapIndex: Int, curPageIndexInChap: Int) {
+    private fun onCurChapChanged(curChapIndex: Int, curPageIndexInChap: Int) {
         Log.d(TAG, "onCurChapChanged: curChapIndex: $curChapIndex, curPageIndexInChap: $curPageIndexInChap")
 
         startTask {
             preprocess(curChapIndex) {
                 loadChap(it)
                 splitChap(it)
-            }
-            preprocess(curChapIndex) {
                 post {
-                    if (inflateChap(it) && curChapIndex == it
-                        && curChapIndex == findChapByPosition(this@ReadView.curPageIndex).first) {
-//                        val chapRange = getChapRange(it)
-//                        if (flipDirection == PageDirection.PREV) {
-//                            this@ReadView.curPageIndex = chapRange.to
-//                        } else {
-//                            // NEXT
-//                            this@ReadView.curPageIndex = chapRange.from + 1
-//                        }
-//                        adapter.notifyDataSetChanged()
-                    }
+                    inflateChap(it)
                 }
             }
         }
     }
 
 
+    /**
+     * 章节跳转
+     * @param chapIndex 需要跳转到的章节
+     */
+    fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean {
+        mBookData?.let {
+            if (chapIndex >= 1 && chapIndex <= mBookData!!.chapCount) {
+                val chapRange = getChapRange(chapIndex)
+                mCurPageIndex = chapRange.from + 1
+                adapter.notifyDataSetChanged()
+                onCurChapChanged(chapIndex, 1)
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * 获取当前章节索引，从1开始
+     */
+    fun getCurChapIndex() = findChapByPosition(mCurPageIndex - 1).first
+
+    /**
+     * 跳转到下一个章节
+     */
+    fun navigateToNextChapter(): Boolean = navigateToChapter(getCurChapIndex() + 1)
+
+    /**
+     * 跳转到上一个章节
+     */
+    fun navigateToPrevChapter(): Boolean = navigateToChapter(getCurChapIndex() - 1)
 }

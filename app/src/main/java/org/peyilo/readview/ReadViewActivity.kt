@@ -31,12 +31,21 @@ class ReadViewActivity : AppCompatActivity() {
             readview.openBook(
                 SimpleNativeLoader(selectedFile).apply {
                     addTitleRegex("第\\d+章 .*")
-                    networkLagFlag = false
+                    networkLagFlag = true
                 },
 //                SimpleTextLoader("你好啊"),
                 chapIndex = 20,
                 pageIndex = 2,
             )
+        }
+
+        readview.setOnClickRegionListener { xPercent, yPercent ->
+            when(xPercent) {
+                in 0..30 -> readview.navigateToPrevChapter()
+                in 70..100 -> readview.navigateToNextChapter()
+                else -> Unit
+            }
+            true
         }
     }
 }

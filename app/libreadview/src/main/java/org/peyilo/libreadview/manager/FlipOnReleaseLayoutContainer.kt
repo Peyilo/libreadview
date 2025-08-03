@@ -163,17 +163,17 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
                                 startNextAnim()
                                 pageContainer.nextCarouselLayout()
                                 onNextCarouselLayout()
-                                pageContainer.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
+                                pageContainer.onFlip(PageDirection.NEXT, pageContainer.mCurPageIndex)
                             }
                             PageDirection.PREV -> {
                                 startPrevAnim()
                                 pageContainer.prevCarouselLayout()
                                 onPrevCarouselLayout()
-                                pageContainer.onFlip(PageDirection.PREV, pageContainer.curPageIndex)
+                                pageContainer.onFlip(PageDirection.PREV, pageContainer.mCurPageIndex)
                             }
                             PageDirection.NONE -> {
                                 startResetAnim(initDire)
-                                pageContainer.onFlip(PageDirection.NONE, pageContainer.curPageIndex)
+                                pageContainer.onFlip(PageDirection.NONE, pageContainer.mCurPageIndex)
                             }
                         }
                         needStartAnim = false
@@ -187,7 +187,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
                     // OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时
                     // OnClickListener.onClick才会执行
                     pageContainer.apply {
-                        val handled = onClickRegionListener?.let { listener ->
+                        val handled = mOnClickRegionListener?.let { listener ->
                             val xPercent = gesture.down.x / width * 100
                             val yPercent = gesture.up.y / height * 100
                             listener.onClickRegion(xPercent.toInt(), yPercent.toInt())
@@ -213,7 +213,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         startNextAnim()
         pageContainer.nextCarouselLayout()
         onNextCarouselLayout()
-        pageContainer.onFlip(PageDirection.NEXT, pageContainer.curPageIndex)
+        pageContainer.onFlip(PageDirection.NEXT, pageContainer.mCurPageIndex)
         lastAnimTimestamp = System.currentTimeMillis()
     }
 
@@ -225,7 +225,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         startPrevAnim()
         pageContainer.prevCarouselLayout()
         onPrevCarouselLayout()
-        pageContainer.onFlip(PageDirection.PREV, pageContainer.curPageIndex)
+        pageContainer.onFlip(PageDirection.PREV, pageContainer.mCurPageIndex)
         lastAnimTimestamp = System.currentTimeMillis()
     }
 
@@ -284,8 +284,8 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         private var lastRealTimeDire = PageDirection.NONE   // 上次的实时移动方向
 
         // 设置page的初始位置
-        override fun initPagePosition() {
-            super.initPagePosition()
+        override fun onInitPagePosition() {
+            super.onInitPagePosition()
             pageContainer.apply {
                 // 将位于当前页之前的page，全部移动到屏幕外的左侧
                 getAllPrevPages().forEach { page ->
@@ -335,8 +335,8 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         private var lastRealTimeDire = PageDirection.NONE   // 上次的实时移动方向
 
         // 设置page的初始位置
-        override fun initPagePosition() {
-            super.initPagePosition()
+        override fun onInitPagePosition() {
+            super.onInitPagePosition()
             pageContainer.apply {
                 // 将位于当前页之前的page，全部移动到屏幕外之上
                 getAllPrevPages().forEach { page ->

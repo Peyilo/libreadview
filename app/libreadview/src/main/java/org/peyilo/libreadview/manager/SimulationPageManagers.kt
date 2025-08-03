@@ -831,8 +831,8 @@ class SimulationPageManagers {
             canvas.drawPath(shadowA2, shadowPaint)
         }
 
-        override fun destroy() {
-            super.destroy()
+        override fun onDestroy() {
+            super.onDestroy()
             pageBitmap.clearBitmap()            // 销毁bitmap
         }
     }

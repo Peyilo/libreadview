@@ -126,7 +126,7 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
                     // OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时
                     // OnClickListener.onClick才会执行
                     pageContainer.apply {
-                        val handled = onClickRegionListener?.let { listener ->
+                        val handled = mOnClickRegionListener?.let { listener ->
                             val xPercent = gesture.down.x / width * 100
                             val yPercent = gesture.up.y / height * 100
                             listener.onClickRegion(xPercent.toInt(), yPercent.toInt())
@@ -154,8 +154,8 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     abstract class Horizontal: NoFlipOnReleaseLayoutManager() {
 
         // 设置page的初始位置
-        override fun initPagePosition() {
-            super.initPagePosition()
+        override fun onInitPagePosition() {
+            super.onInitPagePosition()
             pageContainer.apply {
                 // 将位于当前页之前的page，全部移动到屏幕外的左侧
                 getAllPrevPages().forEach { page ->
@@ -179,8 +179,8 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     abstract class Vertical: NoFlipOnReleaseLayoutManager() {
 
         // 设置page的初始位置
-        override fun initPagePosition() {
-            super.initPagePosition()
+        override fun onInitPagePosition() {
+            super.onInitPagePosition()
             pageContainer.apply {
                 // 将位于当前页之前的page，全部移动到屏幕外之上
                 getAllPrevPages().forEach { page ->

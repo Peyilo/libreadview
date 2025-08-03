@@ -40,7 +40,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
         TODO("Not yet implemented")
     }
 
-    override fun initPagePosition() {
+    override fun onInitPagePosition() {
         needInitPagePosition = false
         pageContainer.apply {
             getAllPrevPages().forEachIndexed { index, page ->

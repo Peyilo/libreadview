@@ -21,8 +21,8 @@ class SlideLayoutManager: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLay
         this.animDuration = animDuration
     }
 
-    override fun initPagePosition() {
-        super.initPagePosition()
+    override fun onInitPagePosition() {
+        super.onInitPagePosition()
         pageContainer.apply {
             // 将位于当前页之后的page，全部移动到屏幕外的右侧
             getAllNextPages().forEach { page ->
@@ -141,8 +141,8 @@ class SlideLayoutManager: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLay
         }
     }
 
-    override fun destroy() {
-        super.destroy()
+    override fun onDestroy() {
+        super.onDestroy()
         primaryView = null
         followedView = null
     }

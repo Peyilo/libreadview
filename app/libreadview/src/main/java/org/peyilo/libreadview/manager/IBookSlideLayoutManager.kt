@@ -162,8 +162,8 @@ class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager
         private const val TAG = "IBookSlideLayoutManager"
     }
 
-    override fun destroy() {
-        super.destroy()
+    override fun onDestroy() {
+        super.onDestroy()
         primaryView = null
         followedView = null
     }

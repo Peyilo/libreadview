@@ -106,8 +106,8 @@ class CoverLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
         }
     }
 
-    override fun destroy() {
-        super.destroy()
+    override fun onDestroy() {
+        super.onDestroy()
         draggedView = null
     }
 
