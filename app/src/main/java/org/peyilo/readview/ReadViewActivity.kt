@@ -30,12 +30,12 @@ class ReadViewActivity : AppCompatActivity() {
 
             readview.openBook(
                 SimpleNativeLoader(selectedFile).apply {
-                    addTitleRegex("序·故事开始前的故事")
-                    addTitleRegex("^\\d+\\..+")
+                    addTitleRegex("第\\d+章 .*")
+                    networkLagFlag = false
                 },
 //                SimpleTextLoader("你好啊"),
-                chapIndex = 1,
-                pageIndex = 1,
+                chapIndex = 20,
+                pageIndex = 2,
             )
         }
     }

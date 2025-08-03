@@ -55,8 +55,10 @@ class PageChangeActivity : AppCompatActivity() {
             pageContainer.adapter.notifyItemRangeChanged(0, colors.size)
         }
 
+        var counter = 0
         findViewById<Button>(R.id.btn_insert).setOnClickListener {
-            colors.add(Pair(Color.WHITE, 0))
+            colors.add(Pair(Color.WHITE, counter))
+            counter += 1
             pageContainer.adapter.notifyItemInserted(colors.size)
         }
 

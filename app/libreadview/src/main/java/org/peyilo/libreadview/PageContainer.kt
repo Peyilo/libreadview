@@ -339,6 +339,10 @@ open class PageContainer(
          */
         open fun onResetPage(view: View) = Unit
 
+        /**
+         * @param view the view be added
+         * @param position the view will be added to this position thro ViewGroup.addView(view, position)
+         */
         open fun onAddPage(view: View, position: Int) = Unit
 
     }
@@ -539,6 +543,10 @@ open class PageContainer(
             // do nothing
         }
 
+        open fun onItemRangeReplaced(positionStart: Int, oldItemCount: Int, newItemCount: Int) {
+            // do nothing
+        }
+
     }
 
     /**
@@ -583,6 +591,12 @@ open class PageContainer(
             // to avoid such problems, just march thru the list in the reverse order.
             for (i in mObservers.indices.reversed()) {
                 mObservers[i].onItemRangeRemoved(positionStart, itemCount)
+            }
+        }
+
+        fun notifyItemRangeReplaced(positionStart: Int, oldItemCount: Int, newItemCount: Int) {
+            for (i in mObservers.indices.reversed()) {
+                mObservers[i].onItemRangeReplaced(positionStart, oldItemCount, newItemCount)
             }
         }
 
@@ -667,6 +681,14 @@ open class PageContainer(
 
         fun notifyItemRangeRemoved(positionStart: Int, itemCount: Int) {
             mObservable.notifyItemRangeRemoved(positionStart, itemCount)
+        }
+
+        fun notifyItemRangeReplaced(positionStart: Int, oldItemCount: Int, newItemCount: Int) {
+            mObservable.notifyItemRangeReplaced(positionStart, oldItemCount, newItemCount)
+        }
+
+        fun notifyItemReplaced(positionStart: Int, newItemCount: Int) {
+            mObservable.notifyItemRangeReplaced(positionStart, 1, newItemCount)
         }
 
     }
@@ -901,6 +923,51 @@ open class PageContainer(
                 }
             }
             Log.d(TAG, "onItemRangeRemoved: oldPageIndex = $oldPageIndex, curPageIndex = $curPageIndex")
+        }
+
+        override fun onItemRangeReplaced(positionStart: Int, oldItemCount: Int, newItemCount: Int) {
+            // TODO: 先只实现oldItemCount为1的情形
+            assert(oldItemCount == 1)
+            if (newItemCount == 0) onItemRangeRemoved(positionStart, oldItemCount)
+
+            val oldPageIndex = curPageIndex
+
+            // replace之前的itemCount
+            val prevItemCount = this@PageContainer.itemCount - oldItemCount + newItemCount
+
+            // 获取目前处于attach状态下的page的position
+            val attachedPagesPosition = mutableListOf<Int>()
+            pageCache.getAllAttachedViewHolder().forEach {
+                attachedPagesPosition.add(it.mPosition)
+            }
+            attachedPagesPosition.sort()
+
+            when {
+                // 所有删除、再插入的pages，都在attachedPages之后，因此不会对已有视图有任何影响
+                positionStart > attachedPagesPosition[attachedPagesPosition.size - 1] -> {
+                    onDatasetChanged()
+                }
+                // 所有删除、再插入的pages，都在curPage之后
+                curPageIndex - 1 < positionStart -> {
+                    onDatasetChanged()
+                }
+                // 被替换的第一个就是curPage
+                curPageIndex - 1 == positionStart -> {
+                    onDatasetChanged()
+                }
+                // 所有删除、再插入的pages，都在attachedPages之后
+                positionStart + oldItemCount <= attachedPagesPosition[0] -> {
+                    curPageIndex += newItemCount - oldItemCount
+                    onDatasetChanged()
+                }
+                // 所有删除、再插入的pages，都在curPage之前
+                positionStart < curPageIndex - 1 -> {
+                    curPageIndex += newItemCount - oldItemCount
+                    onDatasetChanged()
+                }
+            }
+
+            Log.d(TAG, "onItemRangeReplaced: oldPageIndex = $oldPageIndex, curPageIndex = $curPageIndex")
         }
 
     }

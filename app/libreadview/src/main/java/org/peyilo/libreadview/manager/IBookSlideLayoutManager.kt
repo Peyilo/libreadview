@@ -1,5 +1,6 @@
 package org.peyilo.libreadview.manager
 
+import android.util.Log
 import android.view.View
 import org.peyilo.libreadview.PageContainer.PageDirection
 import kotlin.math.max
@@ -123,44 +124,43 @@ class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager
     }
 
     override fun onNextCarouselLayout() {
-        if (pageContainer.itemCount >= 3) {         // 在itemCount=2时，无需处理translationX；itemCount<2的时候，这个函数不会调用
-            pageContainer.apply {
-                getNextPage()?.translationX = 0F
-            }
+        pageContainer.apply {
+            getNextPage()?.translationX = getTranslateX(0)
         }
     }
 
     override fun onPrevCarouselLayout() {
         pageContainer.apply {
-            getPrevPage()?.translationX = -width.toFloat()  // 这里的PrevPage可能不存在的，如果存在就处理translationX，否则不处理
+            getPrevPage()?.translationX = getTranslateX(2)  // 这里的PrevPage可能不存在的，如果存在就处理translationX，否则不处理
         }
+    }
+
+    private fun getTranslateX(position: Int): Float = when {
+        pageContainer.itemCount >= 3 -> when {
+            position == 0 && !pageContainer.isLastPage() -> slideRadio * pageContainer.width.toFloat()
+            position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+            position == 1 && pageContainer.isFirstPage() -> slideRadio * pageContainer.width.toFloat()
+            position == 2 && !pageContainer.isFirstPage() -> -pageContainer.width.toFloat()
+            else -> 0F
+        }
+        pageContainer.itemCount == 2 -> when {
+            position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+            position == 0 && pageContainer.isFirstPage() -> slideRadio * pageContainer.width.toFloat()
+            else -> 0F
+        }
+        pageContainer.itemCount == 1 -> 0F
+        else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
     }
 
     override fun onAddPage(view: View, position: Int) {
         super.onAddPage(view, position)
-        when {
-            pageContainer.itemCount >= 3 -> {
-                if (position == 2 && pageContainer.curPageIndex != 1) {
-                    view.translationX = -pageContainer.width.toFloat()
-                } else if (position == 1 && pageContainer.curPageIndex == pageContainer.itemCount)
-                    view.translationX = -pageContainer.width.toFloat()
-                else {
-                    view.translationX = 0F
-                }
-            }
-            pageContainer.itemCount == 2 -> {
-                if (position == 1 && pageContainer.curPageIndex == 2) {
-                    view.translationX = -pageContainer.width.toFloat()
-                } else {
-                    view.translationX = 0F
-                }
-            }
-            pageContainer.itemCount == 1 -> {
-                view.translationX = 0F
-            }
-        }
+        view.translationX = getTranslateX(position)
+        Log.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, itemCount = ${pageContainer.itemCount}, $position -> ${view.translationX}")
     }
 
+    companion object {
+        private const val TAG = "IBookSlideLayoutManager"
+    }
 
     override fun destroy() {
         super.destroy()

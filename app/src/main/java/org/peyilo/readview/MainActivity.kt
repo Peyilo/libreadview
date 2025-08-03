@@ -73,14 +73,14 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btn_select_file).setOnClickListener {
 //            selectFileLauncher.launch(arrayOf("*/*"))
-            selectedFile = copyAssetToInternalStorage(this@MainActivity, "txts/关于转生后我成为枕头公主这件事.txt")
+            selectedFile = copyAssetToInternalStorage(this@MainActivity, "txts/妖精之诗 作者：尼希维尔特.txt")
         }
 
         findViewById<Button>(R.id.btn_readview_demo).setOnClickListener {
             val intent = Intent(this@MainActivity, ReadViewActivity::class.java)
 
             // 传递文件路径或文件对象
-            intent.putExtra("SELECTED_FILE_PATH", "/data/user/0/org.peyilo.readview/files/关于转生后我成为枕头公主这件事.txt")
+            intent.putExtra("SELECTED_FILE_PATH", "/data/user/0/org.peyilo.readview/files/妖精之诗 作者：尼希维尔特.txt")
 
             // 启动 ReadViewActivity
             startActivity(intent)

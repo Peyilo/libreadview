@@ -7,8 +7,36 @@ import androidx.core.graphics.toColorInt
 
 class ReadConfig {
 
-    var contentHeight = 0F
-    var contentWidth = 0F
+    private val lock = Object()
+    private var _contentDimenIsInitialized = false
+    val contentDimenIsInitialized: Boolean
+        get() = synchronized(lock) { _contentDimenIsInitialized }
+
+    var contentWidth = 0f
+    var contentHeight = 0f
+
+    /**
+     * 初始化ReadContent要显示的宽高
+     */
+    fun initContentDimen(w: Int, h: Int) {
+        synchronized(lock) {
+            contentWidth = w.toFloat()
+            contentHeight = h.toFloat()
+            _contentDimenIsInitialized = true
+            lock.notifyAll()  // 唤醒等待者
+        }
+    }
+
+    /**
+     * 挂起当前线程，直到initContentDimen被调用，非忙等待
+     */
+    fun waitForInitialized() {
+        synchronized(lock) {
+            while (!_contentDimenIsInitialized) {
+                lock.wait()             // 挂起等待，不消耗 CPU
+            }
+        }
+    }
 
     var paddingLeft = 60F
     var paddingRight = 60F
@@ -38,10 +66,5 @@ class ReadConfig {
     var textMargin = 0F                                         // 字符间隔
     var lineMargin = 30F                                        // 行间隔
     var paraMargin = 50F                                        // 段落间隔
-
-    fun setContentDimen(w: Int, h: Int) {
-        contentWidth = w.toFloat()
-        contentHeight = h.toFloat()
-    }
 
 }

@@ -72,7 +72,6 @@ class ChapLoadPage(
 
         textPaint.color = Color.BLACK
         drawCenterText(canvas, title, 48F, 1300F)
-        drawCenterText(canvas, "chapIndex: $chapIndex", 48F, 1400F)
     }
 
 }

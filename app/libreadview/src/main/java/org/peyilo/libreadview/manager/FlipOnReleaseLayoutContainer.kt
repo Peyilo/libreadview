@@ -264,7 +264,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
     /**
      * 需要在这个函数里处理新添加的Page的位置
      * 调用顺序：
-     *      startNextAnim() -> pageContainer.nextCarouselLayout() -> onNextCarouselLayout()
+     *      startNextAnim() -> pageContainer.nextCarouselLayout() -> onNextCarouselLayout() -> onFlip
      *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
      */
     abstract fun onNextCarouselLayout()
@@ -272,7 +272,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
     /**
      * 需要在这个函数里处理新添加的Page的位置
      * 调用顺序：
-     *      startPrevAnim() -> pageContainer.prevCarouselLayout() -> onPrevCarouselLayout()
+     *      ACTION_UP -> startPrevAnim() -> pageContainer.prevCarouselLayout() -> onPrevCarouselLayout() -> onFlip
      *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
      */
     abstract fun onPrevCarouselLayout()

@@ -32,11 +32,6 @@ class ReadView(
 
     private val mAdapterData: Pages
 
-    init {
-        mAdapterData = Pages()
-        adapter = PageAdapter()
-    }
-
     companion object {
         private const val TAG = "ReadView"
     }
@@ -64,7 +59,7 @@ class ReadView(
     private lateinit var mContentParser: ContentParser
     private lateinit var mPageContentProvider: PageContentProvider
 
-    private val mThreadPool by lazy { Executors.newFixedThreadPool(10) }
+    private val mThreadPool by lazy { Executors.newFixedThreadPool(3) }
 
     private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
@@ -77,6 +72,24 @@ class ReadView(
         Nonpaged,               // 未分页
         Uninflated,             // 未填充
         Finished                // 加载、分页完成
+    }
+
+    init {
+        mAdapterData = Pages()
+        adapter = PageAdapter()
+
+        viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                // onPreDraw在main线程运行
+                // 获取ReadContent的宽高，用于分页
+                val dimenPair = measureContentView()
+                mReadConfig.initContentDimen(dimenPair.first, dimenPair.second)
+                Log.d(TAG, "onPreDraw: contentDimemsion = $dimenPair")
+                Log.d(TAG, "onPreDraw: readview.width = $width, readview.height = $height")
+                viewTreeObserver.removeOnPreDrawListener(this)
+                return true
+            }
+        })
     }
 
     override fun onDetachedFromWindow() {
@@ -164,15 +177,16 @@ class ReadView(
                     val chapRange = getChapRange(chapIndex)
                     assert(chapRange.size == 1 && mAdapterData.getPageType(chapRange.from) == PageType.CHAP_LOAD_PAGE)
                     this@ReadView.mAdapterData.removeAt(chapRange.from)
-                    adapter.notifyItemRemoved(chapRange.from)
-                    mReadChapterTable[chapIndex]?.apply {
+                    var pagesSize = 0
+                    mReadChapterTable[chapIndex]!!.apply {
                         this@ReadView.mAdapterData.insert(
                             chapRange.from, PageType.READ_PAGE,
                             pages
                         )
-                        adapter.notifyItemRangeInserted(chapRange.from, pages.size)
-                        mChapPageCountRecorder[chapIndex] = pages.size
+                        pagesSize = pages.size
                     }
+                    mChapPageCountRecorder[chapIndex] = pagesSize
+                    adapter.notifyItemRangeReplaced(chapRange.from, 1, pagesSize)
                     mChapStatusTable[chapIndex] = ChapStatus.Finished
                     Log.d(TAG, "inflateChap: $chapIndex")
                     return true
@@ -275,35 +289,23 @@ class ReadView(
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
                 // 等待视图布局完成，然后获取视图的宽高
-                viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
-                    override fun onPreDraw(): Boolean {         // onPreDraw在main线程运行，但是分页是耗时操作
-                        // 获取ReadContent的宽高，用于分页
-                        val dimenPair = measureContentView()
-                        mReadConfig.setContentDimen(dimenPair.first, dimenPair.second)
-                        Log.d(TAG, "onPreDraw: dimenPair = $dimenPair")
-                        Log.d(TAG, "onPreDraw: width = $width, height = $height")
-                        startTask {
-                            splitCurChap()
-                            post {
-                                var chapRange = getChapRange(chapIndex)
-                                val needJumpPage = curPageIndex - 1 == chapRange.from
-                                preprocess(chapIndex) {
-                                    inflateChap(it)
-                                }
-                                // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
-                                // 这样也就没必要，跳转到指定pageIndex了
-                                Log.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $curPageIndex, chapRange = $chapRange")
-                                if (needJumpPage) {
-                                    chapRange = getChapRange(chapIndex)
-                                    curPageIndex = chapRange.from + pageIndex
-                                    adapter.notifyDataSetChanged()
-                                }
-                            }
-                        }
-                        viewTreeObserver.removeOnPreDrawListener(this)
-                        return true
+                mReadConfig.waitForInitialized()
+                splitCurChap()
+                post {
+                    var chapRange = getChapRange(chapIndex)
+                    val needJumpPage = curPageIndex - 1 == chapRange.from
+                    preprocess(chapIndex) {
+                        inflateChap(it)
                     }
-                })
+                    // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
+                    // 这样也就没必要，跳转到指定pageIndex了
+                    Log.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $curPageIndex, chapRange = $chapRange")
+                    if (needJumpPage) {
+                        chapRange = getChapRange(chapIndex)
+                        curPageIndex = chapRange.from + pageIndex
+                        adapter.notifyDataSetChanged()
+                    }
+                }
 
             } else {
                 showMessagePage("章节加载失败......")
@@ -430,8 +432,8 @@ class ReadView(
                     val pageData = mAdapterData.getPageContent(position) as PageData
                     val indexPair = findChapByPosition(position)
                     page.header.text = mBookData!!.getChap(indexPair.first).title
-//                    page.progress.text = "${indexPair.second}/${mChapPageCountRecorder[indexPair.first]}"
-                    page.progress.text = "${position + 1}/${itemCount}"
+                    page.progress.text = "${indexPair.second}/${mChapPageCountRecorder[indexPair.first]}"
+//                    page.progress.text = "${position + 1}/${itemCount}"
                     page.content.setContent(pageData)
                     page.content.provider = mPageContentProvider
 
@@ -507,7 +509,6 @@ class ReadView(
                 loadChap(it)
                 splitChap(it)
             }
-            Thread.sleep(500)
             preprocess(curChapIndex) {
                 post {
                     if (inflateChap(it) && curChapIndex == it
