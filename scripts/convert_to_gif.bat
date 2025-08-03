@@ -3,6 +3,8 @@
 
 setlocal enabledelayedexpansion
 
+set maxHeight=480
+
 :: 初始化变量
 set inputFile=
 set outputFile=
@@ -42,7 +44,7 @@ if errorlevel 1 (
 
 :: 开始转换
 echo Converting "%inputFile%" to "%outputFile%"...
-ffmpeg -y -i "%inputFile%" -vf "fps=15,scale=640:-1:flags=lanczos" -loop 0 "%outputFile%"
+ffmpeg -y -i "%inputFile%" -vf "fps=15,scale='if(gt(ih,%maxHeight%),trunc(iw*%maxHeight%/ih),iw)':'if(gt(ih,%maxHeight%),%maxHeight%,ih)':flags=lanczos" -loop 0 "%outputFile%"
 
 if errorlevel 1 (
     echo [ERROR] Conversion failed.

@@ -13,7 +13,7 @@ A lightweight and customizable Android page turning library inspired by real-wor
 - 🧩 Page container layout to manage reading flow
 - 💡 Optimized for performance and customization
 
-<img src="gif/output.gif" alt="Page Flip Preview" style="zoom: 50%;" />
+<img src="gif/output.gif" alt="Page Flip Preview"  />
 
 ## 📦 Installation
 

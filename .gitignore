@@ -9,3 +9,4 @@
 /app/libreadview/src/main/assets/txts
 .externalNativeBuild
 .cxx
+*.webm
