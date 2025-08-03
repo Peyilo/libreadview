@@ -4,7 +4,7 @@
 
 A lightweight and customizable Android page turning library inspired by real-world reading experiences. Supports animations like simulation, slide, cover, and scroll styles.
 
-<img src="gif/output.gif" alt="Page Flip Preview" style="zoom: 80%;" />
+<img src=".\gif\Snipaste_2025-08-03_10-26-43.png" alt="Snipaste_2025-08-03_10-26-43" style="zoom:80%;" />
 
 ## 🚀 Features
 
@@ -12,6 +12,8 @@ A lightweight and customizable Android page turning library inspired by real-wor
 - 🎨 Easily extendable page manager
 - 🧩 Page container layout to manage reading flow
 - 💡 Optimized for performance and customization
+
+<img src="gif/output.gif" alt="Page Flip Preview" style="zoom: 50%;" />
 
 ## 📦 Installation
 
