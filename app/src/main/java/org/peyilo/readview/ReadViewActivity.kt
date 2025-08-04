@@ -41,8 +41,8 @@ class ReadViewActivity : AppCompatActivity() {
 
         readview.setOnClickRegionListener { xPercent, yPercent ->
             when(xPercent) {
-                in 0..30 -> readview.navigateToPrevChapter()
-                in 70..100 -> readview.navigateToNextChapter()
+                in 0..30 -> readview.prevCarouselLayout()
+                in 70..100 -> readview.nextCarouselLayout()
                 else -> Unit
             }
             true

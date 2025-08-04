@@ -33,7 +33,7 @@ class NoAnimPageManagers {
         }
 
         override fun onNextCarouselLayout() {
-            if (pageContainer.itemCount >= 3) {
+            if (pageContainer.getContainerPageCount() >= 3) {
                 pageContainer.apply {
                     getNextPage()?.translationX = 0F
                 }
@@ -72,7 +72,7 @@ class NoAnimPageManagers {
         }
 
         override fun onNextCarouselLayout() {
-            if (pageContainer.itemCount >= 3) {
+            if (pageContainer.getContainerPageCount() >= 3) {
                 pageContainer.apply {
                     getNextPage()?.translationY = 0F
                 }

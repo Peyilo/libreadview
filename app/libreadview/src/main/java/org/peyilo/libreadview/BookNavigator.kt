@@ -12,24 +12,27 @@ interface BookNavigator {
      */
     fun getChapCount(): Int
 
-
     /**
      * 当前章节的理论分页数量（根据排版计算得出）
      */
     fun getCurChapPageCount(): Int
 
     /**
-     * 获取当前章节索引
+     * 获取当前章节索引，从1开始
      */
     fun getCurChapIndex(): Int
 
+    /**
+     * 获取当前页在当前章节的索引，从1开始
+     */
+    fun getCurChapPageIndex(): Int
 
     /**
      * 跳转到指定章节的指定页
      * @param chapIndex 章节索引，从1开始
-     * @param pageIndex 页索引，从1开始
+     * @param chapPageIndex 页索引，从1开始
      */
-    fun navigateBook(@IntRange(from = 1) chapIndex: Int, @IntRange(from = 1) pageIndex: Int): Boolean
+    fun navigateBook(@IntRange(from = 1) chapIndex: Int, @IntRange(from = 1) chapPageIndex: Int): Boolean
 
     /**
      * 跳转到指定章节

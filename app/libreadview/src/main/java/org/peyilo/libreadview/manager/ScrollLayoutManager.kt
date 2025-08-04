@@ -41,7 +41,6 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
     }
 
     override fun onInitPagePosition() {
-        needInitPagePosition = false
         pageContainer.apply {
             getAllPrevPages().forEachIndexed { index, page ->
                 page.translationY = -height.toFloat() * (index + 1)
@@ -98,7 +97,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
             if (curPage!!.translationY < - pageContainer.height / 2) {
                 pageContainer.nextCarouselLayout()      // 该函数执行以后，page顺序就发生了改变
                 refreshPages()
-                if (pageContainer.itemCount >= 3) {
+                if (pageContainer.getContainerPageCount() >= 3) {
                     pageContainer.apply {
                         getNextPage()?.translationY = curPage!!.translationY + pageContainer.height
                     }

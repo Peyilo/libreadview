@@ -469,7 +469,7 @@ class SimulationPageManagers {
         override fun onNextCarouselLayout() {
             // 由于仿真翻页的动画实现，并不是依靠translationX，因此在动画结束后，
             // 还需将被拖动的View需要主动移出画面内，不像其他PageManager会通过设置translationX达到动画的效果
-            if (pageContainer.itemCount >= 2) {
+            if (pageContainer.getContainerPageCount() >= 2) {
                 pageContainer.apply {
                     getPrevPage()?.translationX = -containerWidth.toFloat()
                     getNextPage()?.translationX = 0F

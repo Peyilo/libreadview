@@ -1,6 +1,8 @@
 package org.peyilo.libreadview.manager
 
-import android.util.Log
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.view.View
 import org.peyilo.libreadview.PageContainer.PageDirection
 import org.peyilo.libreadview.utils.LogHelper
@@ -8,10 +10,11 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 仿Apple iBook的Slide翻页实现
- * 实际上是：覆盖(cover)翻页和平移(slide)翻页的结合
+ * 仿Apple iBook的Slide翻页实现.
+ * 实际上是：覆盖(cover)翻页和平移(slide)翻页的结合.
+ * 阴影绘制，整个底页覆盖一个阴影区域.
  */
-class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
+class IBookSlideLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
     private var primaryView: View? = null
     private var followedView: View? = null
@@ -19,6 +22,14 @@ class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager
     private var animDuration = 300
 
     private val slideRadio = 0.25F
+
+    private val shadowPaint: Paint = Paint()
+
+    /**
+     * 控制底部page的阴影，越大，则阴影颜色越深，取值范围为0-255
+     */
+    private val bottomPageShadowAlpha = 80
+
 
     /**
      * curAnimDire是用来根据方向，确定primaryView、followedView分别是什么的
@@ -124,39 +135,31 @@ class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager
         curAnimDire = PageDirection.NONE
     }
 
-    override fun onNextCarouselLayout() {
-        pageContainer.apply {
-            getNextPage()?.translationX = getTranslateX(0)
+    private fun getTranslateX(position: Int): Float {
+        val containerPageCount = pageContainer.getContainerPageCount()
+        return when {
+            containerPageCount >= 3 -> when {
+                position == 0 && !pageContainer.isLastPage() -> slideRadio * pageContainer.width.toFloat()
+                position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                position == 1 && pageContainer.isFirstPage() -> slideRadio * pageContainer.width.toFloat()
+                position == 2 && !pageContainer.isFirstPage() -> -pageContainer.width.toFloat()
+                else -> 0F
+            }
+            containerPageCount == 2 -> when {
+                position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                position == 0 && pageContainer.isFirstPage() -> slideRadio * pageContainer.width.toFloat()
+                else -> 0F
+            }
+            containerPageCount == 1 -> 0F
+            else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
         }
-    }
-
-    override fun onPrevCarouselLayout() {
-        pageContainer.apply {
-            getPrevPage()?.translationX = getTranslateX(2)  // 这里的PrevPage可能不存在的，如果存在就处理translationX，否则不处理
-        }
-    }
-
-    private fun getTranslateX(position: Int): Float = when {
-        pageContainer.itemCount >= 3 -> when {
-            position == 0 && !pageContainer.isLastPage() -> slideRadio * pageContainer.width.toFloat()
-            position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
-            position == 1 && pageContainer.isFirstPage() -> slideRadio * pageContainer.width.toFloat()
-            position == 2 && !pageContainer.isFirstPage() -> -pageContainer.width.toFloat()
-            else -> 0F
-        }
-        pageContainer.itemCount == 2 -> when {
-            position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
-            position == 0 && pageContainer.isFirstPage() -> slideRadio * pageContainer.width.toFloat()
-            else -> 0F
-        }
-        pageContainer.itemCount == 1 -> 0F
-        else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
     }
 
     override fun onAddPage(view: View, position: Int) {
         super.onAddPage(view, position)
         view.translationX = getTranslateX(position)
-        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, itemCount = ${pageContainer.itemCount}, $position -> ${view.translationX}")
+        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
+                "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
     }
 
     companion object {
@@ -169,6 +172,17 @@ class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager
         followedView = null
     }
 
-    override fun getCoverShadowView(): View? = primaryView
 
+    override fun dispatchDraw(canvas: Canvas) {
+        if ((isAnimRuning || isDragging) && primaryView != null) {
+            val shadowWidth = -primaryView!!.translationX
+            val scale = 1 - shadowWidth / pageContainer.width
+            val alpha = (bottomPageShadowAlpha * scale).toInt()
+            shadowPaint.color = Color.argb(alpha, 0, 0, 0)
+            canvas.drawRect(pageContainer.width + primaryView!!.translationX, 0F,
+                pageContainer.width.toFloat(), pageContainer.height.toFloat(),
+                shadowPaint
+            )
+        }
+    }
 }

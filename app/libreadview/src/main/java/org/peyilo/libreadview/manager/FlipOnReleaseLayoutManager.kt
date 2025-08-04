@@ -139,17 +139,14 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
                 startNextAnim()
                 pageContainer.nextCarouselLayout()
                 onNextCarouselLayout()
-                pageContainer.onFlip(PageDirection.NEXT, pageContainer.mCurPageIndex)
             }
             PageDirection.PREV -> {
                 startPrevAnim()
                 pageContainer.prevCarouselLayout()
                 onPrevCarouselLayout()
-                pageContainer.onFlip(PageDirection.PREV, pageContainer.mCurPageIndex)
             }
             PageDirection.NONE -> {
                 startResetAnim(initDire)
-                pageContainer.onFlip(PageDirection.NONE, pageContainer.mCurPageIndex)
             }
         }
     }
@@ -255,7 +252,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         startNextAnim()
         pageContainer.nextCarouselLayout()
         onNextCarouselLayout()
-        pageContainer.onFlip(PageDirection.NEXT, pageContainer.mCurPageIndex)
         lastAnimTimestamp = System.currentTimeMillis()
     }
 
@@ -267,7 +263,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         startPrevAnim()
         pageContainer.prevCarouselLayout()
         onPrevCarouselLayout()
-        pageContainer.onFlip(PageDirection.PREV, pageContainer.mCurPageIndex)
         lastAnimTimestamp = System.currentTimeMillis()
     }
 
@@ -306,18 +301,18 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     /**
      * 需要在这个函数里处理新添加的Page的位置
      * 调用顺序：
-     *      startNextAnim() -> pageContainer.nextCarouselLayout() -> onNextCarouselLayout() -> onFlip
+     *      startNextAnim() -> pageContainer.nextCarouselLayout() -> onNextCarouselLayout()
      *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
      */
-    abstract fun onNextCarouselLayout()
+    open fun onNextCarouselLayout() = Unit
 
     /**
      * 需要在这个函数里处理新添加的Page的位置
      * 调用顺序：
-     *      ACTION_UP -> startPrevAnim() -> pageContainer.prevCarouselLayout() -> onPrevCarouselLayout() -> onFlip
+     *      ACTION_UP -> startPrevAnim() -> pageContainer.prevCarouselLayout() -> onPrevCarouselLayout(
      *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
      */
-    abstract fun onPrevCarouselLayout()
+    open fun onPrevCarouselLayout() = Unit
 
 
     abstract class Horizontal: FlipOnReleaseLayoutManager() {

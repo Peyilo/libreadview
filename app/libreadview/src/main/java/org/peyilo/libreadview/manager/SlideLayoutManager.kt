@@ -128,7 +128,7 @@ class SlideLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayou
     }
 
     override fun onNextCarouselLayout() {
-        if (pageContainer.itemCount >= 3) {         // 在itemCount=2时，无需处理translationX；itemCount<2的时候，这个函数不会调用
+        if (pageContainer.getContainerPageCount() >= 3) {         // 在itemCount=2时，无需处理translationX；itemCount<2的时候，这个函数不会调用
             pageContainer.apply {
                 getNextPage()?.translationX = width.toFloat()
             }

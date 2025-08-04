@@ -279,9 +279,9 @@ class ReadView(
         if (initTocRes) {
             // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
             // 由于涉及UI更新，需要在主线程执行
-            mCurPageIndex = chapIndex
+            mCurContainerPageIndex = chapIndex
             showAllChapLoadPage()
-            LogHelper.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$mCurPageIndex")
+            LogHelper.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$mCurContainerPageIndex")
             val loadChapRes = loadChap(chapIndex)
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
@@ -291,14 +291,14 @@ class ReadView(
                 preSplit(chapIndex)
                 post {
                     var chapRange = getChapRange(chapIndex)
-                    val needJumpPage = mCurPageIndex - 1 == chapRange.from
+                    val needJumpPage = mCurContainerPageIndex - 1 == chapRange.from
                     preInflate(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
-                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurPageIndex, chapRange = $chapRange")
+                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurContainerPageIndex, chapRange = $chapRange")
                     if (needJumpPage) {
                         chapRange = getChapRange(chapIndex)
-                        mCurPageIndex = chapRange.from + pageIndex
+                        mCurContainerPageIndex = chapRange.from + pageIndex
                         adapter.notifyDataSetChanged()
                     }
                 }
@@ -479,29 +479,24 @@ class ReadView(
 
     }
 
-    /**
-     * 翻页成功时，会回调这个函数
-     */
-    override fun onFlip(flipDirection: PageDirection, curPageIndex: Int) {
-        super.onFlip(flipDirection, curPageIndex)
-        val indexPair = findChapByPosition(curPageIndex - 1)
-        if (indexPair.second == 1 && flipDirection == PageDirection.NEXT
-            || indexPair.second == mChapPageCountRecorder[indexPair.first] && flipDirection == PageDirection.PREV
-            ) {
-            onCurChapChanged(indexPair.first, indexPair.second)
+    override fun onPageChanged(oldPageIndex: Int, newPageIndex: Int) {
+        super.onPageChanged(oldPageIndex, newPageIndex)
+        val newChapIndex = findChapByPosition(newPageIndex - 1).first
+        val oldChapIndex = findChapByPosition(oldPageIndex - 1).first
+        if (newPageIndex != oldPageIndex) {
+            onChapChanged(oldChapIndex, newChapIndex)
         }
-
-        LogHelper.d(TAG, "curPageIndex: $curPageIndex")
+        LogHelper.d(TAG, "onPageChanged: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")
     }
 
     /**
      * 当章节发生改变，就会回调这个函数
      */
-    private fun onCurChapChanged(curChapIndex: Int, curPageIndexInChap: Int) {
-        LogHelper.d(TAG, "onCurChapChanged: curChapIndex: $curChapIndex, curPageIndexInChap: $curPageIndexInChap")
+    private fun onChapChanged(oldChapIndex: Int, newChapIndex: Int) {
+        LogHelper.d(TAG, "onChapChanged: oldChapIndex = $oldChapIndex, newChapIndex = $newChapIndex")
 
         startTask {
-            preprocess(curChapIndex) {
+            preprocess(newChapIndex) {
                 loadChap(it)
                 splitChap(it)
                 post {
@@ -519,10 +514,13 @@ class ReadView(
     fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean {
         mBookData?.let {
             if (chapIndex >= 1 && chapIndex <= mBookData!!.chapCount) {
+                val oldChapIndex = getCurChapIndex()
                 val chapRange = getChapRange(chapIndex)
-                mCurPageIndex = chapRange.from + 1
+                mCurContainerPageIndex = chapRange.from + 1
                 adapter.notifyDataSetChanged()
-                onCurChapChanged(chapIndex, 1)
+                if (oldChapIndex != chapIndex) {
+                    onChapChanged(oldChapIndex, chapIndex)
+                }
                 return true
             }
         }
@@ -532,7 +530,7 @@ class ReadView(
     /**
      * 获取当前章节索引，从1开始
      */
-    fun getCurChapIndex() = findChapByPosition(mCurPageIndex - 1).first
+    fun getCurChapIndex() = findChapByPosition(mCurContainerPageIndex - 1).first
 
     /**
      * 跳转到下一个章节

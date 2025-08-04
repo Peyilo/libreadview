@@ -31,9 +31,10 @@ abstract class CoverShadowLayoutManager: FlipOnReleaseLayoutManager.Horizontal()
 
     // 处理阴影绘制
     override fun dispatchDraw(canvas: Canvas) {
-        getCoverShadowView()?.let {
+        val coverShadowView = getCoverShadowView()
+        if ((isAnimRuning || isDragging) && coverShadowView != null) {
             pageContainer.apply {
-                val shadowStartX = width + getCoverShadowView()!!.translationX.toInt()
+                val shadowStartX = width + coverShadowView.translationX.toInt()
                 if (shadowStartX !in 0 until width) return
                 for (i in 0 until shadowWidth) {
                     val t = i / shadowWidth.toFloat()                          // 0f ~ 1f
