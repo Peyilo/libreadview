@@ -14,7 +14,7 @@ class SimpleNativeLoader(file: File): BookLoader {
      * 一个模拟网络延迟的标记位
      */
     var networkLagFlag = false
-    private val networkLagTime: Long get() = Random.nextInt(0, 3000).toLong()
+    private val networkLagTime: Long get() = Random.nextInt(200, 2000).toLong()
 
     private val defaultTitleRegex by lazy { Regex("(^\\s*第)(.{1,7})[章卷](\\s*)(.*)") }
 

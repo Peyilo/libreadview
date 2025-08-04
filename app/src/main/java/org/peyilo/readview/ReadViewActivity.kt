@@ -35,7 +35,7 @@ class ReadViewActivity : AppCompatActivity() {
                 },
 //                SimpleTextLoader("你好啊"),
                 chapIndex = 20,
-                pageIndex = 2,
+                pageIndex = 1,
             )
         }
 

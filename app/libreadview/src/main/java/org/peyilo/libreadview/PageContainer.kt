@@ -347,7 +347,7 @@ open class PageContainer(
         /**
          * 在这里进行一些销毁操作
          */
-        open fun onDestroy() = Unit
+        protected open fun onDestroy() = Unit
 
         /**
          * 初始化Page的位置，调用该函数会将needInitPagePosition置为false，并回调onInitPagePosition()
@@ -360,7 +360,7 @@ open class PageContainer(
         /**
          * 设置page的初始位置
          */
-        open fun onInitPagePosition() = Unit
+        protected open fun onInitPagePosition() = Unit
 
         abstract fun onTouchEvent(event: MotionEvent): Boolean
 
@@ -380,6 +380,18 @@ open class PageContainer(
          * @param limited 是否限制翻页速度（一定时间内的翻页次数）
          */
         abstract fun flipToPrevPage(limited: Boolean = true): Boolean
+
+        /**
+         * describe the state of layoutmanagger is not in layout or scroll
+         * @return true if layoutmanager is not in layout or scroll, false otherwise
+         */
+        abstract fun notInLayoutOrScroll(): Boolean
+
+        /**
+         * force the state of layoutmanager is not in layout or scroll.
+         * this method will abort the animation of layoutmanager and enture the view not in layout.
+         */
+        abstract fun forceNotInLayoutOrScroll()
 
         /**
          * 可以在这里进行绘制阴影、动画
@@ -792,14 +804,19 @@ open class PageContainer(
 
     private inner class PageDataObserver : AdapterDataObserver() {
 
-        private fun assertNotInLayoutOrScroll() = Unit
+        /**
+         * 当确定，某个操作会影响当前attachedPages发生改变（不是内容，而是View实例）时，需要调用这个函数保证更新当前attachedPages时，所有的attachedPage不应该不处于滚动或布局中央状态
+         */
+        private fun forceNotInLayoutOrScroll() {
+            if (_layoutManager == null) return
+            layoutManager.forceNotInLayoutOrScroll()
+        }
 
         /**
          * 这会移除PageContainer中的全部child，并且为pageCache设置新的adapter，这会导致pageCache中的缓存全部被清空。
          * 同时，还会根据设置的adapter，往pageContainer中添加新的child
          */
         override fun onDatasetChanged() {
-            assertNotInLayoutOrScroll()
             for (i in 0 until childCount) {
                 val child = getChildAt(i)
                 mPageCache.recycleAttachedView(child)
@@ -807,6 +824,7 @@ open class PageContainer(
             if (isNotEmpty()) {
                 removeAllViews()
             }
+            forceNotInLayoutOrScroll()
 
             val oldPageIndex = mCurPageIndex
 
@@ -827,7 +845,6 @@ open class PageContainer(
          * 因此，仅当改变的page处于attach状态下，才需要进行视图更新
          */
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
-            assertNotInLayoutOrScroll()
             if (itemCount == 0) return
 
             val oldPageIndex = mCurPageIndex
@@ -845,6 +862,7 @@ open class PageContainer(
             // 取两个部分的交集，即需要视图更新的page的indices
             val pagesToUpdate = attachedPages.intersect(updatedItems)
 
+            // 如果要更新的item和当前的attachedPages毫无关系，直接退出
             if (pagesToUpdate.isEmpty()) return
 
             // 遍历所有的child，更新pagesToUpdate中对应的page
@@ -860,6 +878,8 @@ open class PageContainer(
                     mViewHolderAdapter.bindViewHolder(cache, cache.mPosition)
                     child.invalidate()
                 } else {
+                    // 因为已经影响到了attachedPages，需要保证它们不处于滚动或布局中央
+                    forceNotInLayoutOrScroll()
                     // page的type发生了改变: 先移除child，然后再创建新的viewholder，然后添加进children view中
                     removeView(child)
                     mPageCache.recycleAttachedView(child)
@@ -876,7 +896,6 @@ open class PageContainer(
          * 插入之后的目标，是尽量保证当前显示的页面不变
          */
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            assertNotInLayoutOrScroll()
             if (itemCount == 0) return
 
             val oldPageIndex = mCurPageIndex
@@ -891,8 +910,8 @@ open class PageContainer(
             }
             attachedPagesPosition.sort()
 
-
             when {
+                // 插入之前，不存在任何item
                 attachedPagesPosition.isEmpty() -> {
                     val count = itemCount
                     // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
@@ -951,17 +970,24 @@ open class PageContainer(
                     }
                     // 如果page，依赖于itemCount，因此需要更新当前所有attach
                     mPageCache.getAllAttachedViewHolder().forEach {
-                        onItemRangeChanged(it.mPosition, 1)
+                        mViewHolderAdapter.bindViewHolder(it, it.mPosition)
+                        it.itemView.invalidate()
                     }
                 }
+                // 插入的位置在curPae之后，但是已经影响到了attachedPages
                 mCurPageIndex - 1 < positionStart -> {
                     onDatasetChanged()
                 }
+                // 插入的位置在attachedPages之前，不影响当前的attachedPages
                 positionStart <= attachedPagesPosition[0] -> {
                     mCurPageIndex += itemCount
-                    onDatasetChanged()
+                    mPageCache.getAllAttachedViewHolder().forEach {
+                        it.mPosition += itemCount
+                        mViewHolderAdapter.bindViewHolder(it, it.mPosition)
+                        it.itemView.invalidate()
+                    }
                 }
-                // 插入起始位置位于curPage之前
+                // 插入起始位置位于curPage之前,但是已经影响到attachedPages了
                 positionStart < mCurPageIndex - 1 -> {
                     mCurPageIndex += itemCount
                     onDatasetChanged()
@@ -976,7 +1002,6 @@ open class PageContainer(
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            assertNotInLayoutOrScroll()
             if (itemCount == 0) return
 
             val oldPageIndex = mCurPageIndex
@@ -1045,7 +1070,10 @@ open class PageContainer(
             when {
                 // 所有删除、再插入的pages，都在attachedPages之后，因此不会对已有视图有任何影响
                 positionStart > attachedPagesPosition[attachedPagesPosition.size - 1] -> {
-                    onDatasetChanged()
+                    mPageCache.getAllAttachedViewHolder().forEach {
+                        mViewHolderAdapter.bindViewHolder(it, it.mPosition)
+                        it.itemView.invalidate()
+                    }
                 }
                 // 所有删除、再插入的pages，都在curPage之后
                 mCurPageIndex - 1 < positionStart -> {
@@ -1055,10 +1083,14 @@ open class PageContainer(
                 mCurPageIndex - 1 == positionStart -> {
                     onDatasetChanged()
                 }
-                // 所有删除、再插入的pages，都在attachedPages之后
+                // 所有删除、再插入的pages，都在attachedPages之前
                 positionStart + oldItemCount <= attachedPagesPosition[0] -> {
                     mCurPageIndex += newItemCount - oldItemCount
-                    onDatasetChanged()
+                    mPageCache.getAllAttachedViewHolder().forEach {
+                        it.mPosition += newItemCount - oldItemCount
+                        mViewHolderAdapter.bindViewHolder(it, it.mPosition)
+                        it.itemView.invalidate()
+                    }
                 }
                 // 所有删除、再插入的pages，都在curPage之前
                 positionStart < mCurPageIndex - 1 -> {

@@ -26,6 +26,8 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
     private var initDire = PageDirection.NONE               // 初始滑动方向，其确定了要滑动的page
     private var realTimeDire = PageDirection.NONE
 
+    private var isForceStop = false
+
     /**
      * 最小翻页时间间隔: 限制翻页速度，取值为0时，表示不限制
      */
@@ -72,6 +74,23 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
      */
     open fun abortAnim() = Unit
 
+    override fun notInLayoutOrScroll(): Boolean = !(isDragging || isAnimRuning)
+
+    override fun forceNotInLayoutOrScroll() {
+        if (isDragging) {
+            startResetAnim(initDire)
+            abortAnim()
+            isDragging = false
+            isSwipeGesture = false
+            needStartAnim = false
+            isForceStop = true
+        }
+        if (isAnimRuning) {
+            abortAnim()
+            isForceStop = true
+        }
+    }
+
     /**
      * 开启翻向下一页的动画
      */
@@ -112,6 +131,13 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
      * 手指抬起后，会自动触发翻页动画，也就是每次手势结束后，page都会对其PageContainer的边界
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (isForceStop) {              // 如果，本轮手势进行中，经历了一次强制结束，那么本轮手势接下来全部ACTION都将不再受处理，直至UP/CACEL
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                isForceStop = false
+            }
+            return true
+        }
+
         gesture.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {

@@ -39,11 +39,11 @@ class ReadView(
     /**
      * 预处理章节数：需要预处理当前章节之前的preprocessBefore个章节
      */
-    private var mPreprocessBefore = 0
+    private var mPreprocessBefore = 1
     /**
      * 预处理章节数：需要预处理当前章节之后的preprocessBehind个章节
      */
-    private var mPreprocessBehind = 0
+    private var mPreprocessBehind = 1
 
     private var mBookData: BookData? = null
 
@@ -159,7 +159,7 @@ class ReadView(
 
     /**
      * 在章节加载并分页完成以后，可以调用该函数将分割完的pages填充到adapterData中
-     *
+     * 只能在主线程调用
      */
     private fun inflateChap(@IntRange(from = 1) chapIndex: Int): Boolean {
         synchronized(mLocksForChap[chapIndex]!!) {
@@ -219,6 +219,10 @@ class ReadView(
 
     private fun preSplit(chapIndex: Int) = preprocess(chapIndex) {
         splitChap(it)
+    }
+
+    private fun preInflate(chapIndex: Int) = preprocess(chapIndex) {
+        inflateChap(it)
     }
 
 
@@ -283,13 +287,12 @@ class ReadView(
                 // 等待视图宽高数据，用来分页
                 // 等待视图布局完成，然后获取视图的宽高
                 mReadConfig.waitForInitialized()
-                splitChap(chapIndex)
+                preload(chapIndex)
+                preSplit(chapIndex)
                 post {
                     var chapRange = getChapRange(chapIndex)
                     val needJumpPage = mCurPageIndex - 1 == chapRange.from
-                    preprocess(chapIndex) {
-                        inflateChap(it)
-                    }
+                    preInflate(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
                     Log.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurPageIndex, chapRange = $chapRange")

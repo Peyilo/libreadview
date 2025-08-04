@@ -23,6 +23,10 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      */
     abstract fun prepareAnim(initDire: PageDirection)
 
+    override fun notInLayoutOrScroll(): Boolean = true
+
+    override fun forceNotInLayoutOrScroll() = Unit
+
     /**
      * 拖动某个view滑动
      * dx: 当前点到落点的水平偏移量
