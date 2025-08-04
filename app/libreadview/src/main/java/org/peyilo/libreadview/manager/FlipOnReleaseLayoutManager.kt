@@ -9,7 +9,11 @@ import org.peyilo.libreadview.PageContainer.PageDirection
 import kotlin.math.abs
 import kotlin.math.hypot
 
-abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
+/**
+ * FlipOnReleaseLayoutManager定义了这么一种翻页模式：所有的page都会在手指抬起的时候，执行翻页，翻页结束以后，到达page该在的位置。
+ * 也就是说，在没有任何MotionEvent的情况下，page的位置固定的。当处于拖动状态，但是没有松手的时候，page介于中间状态.
+ */
+abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
 
     private var _scroller: Scroller? = null
     protected val scroller: Scroller
@@ -26,8 +30,11 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
     private var initDire = PageDirection.NONE               // 初始滑动方向，其确定了要滑动的page
     private var realTimeDire = PageDirection.NONE
 
-    private var isForceStop = false
-
+    /**
+     * 如果被强行置为非滚动或布局中央，该标记位就会被置为true。这个标记位只为实现唯一一个作用：当处于拖动状态下，pages被强行置为非滚动或布局中央，
+     * 但是置换前后的手指位置不变，这时候会导致明明本轮时间是拖动，却执行了点击事件，这个标记位就是为了解决怎么一个问题
+     */
+    private var forceWhenDraggingFlag = false
     /**
      * 最小翻页时间间隔: 限制翻页速度，取值为0时，表示不限制
      */
@@ -83,11 +90,10 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
             isDragging = false
             isSwipeGesture = false
             needStartAnim = false
-            isForceStop = true
+            forceWhenDraggingFlag = true
         }
         if (isAnimRuning) {
             abortAnim()
-            isForceStop = true
         }
     }
 
@@ -127,17 +133,75 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
         }
     }
 
+    private fun startPageTurn() {
+        when (decideEndDire(initDire, realTimeDire)) {
+            PageDirection.NEXT -> {
+                startNextAnim()
+                pageContainer.nextCarouselLayout()
+                onNextCarouselLayout()
+                pageContainer.onFlip(PageDirection.NEXT, pageContainer.mCurPageIndex)
+            }
+            PageDirection.PREV -> {
+                startPrevAnim()
+                pageContainer.prevCarouselLayout()
+                onPrevCarouselLayout()
+                pageContainer.onFlip(PageDirection.PREV, pageContainer.mCurPageIndex)
+            }
+            PageDirection.NONE -> {
+                startResetAnim(initDire)
+                pageContainer.onFlip(PageDirection.NONE, pageContainer.mCurPageIndex)
+            }
+        }
+    }
+
+    private fun dragging(event: MotionEvent) {
+        if (isAnimRuning) {
+            abortAnim()
+        }
+        val dx = gesture.dx       // 水平偏移量
+        val dy = gesture.dy       // 垂直偏移量
+        val distance = hypot(dx, dy)            // 距离
+        realTimeDire = decideRealTimeDire(event.x, event.y)
+        if (isSwipeGesture || distance > pageContainer.scaledTouchSlop) {
+            if (!isSwipeGesture) {
+                initDire = decideInitDire(dx, dy)
+                if (initDire != PageDirection.NONE) {
+                    isSwipeGesture = true
+                    needStartAnim = (initDire == PageDirection.NEXT && pageContainer.hasNextPage())
+                            || (initDire == PageDirection.PREV && pageContainer.hasPrevPage())
+                    if (needStartAnim) prepareAnim(initDire)
+                }
+            }
+            if (needStartAnim) {
+                // 跟随手指滑动
+                isDragging = true
+                onDragging(initDire, dx, dy)
+            }
+        }
+    }
+
+    /**
+     * 触发点击事件回调，点击事件回调有两种：OnClickRegionListener和OnClickListener
+     * OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时
+     * OnClickListener.onClick才会执行
+     * @return 点击事件是否被消费
+     */
+    private fun performClick(): Boolean {
+        pageContainer.apply {
+            val handled = mOnClickRegionListener?.let { listener ->
+                val xPercent = gesture.down.x / width * 100
+                val yPercent = gesture.up.y / height * 100
+                listener.onClickRegion(xPercent.toInt(), yPercent.toInt())
+            } ?: false
+
+            return handled || pageContainer.performClick()
+        }
+    }
+
     /**
      * 手指抬起后，会自动触发翻页动画，也就是每次手势结束后，page都会对其PageContainer的边界
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (isForceStop) {              // 如果，本轮手势进行中，经历了一次强制结束，那么本轮手势接下来全部ACTION都将不再受处理，直至UP/CACEL
-            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-                isForceStop = false
-            }
-            return true
-        }
-
         gesture.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -154,29 +218,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
                 // 如果还有动画正在执行、并且翻页动画间隔大于minPageTurnInterval，就结束动画
                 // 如果小于最小翻页时间间隔minPageTurnInterval，就不强制结束动画
                 if (internal > minPageTurnInterval) {
-                    if (isAnimRuning) {
-                        abortAnim()
-                    }
-                    val dx = gesture.dx       // 水平偏移量
-                    val dy = gesture.dy       // 垂直偏移量
-                    val distance = hypot(dx, dy)            // 距离
-                    realTimeDire = decideRealTimeDire(event.x, event.y)
-                    if (isSwipeGesture || distance > pageContainer.scaledTouchSlop) {
-                        if (!isSwipeGesture) {
-                            initDire = decideInitDire(dx, dy)
-                            if (initDire != PageDirection.NONE) {
-                                isSwipeGesture = true
-                                needStartAnim = (initDire == PageDirection.NEXT && pageContainer.hasNextPage())
-                                        || (initDire == PageDirection.PREV && pageContainer.hasPrevPage())
-                                if (needStartAnim) prepareAnim(initDire)
-                            }
-                        }
-                        if (needStartAnim) {
-                            // 跟随手指滑动
-                            isDragging = true
-                            onDragging(initDire, dx, dy)
-                        }
-                    }
+                    dragging(event)
                 }
                 onActionMove()
             }
@@ -184,44 +226,18 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
                 if (isSwipeGesture) {   // 本轮事件构成滑动手势，清除某些状态
                     if (needStartAnim) {
                         // 决定最后的翻页方向，并且播放翻页动画
-                        when (decideEndDire(initDire, realTimeDire)) {
-                            PageDirection.NEXT -> {
-                                startNextAnim()
-                                pageContainer.nextCarouselLayout()
-                                onNextCarouselLayout()
-                                pageContainer.onFlip(PageDirection.NEXT, pageContainer.mCurPageIndex)
-                            }
-                            PageDirection.PREV -> {
-                                startPrevAnim()
-                                pageContainer.prevCarouselLayout()
-                                onPrevCarouselLayout()
-                                pageContainer.onFlip(PageDirection.PREV, pageContainer.mCurPageIndex)
-                            }
-                            PageDirection.NONE -> {
-                                startResetAnim(initDire)
-                                pageContainer.onFlip(PageDirection.NONE, pageContainer.mCurPageIndex)
-                            }
-                        }
+                        startPageTurn()
                         needStartAnim = false
                         lastAnimTimestamp = System.currentTimeMillis()
                     }
                     isSwipeGesture = false
                     isDragging = false
                     initDire = PageDirection.NONE
-                } else {
-                    // 触发点击事件回调，点击事件回调有两种：OnClickRegionListener和OnClickListener
-                    // OnClickRegionListener优先级比OnClickListener高，只有当OnClickRegionListener.onClickRegion返回false时
-                    // OnClickListener.onClick才会执行
-                    pageContainer.apply {
-                        val handled = mOnClickRegionListener?.let { listener ->
-                            val xPercent = gesture.down.x / width * 100
-                            val yPercent = gesture.up.y / height * 100
-                            listener.onClickRegion(xPercent.toInt(), yPercent.toInt())
-                        } ?: false
-
-                        if (!handled) performClick()
-                    }
+                } else if (!forceWhenDraggingFlag) {
+                    // forceWhenDraggingFlag标记位，会造成当前点击事件不会被执行
+                    performClick()
                 }
+                forceWhenDraggingFlag = false           // 清除forceWhenDraggingFlag标记位
                 onActionUp()
             }
             MotionEvent.ACTION_CANCEL -> {
@@ -304,7 +320,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
     abstract fun onPrevCarouselLayout()
 
 
-    abstract class Horizontal: FlipOnReleaseLayoutContainer() {
+    abstract class Horizontal: FlipOnReleaseLayoutManager() {
 
         private var lastX: Float = 0F                       // 上次的触摸点的y坐标
         private var lastRealTimeDire = PageDirection.NONE   // 上次的实时移动方向
@@ -355,7 +371,7 @@ abstract class FlipOnReleaseLayoutContainer: DirectionalLayoutManager() {
 
     }
 
-    abstract class Vertical: FlipOnReleaseLayoutContainer() {
+    abstract class Vertical: FlipOnReleaseLayoutManager() {
 
         private var lastY: Float = 0F                       // 上次的触摸点的y坐标
         private var lastRealTimeDire = PageDirection.NONE   // 上次的实时移动方向

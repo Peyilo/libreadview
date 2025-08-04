@@ -3,7 +3,6 @@ package org.peyilo.libreadview
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -22,6 +21,7 @@ import org.peyilo.libreadview.provider.SimlpePageContentProvider
 import org.peyilo.libreadview.ui.ChapLoadPage
 import org.peyilo.libreadview.ui.MessagePage
 import org.peyilo.libreadview.ui.ReadPage
+import org.peyilo.libreadview.utils.LogHelper
 import java.io.File
 import java.util.concurrent.Executors
 import kotlin.math.max
@@ -39,11 +39,11 @@ class ReadView(
     /**
      * 预处理章节数：需要预处理当前章节之前的preprocessBefore个章节
      */
-    private var mPreprocessBefore = 1
+    private var mPreprocessBefore = 0
     /**
      * 预处理章节数：需要预处理当前章节之后的preprocessBehind个章节
      */
-    private var mPreprocessBehind = 1
+    private var mPreprocessBehind = 0
 
     private var mBookData: BookData? = null
 
@@ -80,8 +80,8 @@ class ReadView(
                 // 获取ReadContent的宽高，用于分页
                 val dimenPair = measureContentView()
                 mReadConfig.initContentDimen(dimenPair.first, dimenPair.second)
-                Log.d(TAG, "onPreDraw: contentDimemsion = $dimenPair")
-                Log.d(TAG, "onPreDraw: readview.width = $width, readview.height = $height")
+                LogHelper.d(TAG, "onPreDraw: contentDimemsion = $dimenPair")
+                LogHelper.d(TAG, "onPreDraw: readview.width = $width, readview.height = $height")
                 viewTreeObserver.removeOnPreDrawListener(this)
                 return true
             }
@@ -106,7 +106,7 @@ class ReadView(
             }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "initToc: ${e.stackTrace}")
+            LogHelper.e(TAG, "initToc: ${e.stackTrace}")
             return false
         }
     }
@@ -124,10 +124,10 @@ class ReadView(
                     mBookLoader.loadChap(chapData)
                     mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
                     mChapStatusTable[chapIndex] = ChapStatus.Nonpaged        // 更新状态
-                    Log.d(TAG, "loadChap: $chapIndex")
+                    LogHelper.d(TAG, "loadChap: $chapIndex")
                     return true
                 } catch (e: Exception) {        // 加载失败
-                    Log.d(TAG, "loadChap: ${e.stackTrace}")
+                    LogHelper.d(TAG, "loadChap: ${e.stackTrace}")
                 }
             }
             return false
@@ -148,7 +148,7 @@ class ReadView(
                     val readChapter = mReadChapterTable[chapIndex]!!
                     mPageContentProvider.split(readChapter)
                     mChapStatusTable[chapIndex] = ChapStatus.Uninflated
-                    Log.d(TAG, "splitChap: $chapIndex")
+                    LogHelper.d(TAG, "splitChap: $chapIndex")
                     return true
                 }
                 ChapStatus.Finished, ChapStatus.Uninflated -> Unit
@@ -185,7 +185,7 @@ class ReadView(
                     mChapPageCountRecorder[chapIndex] = pagesSize
                     adapter.notifyItemRangeReplaced(chapRange.from, 1, pagesSize)
                     mChapStatusTable[chapIndex] = ChapStatus.Finished
-                    Log.d(TAG, "inflateChap: $chapIndex")
+                    LogHelper.d(TAG, "inflateChap: $chapIndex")
                     return true
                 }
                 ChapStatus.Finished -> Unit
@@ -281,7 +281,7 @@ class ReadView(
             // 由于涉及UI更新，需要在主线程执行
             mCurPageIndex = chapIndex
             showAllChapLoadPage()
-            Log.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$mCurPageIndex")
+            LogHelper.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$mCurPageIndex")
             val loadChapRes = loadChap(chapIndex)
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
@@ -295,7 +295,7 @@ class ReadView(
                     preInflate(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
-                    Log.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurPageIndex, chapRange = $chapRange")
+                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurPageIndex, chapRange = $chapRange")
                     if (needJumpPage) {
                         chapRange = getChapRange(chapIndex)
                         mCurPageIndex = chapRange.from + pageIndex
@@ -435,7 +435,7 @@ class ReadView(
                     page.content.setContent(pageData)
                     page.content.provider = mPageContentProvider
 
-                    Log.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.header.text}, ${page.progress.text}")
+                    LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.header.text}, ${page.progress.text}")
                 }
             }
         }
@@ -491,14 +491,14 @@ class ReadView(
             onCurChapChanged(indexPair.first, indexPair.second)
         }
 
-        Log.d(TAG, "curPageIndex: $curPageIndex")
+        LogHelper.d(TAG, "curPageIndex: $curPageIndex")
     }
 
     /**
      * 当章节发生改变，就会回调这个函数
      */
     private fun onCurChapChanged(curChapIndex: Int, curPageIndexInChap: Int) {
-        Log.d(TAG, "onCurChapChanged: curChapIndex: $curChapIndex, curPageIndexInChap: $curPageIndexInChap")
+        LogHelper.d(TAG, "onCurChapChanged: curChapIndex: $curChapIndex, curPageIndexInChap: $curPageIndexInChap")
 
         startTask {
             preprocess(curChapIndex) {

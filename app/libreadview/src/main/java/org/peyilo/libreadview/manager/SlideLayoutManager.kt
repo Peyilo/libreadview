@@ -5,7 +5,7 @@ import org.peyilo.libreadview.PageContainer.PageDirection
 import kotlin.math.max
 import kotlin.math.min
 
-class SlideLayoutManager: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLayoutManager {
+class SlideLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
     private var primaryView: View? = null
     private var followedView: View? = null

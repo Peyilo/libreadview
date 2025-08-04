@@ -1,11 +1,11 @@
 package org.peyilo.readview
 
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.ReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
+import org.peyilo.libreadview.utils.LogHelper
 import java.io.File
 
 class ReadViewActivity : AppCompatActivity() {
@@ -26,15 +26,15 @@ class ReadViewActivity : AppCompatActivity() {
 
         filePath?.let {
             val selectedFile = File(it)
-            Log.d("ReadViewActivity", "File selected: ${selectedFile.absolutePath}")
+            LogHelper.d("ReadViewActivity", "File selected: ${selectedFile.absolutePath}")
 
             readview.openBook(
                 SimpleNativeLoader(selectedFile).apply {
-                    addTitleRegex("第\\d+章 .*")
+//                    addTitleRegex("第\\d+章 .*")
                     networkLagFlag = true
                 },
 //                SimpleTextLoader("你好啊"),
-                chapIndex = 20,
+                chapIndex = 1,
                 pageIndex = 1,
             )
         }

@@ -1,5 +1,8 @@
 package org.peyilo.libreadview.manager
 
+/**
+ * 实现这个接口的LayoutManager，表示实现了翻页动画
+ */
 interface AnimatedLayoutManager {
 
     /**

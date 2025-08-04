@@ -1,9 +1,9 @@
 package org.peyilo.libreadview.manager
 
-import android.util.Log
 import android.view.View
 import android.widget.Scroller
 import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.utils.LogHelper
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -103,14 +103,14 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
                         getNextPage()?.translationY = curPage!!.translationY + pageContainer.height
                     }
                 }
-                Log.d(TAG, "onDragging: nextCarouselLayout")
+                LogHelper.d(TAG, "onDragging: nextCarouselLayout")
             } else if (curPage!!.translationY > pageContainer.height / 2) {
                 pageContainer.prevCarouselLayout()
                 refreshPages()
                 pageContainer.apply {
                     getPrevPage()?.translationY = curPage!!.translationY - pageContainer.height
                 }
-                Log.d(TAG, "onDragging: prevCarouselLayout")
+                LogHelper.d(TAG, "onDragging: prevCarouselLayout")
             }
         }
     }

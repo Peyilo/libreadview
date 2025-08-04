@@ -15,6 +15,7 @@ import android.view.ViewConfiguration
 import android.view.ViewGroup
 import androidx.annotation.IntRange
 import androidx.core.view.isNotEmpty
+import org.peyilo.libreadview.utils.LogHelper
 import kotlin.math.max
 import kotlin.math.min
 
@@ -113,7 +114,7 @@ open class PageContainer(
         set(value) {
             synchronized(mCurPageIndexLock) {
                 if (field != value) {
-                    Log.d(TAG, "setCurPageIndex: $field -> $value")
+                    LogHelper.d(TAG, "setCurPageIndex: $field -> $value")
                 }
                 field = value
             }
@@ -500,16 +501,16 @@ open class PageContainer(
             }
             if (cacheIndex != -1) {                 // 命中缓存
                 cachedPages.remove(viewHolder)
-                Log.d(TAG, "getViewHolder: use cached page")
+                LogHelper.d(TAG, "getViewHolder: use cached page")
             }
 
             // 如果没有找到，则创建新的
             if (viewHolder == null) {
                 viewHolder = adapter.createViewHolder(viewGroup, viewType)
-                Log.d(TAG, "getViewHolder: create new page")
+                LogHelper.d(TAG, "getViewHolder: create new page")
             }
 
-            Log.d(TAG, "getViewHolder: ${viewHolder.mPosition} -> $position")
+            LogHelper.d(TAG, "getViewHolder: ${viewHolder.mPosition} -> $position")
 
             adapter.bindViewHolder(viewHolder, position)
             return viewHolder
@@ -531,7 +532,7 @@ open class PageContainer(
             if (cachedPages.size > maxCachedPage) {
                 val removed = cachedPages.removeAt(0) // 移除最久未用的
                 removed.onRemoved()
-                Log.d(TAG, "recycle: remove cached page")
+                LogHelper.d(TAG, "recycle: remove cached page")
             }
         }
 
@@ -837,7 +838,7 @@ open class PageContainer(
                 mPageCache.attachView(holder)
             }
 
-            Log.d(TAG, "onDatasetChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
+            LogHelper.d(TAG, "onDatasetChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
         }
 
         /**
@@ -889,7 +890,7 @@ open class PageContainer(
                 }
             }
 
-            Log.d(TAG, "onItemRangeChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
+            LogHelper.d(TAG, "onItemRangeChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
         }
 
         /**
@@ -998,7 +999,7 @@ open class PageContainer(
                 }
                 else -> throw IllegalStateException()
             }
-            Log.d(TAG, "onItemRangeInserted: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
+            LogHelper.d(TAG, "onItemRangeInserted: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
@@ -1047,7 +1048,7 @@ open class PageContainer(
                     onDatasetChanged()
                 }
             }
-            Log.d(TAG, "onItemRangeRemoved: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
+            LogHelper.d(TAG, "onItemRangeRemoved: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
         }
 
         override fun onItemRangeReplaced(positionStart: Int, oldItemCount: Int, newItemCount: Int) {
@@ -1099,7 +1100,7 @@ open class PageContainer(
                 }
             }
 
-            Log.d(TAG, "onItemRangeReplaced: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
+            LogHelper.d(TAG, "onItemRangeReplaced: oldPageIndex = $oldPageIndex, curPageIndex = $mCurPageIndex")
         }
 
     }

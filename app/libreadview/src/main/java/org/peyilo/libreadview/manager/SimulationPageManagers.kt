@@ -9,12 +9,12 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.graphics.Shader
-import android.util.Log
 import androidx.core.graphics.minus
 import androidx.core.graphics.plus
 import androidx.core.graphics.times
 import androidx.core.graphics.withClip
 import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.utils.LogHelper
 import org.peyilo.libreadview.utils.Vec
 import org.peyilo.libreadview.utils.copy
 import org.peyilo.libreadview.utils.rakeRadio
@@ -40,7 +40,7 @@ class SimulationPageManagers {
      * TODO：尽可能不在绘制中创建大量的PointF对象，由于对象全部保存在堆上，可能造成频繁地GC
      * TODO: 向上翻页时，动画实在过于简陋，尝试采用iOS iBook那种实现
      */
-    open class Style1: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLayoutManager {
+    open class Style1: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
         protected val containerWidth get() = pageContainer.width      // 容器的宽度
         protected val containerHeight get() = pageContainer.height    // 容器的高度
@@ -120,7 +120,7 @@ class SimulationPageManagers {
                         try {           // 如果不为null，尝试释放bitmap
                             field!!.recycle()
                         } catch (e: Exception) {
-                            Log.e(TAG, "topBitmap: ${e.stackTrace}")
+                            LogHelper.e(TAG, "topBitmap: ${e.stackTrace}")
                         }
                     }
                     field = value
@@ -132,7 +132,7 @@ class SimulationPageManagers {
                         try {           // 如果不为null，尝试释放bitmap
                             field!!.recycle()
                         } catch (e: Exception) {
-                            Log.e(TAG, "topBitmap: ${e.stackTrace}")
+                            LogHelper.e(TAG, "topBitmap: ${e.stackTrace}")
                         }
                     }
                     field = value
@@ -837,7 +837,7 @@ class SimulationPageManagers {
         }
     }
 
-    class Style2: FlipOnReleaseLayoutContainer.Horizontal(), AnimatedLayoutManager {
+    class Style2: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
         override fun prepareAnim(initDire: PageDirection) {
             TODO("Not yet implemented")

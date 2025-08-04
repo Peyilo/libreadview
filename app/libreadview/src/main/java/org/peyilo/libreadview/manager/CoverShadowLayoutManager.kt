@@ -10,7 +10,7 @@ import kotlin.math.sqrt
 /**
  * 实现了覆盖翻页的阴影绘制，并且提供了多个阴影参数设置的API
  */
-abstract class CoverShadowLayoutManager: FlipOnReleaseLayoutContainer.Horizontal() {
+abstract class CoverShadowLayoutManager: FlipOnReleaseLayoutManager.Horizontal() {
 
     private val shadowPaint: Paint = Paint()
 

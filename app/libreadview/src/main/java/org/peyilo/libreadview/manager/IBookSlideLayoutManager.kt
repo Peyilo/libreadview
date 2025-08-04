@@ -3,6 +3,7 @@ package org.peyilo.libreadview.manager
 import android.util.Log
 import android.view.View
 import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.utils.LogHelper
 import kotlin.math.max
 import kotlin.math.min
 
@@ -155,7 +156,7 @@ class IBookSlideLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager
     override fun onAddPage(view: View, position: Int) {
         super.onAddPage(view, position)
         view.translationX = getTranslateX(position)
-        Log.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, itemCount = ${pageContainer.itemCount}, $position -> ${view.translationX}")
+        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, itemCount = ${pageContainer.itemCount}, $position -> ${view.translationX}")
     }
 
     companion object {

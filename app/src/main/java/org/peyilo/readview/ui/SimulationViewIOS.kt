@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import org.peyilo.libreadview.utils.LogHelper
 import org.peyilo.libreadview.utils.Vec
 
 
@@ -114,7 +115,7 @@ class SimulationViewIOS(context: Context, attrs: AttributeSet?): View(context, a
             }
         }
 
-        Log.d(TAG, "onDraw: start: (${axisStartPos.x}, ${axisStartPos.y}), end: (${axisEndPos.x}, ${axisEndPos.y})")
+        LogHelper.d(TAG, "onDraw: start: (${axisStartPos.x}, ${axisStartPos.y}), end: (${axisEndPos.x}, ${axisEndPos.y})")
         canvas.drawLine(axisStartPos.x, axisStartPos.y, axisEndPos.x, axisEndPos.y, paint2)
         canvas.drawText("start: (${axisStartPos.x}, ${axisStartPos.y}), end: (${axisEndPos.x}, ${axisEndPos.y})", 50F, 50F, paint1)
     }
