@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.annotation.IntRange
 import org.peyilo.libreadview.data.novel.BookData
-import org.peyilo.libreadview.data.novel.RangeData
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.loader.SimpleNativeLoader
@@ -23,12 +22,11 @@ import org.peyilo.libreadview.ui.MessagePage
 import org.peyilo.libreadview.ui.ReadPage
 import org.peyilo.libreadview.utils.LogHelper
 import java.io.File
-import java.util.concurrent.Executors
 import kotlin.math.max
 
 class ReadView(
     context: Context, attrs: AttributeSet? = null
-): PageContainer(context, attrs) {
+): AbstractReadView(context, attrs) {
 
     private val mAdapterData: Pages
 
@@ -53,15 +51,9 @@ class ReadView(
     private lateinit var mContentParser: ContentParser
     private lateinit var mPageContentProvider: PageContentProvider
 
-    private val mThreadPool by lazy {
-        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
-    }
-
     private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
     private val mLocksForChap = mutableMapOf<Int, Any>()
-
-    private val mChapPageCountRecorder = mutableMapOf<Int, Int>()
 
     private enum class ChapStatus {
         Unload,                 // 未加载
@@ -86,15 +78,6 @@ class ReadView(
                 return true
             }
         })
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        mThreadPool.shutdownNow()        // 关闭正在执行的所有线程
-    }
-
-    private fun startTask(task: Runnable) {
-        mThreadPool.submit(task)
     }
 
     private fun initToc(): Boolean {
@@ -171,7 +154,7 @@ class ReadView(
                     throw IllegalStateException("章节[$chapIndex]未完成分页，不能进行填充!")
                 }
                 ChapStatus.Uninflated -> {
-                    val chapRange = getChapRange(chapIndex)
+                    val chapRange = getChapPageRange(chapIndex)
                     assert(chapRange.size == 1 && mAdapterData.getPageType(chapRange.from) == PageType.CHAP_LOAD_PAGE)
                     this@ReadView.mAdapterData.removeAt(chapRange.from)
                     var pagesSize = 0
@@ -182,7 +165,7 @@ class ReadView(
                         )
                         pagesSize = pages.size
                     }
-                    mChapPageCountRecorder[chapIndex] = pagesSize
+                    updateChapPageCount(chapIndex, pagesSize)
                     adapter.notifyItemRangeReplaced(chapRange.from, 1, pagesSize)
                     mChapStatusTable[chapIndex] = ChapStatus.Finished
                     LogHelper.d(TAG, "inflateChap: $chapIndex")
@@ -290,14 +273,14 @@ class ReadView(
                 preload(chapIndex)
                 preSplit(chapIndex)
                 post {
-                    var chapRange = getChapRange(chapIndex)
+                    var chapRange = getChapPageRange(chapIndex)
                     val needJumpPage = mCurContainerPageIndex - 1 == chapRange.from
                     preInflate(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
                     LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurContainerPageIndex, chapRange = $chapRange")
                     if (needJumpPage) {
-                        chapRange = getChapRange(chapIndex)
+                        chapRange = getChapPageRange(chapIndex)
                         mCurContainerPageIndex = chapRange.from + pageIndex
                         adapter.notifyDataSetChanged()
                     }
@@ -312,10 +295,10 @@ class ReadView(
     }
 
 
-    fun openBook(
+    override fun openBook(
         loader: BookLoader,
-        @IntRange(from = 1) chapIndex: Int = 1,
-        @IntRange(from = 1) pageIndex: Int = 1
+        @IntRange(from = 1) chapIndex: Int,
+        @IntRange(from = 1) pageIndex: Int
     ) {
         this.mBookLoader = loader
         this.mContentParser = SimpleContentParser()
@@ -345,46 +328,21 @@ class ReadView(
         adapter.notifyDataSetChanged()
     }
 
+    /**
+     * 当目录完成初始化以后，就会调用这个函数
+     */
     private fun showAllChapLoadPage() = post {
+        initChapPageIndexer(mBookData!!.chapCount)
         mAdapterData.clear()
         for (i in 1..mBookData!!.chapCount) {
             val chap = mBookData!!.getChap(i)
             mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(chap.title ?: "", i))
-            mChapPageCountRecorder[i] = 1
+            updateChapPageCount(i, 1)
         }
         adapter.notifyDataSetChanged()
     }
 
-    /**
-     * 获取指定章节在adapterData中的位置, 如adapterData中position为0就对应为RangeData中的0
-     */
-    private fun getChapRange(chapIndex: Int): RangeData = RangeData().apply {
-        var counter = 0
-        for (i in 1 until chapIndex) {
-            counter += mChapPageCountRecorder[i]!!
-        }
-        from = counter
-        to = from + mChapPageCountRecorder[chapIndex]!!
-    }
 
-    /**
-     * 返回一个pair，第一个表示章节索引，第二个表示position对应的item属于章节中的第几页。两个都是从1开始算
-     */
-    private fun findChapByPosition(position: Int): Pair<Int, Int> {
-        val position = position + 1
-        var start = 0
-        var chapIndex = 0
-        for (i in 1 .. mBookData!!.chapCount) {
-            val temp = start + mChapPageCountRecorder[i]!!
-            if (temp < position) {
-                start = temp
-            } else {
-                chapIndex = i
-                break
-            }
-        }
-        return Pair(chapIndex, position - start)
-    }
 
     private enum class PageType {
         MESSAGE_PAGE, CHAP_LOAD_PAGE, READ_PAGE,
@@ -430,8 +388,7 @@ class ReadView(
                     val pageData = mAdapterData.getPageContent(position) as PageData
                     val indexPair = findChapByPosition(position)
                     page.header.text = mBookData!!.getChap(indexPair.first).title
-                    page.progress.text = "${indexPair.second}/${mChapPageCountRecorder[indexPair.first]}"
-//                    page.progress.text = "${position + 1}/${itemCount}"
+                    page.progress.text = "${indexPair.second}/${getChapPageCount(indexPair.first)}"
                     page.content.setContent(pageData)
                     page.content.provider = mPageContentProvider
 
@@ -494,7 +451,6 @@ class ReadView(
      */
     private fun onChapChanged(oldChapIndex: Int, newChapIndex: Int) {
         LogHelper.d(TAG, "onChapChanged: oldChapIndex = $oldChapIndex, newChapIndex = $newChapIndex")
-
         startTask {
             preprocess(newChapIndex) {
                 loadChap(it)
@@ -511,11 +467,11 @@ class ReadView(
      * 章节跳转
      * @param chapIndex 需要跳转到的章节
      */
-    fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean {
+    override fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean {
         mBookData?.let {
             if (chapIndex >= 1 && chapIndex <= mBookData!!.chapCount) {
                 val oldChapIndex = getCurChapIndex()
-                val chapRange = getChapRange(chapIndex)
+                val chapRange = getChapPageRange(chapIndex)
                 mCurContainerPageIndex = chapRange.from + 1
                 adapter.notifyDataSetChanged()
                 if (oldChapIndex != chapIndex) {
@@ -527,18 +483,18 @@ class ReadView(
         return false
     }
 
-    /**
-     * 获取当前章节索引，从1开始
-     */
-    fun getCurChapIndex() = findChapByPosition(mCurContainerPageIndex - 1).first
 
     /**
      * 跳转到下一个章节
      */
-    fun navigateToNextChapter(): Boolean = navigateToChapter(getCurChapIndex() + 1)
+    override fun navigateToNextChapter(): Boolean = navigateToChapter(getCurChapIndex() + 1)
 
     /**
      * 跳转到上一个章节
      */
-    fun navigateToPrevChapter(): Boolean = navigateToChapter(getCurChapIndex() - 1)
+    override fun navigateToPrevChapter(): Boolean = navigateToChapter(getCurChapIndex() - 1)
+
+    override fun navigateBook(chapIndex: Int, chapPageIndex: Int): Boolean {
+        TODO("Not yet implemented")
+    }
 }

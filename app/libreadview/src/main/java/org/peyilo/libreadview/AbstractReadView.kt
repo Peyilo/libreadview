@@ -3,7 +3,10 @@ package org.peyilo.libreadview
 import android.content.Context
 import android.util.AttributeSet
 import androidx.annotation.IntRange
+import org.peyilo.libreadview.data.novel.RangeData
 import org.peyilo.libreadview.loader.BookLoader
+import org.peyilo.libreadview.pagination.DirectMapChapIndexer
+import java.util.concurrent.Executors
 
 /**
  * ReadView必须支持以下功能：
@@ -12,7 +15,7 @@ import org.peyilo.libreadview.loader.BookLoader
  */
 abstract class AbstractReadView(
     context: Context, attrs: AttributeSet? = null
-): PageContainer(context, attrs), TextSelector, BookNavigator {
+): PageContainer(context, attrs), BookNavigator {
 
     /**
      * 预处理章节数：需要预处理当前章节之前的preprocessBefore个章节
@@ -24,6 +27,11 @@ abstract class AbstractReadView(
      */
     var preprocessBehind = 0
 
+    private var mChapPageIndexer: DirectMapChapIndexer? = null
+
+    private val mThreadPool by lazy {
+        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
+    }
 
     /**
      * 对指定章节及其前后指定数量的章节执行预处理操作。
@@ -73,5 +81,74 @@ abstract class AbstractReadView(
         @IntRange(from = 1) chapIndex: Int = 1,
         @IntRange(from = 1) pageIndex: Int = 1
     )
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        mThreadPool.shutdownNow()        // 关闭正在执行的所有线程
+    }
+
+    /**
+     * 向线程池中添加一个任务
+     */
+    protected fun startTask(task: Runnable) {
+        mThreadPool.submit(task)
+    }
+
+    protected fun initChapPageIndexer(chapCount: Int) {
+        mChapPageIndexer = DirectMapChapIndexer(chapCount)
+    }
+
+    /**
+     * 获取指定章节在adapterData中的位置, 如adapterData中position为0就对应为RangeData中的0
+     * @param chapIndex 从1开始
+     */
+    protected fun getChapPageRange(@IntRange(from = 1) chapIndex: Int): RangeData {
+        if (mChapPageIndexer == null) {
+            throw IllegalStateException("mChapPageIndexer is not be initialized")
+        }
+        val intRange = mChapPageIndexer!!.getChapPageRange(chapIndex)
+        return RangeData().apply {
+            from = intRange.first
+            to = intRange.last + 1
+        }
+    }
+
+    /**
+     * 返回一个pair，第一个表示章节索引，第二个表示position对应的item属于章节中的第几页。两个都是从1开始算
+     * @param position 从0开始
+     */
+    protected fun findChapByPosition(@IntRange(from = 0) position: Int): Pair<Int, Int> {
+        if (mChapPageIndexer == null) {
+            throw IllegalStateException("mChapPageIndexer is not be initialized")
+        }
+        return mChapPageIndexer!!.findChapForPage(position + 1)
+    }
+
+    protected fun updateChapPageCount(chapIndex: Int, chapPageCount: Int) {
+        if (mChapPageIndexer == null) {
+            throw IllegalStateException("mChapPageIndexer is not be initialized")
+        }
+        mChapPageIndexer!!.updateChapPageCount(chapIndex, chapPageCount)
+    }
+
+    protected fun getChapPageCount(chapIndex: Int): Int {
+        if (mChapPageIndexer == null) {
+            throw IllegalStateException("mChapPageIndexer is not be initialized")
+        }
+        return mChapPageIndexer!!.getChapPageCount(chapIndex)
+    }
+
+    override fun getChapCount(): Int {
+        if (mChapPageIndexer == null) {
+            return 0
+        }
+        return mChapPageIndexer!!.chapCount
+    }
+    override fun getCurChapIndex(): Int = findChapByPosition(getCurContainerPageIndex() - 1).first
+
+    override fun getCurChapPageCount(): Int = getChapPageCount(getCurChapIndex())
+
+    override fun getCurChapPageIndex(): Int = findChapByPosition(getCurContainerPageIndex() - 1).second
+
 
 }
