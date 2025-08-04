@@ -43,13 +43,6 @@ class ReadView(
     private lateinit var mPageContentProvider: PageContentProvider
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
 
-    private enum class ChapStatus {
-        Unload,                 // 未加载
-        Nonpaged,               // 未分页
-        Uninflated,             // 未填充
-        Finished                // 加载、分页完成
-    }
-
     init {
         mAdapterData = Pages()
         adapter = PageAdapter()
@@ -106,6 +99,7 @@ class ReadView(
         LogHelper.d(TAG, "splitChap: $chapIndex")
         return@splitChapWithLock true
     }
+
     /**
      * 在章节加载并分页完成以后，可以调用该函数将分割完的pages填充到adapterData中
      * 只能在主线程调用

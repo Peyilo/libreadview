@@ -91,6 +91,8 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
             isSwipeGesture = false
             needStartAnim = false
             forceWhenDraggingFlag = true
+            gesture.down.x = gesture.cur.x
+            gesture.down.y = gesture.cur.y
         }
         if (isAnimRuning) {
             abortAnim()
