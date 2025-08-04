@@ -17,6 +17,10 @@ abstract class AbstractReadView(
     context: Context, attrs: AttributeSet? = null
 ): PageContainer(context, attrs), BookNavigator {
 
+    companion object {
+        private const val TAG = "AbstractReadView"
+    }
+
     /**
      * 预处理章节数：需要预处理当前章节之前的preprocessBefore个章节
      */
@@ -33,6 +37,17 @@ abstract class AbstractReadView(
         Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
     }
 
+    private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
+    private val mLocksForChap = mutableMapOf<Int, Any>()
+
+
+    private enum class ChapStatus {
+        Unload,                 // 未加载
+        Nonpaged,               // 未分页
+        Uninflated,             // 未填充
+        Finished                // 加载、分页完成
+    }
+
     /**
      * 对指定章节及其前后指定数量的章节执行预处理操作。
      *
@@ -45,7 +60,7 @@ abstract class AbstractReadView(
      * 示例：若 chapIndex = 5，preprocessBefore = 2，preprocessBehind = 1，
      *      则会处理章节 [3, 4, 5, 6]（只要不越界）
      */
-    private fun processNearbyChapters(@IntRange(from = 1) chapIndex: Int, process: (index: Int) -> Unit) {
+    protected fun processNearbyChapters(@IntRange(from = 1) chapIndex: Int, process: (index: Int) -> Unit) {
         val chapCount = getChapCount()
         process(chapIndex)
         var i = chapIndex - 1
@@ -58,6 +73,88 @@ abstract class AbstractReadView(
             process(i)
             i++
         }
+    }
+
+    protected abstract fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean
+
+    protected abstract fun splitChap(@IntRange(from = 1) chapIndex: Int): Boolean
+
+    protected abstract fun inflateChap(@IntRange(from = 1) chapIndex: Int): Boolean
+
+    protected fun loadNearbyChapters(chapIndex: Int): Boolean {
+        var res = true
+        processNearbyChapters(chapIndex) {
+            val temp = loadChap(it)
+            if (it == chapIndex) res = temp
+        }
+        return res
+    }
+
+    protected fun splitNearbyChapters(chapIndex: Int) = processNearbyChapters(chapIndex) {
+        splitChap(it)
+    }
+
+    protected fun inflateNearbyChapters(chapIndex: Int) = processNearbyChapters(chapIndex) {
+        inflateChap(it)
+    }
+
+    protected fun onInitTocSuccess(chapCount: Int) {
+        mChapPageIndexer = DirectMapChapIndexer(chapCount)
+        for (i in 1..chapCount) {              // 初始化章节状态表
+            mChapStatusTable[i] = ChapStatus.Unload
+            mLocksForChap[i] = Any()
+        }
+    }
+
+    protected fun loadChapWithLock(chapIndex: Int, block: (Int) -> Boolean): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        if (mChapStatusTable[chapIndex] == ChapStatus.Unload) {      // 未加载
+            val res = block(chapIndex)
+            if (res) {
+                mChapStatusTable[chapIndex] = ChapStatus.Nonpaged
+            }
+            return res
+        }
+        return false
+    }
+
+    protected fun splitChapWithLock(chapIndex: Int, block: (Int) -> Boolean): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        when (mChapStatusTable[chapIndex]!!) {
+            ChapStatus.Unload -> {
+                throw IllegalStateException("章节[$chapIndex]未完成加载，不能进行分页!")
+            }
+            ChapStatus.Nonpaged -> {
+                val res = block(chapIndex)
+                if (res) {
+                    mChapStatusTable[chapIndex] = ChapStatus.Uninflated
+                }
+                return res
+            }
+            ChapStatus.Uninflated, ChapStatus.Finished -> Unit
+        }
+        return false
+    }
+
+    protected fun inflateChapWithLock(chapIndex: Int, block: (Int) -> Boolean): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        when (mChapStatusTable[chapIndex]!!) {
+            ChapStatus.Unload -> {
+                throw IllegalStateException("章节[$chapIndex]未完成加载，不能进行填充!")
+            }
+            ChapStatus.Nonpaged -> {
+                throw IllegalStateException("章节[$chapIndex]未完成分页，不能进行填充!")
+            }
+            ChapStatus.Uninflated -> {
+                val res = block(chapIndex)
+                if (res) {
+                    mChapStatusTable[chapIndex] = ChapStatus.Finished
+                }
+                return res
+            }
+            ChapStatus.Finished -> Unit
+        }
+        return false
     }
 
     /**
@@ -94,12 +191,9 @@ abstract class AbstractReadView(
         mThreadPool.submit(task)
     }
 
-    protected fun initChapPageIndexer(chapCount: Int) {
-        mChapPageIndexer = DirectMapChapIndexer(chapCount)
-    }
-
     /**
-     * 获取指定章节在adapterData中的位置, 如adapterData中position为0就对应为RangeData中的0
+     * 获取指定章节在adapterData中的位置, 如adapterData中position为0就对应为RangeData中的1.
+     * 举个例子：第一章节有3页，位于前面三页，因此返回的是from=0, to=3, size=3
      * @param chapIndex 从1开始
      */
     protected fun getChapPageRange(@IntRange(from = 1) chapIndex: Int): RangeData {
@@ -108,8 +202,8 @@ abstract class AbstractReadView(
         }
         val intRange = mChapPageIndexer!!.getChapPageRange(chapIndex)
         return RangeData().apply {
-            from = intRange.first
-            to = intRange.last + 1
+            from = intRange.first - 1
+            to = intRange.last
         }
     }
 
@@ -124,6 +218,9 @@ abstract class AbstractReadView(
         return mChapPageIndexer!!.findChapForPage(position + 1)
     }
 
+    /**
+     * 更新某个章节的page数量
+     */
     protected fun updateChapPageCount(chapIndex: Int, chapPageCount: Int) {
         if (mChapPageIndexer == null) {
             throw IllegalStateException("mChapPageIndexer is not be initialized")
@@ -131,6 +228,9 @@ abstract class AbstractReadView(
         mChapPageIndexer!!.updateChapPageCount(chapIndex, chapPageCount)
     }
 
+    /**
+     * 获取指定章节中包含的page数量
+     */
     protected fun getChapPageCount(chapIndex: Int): Int {
         if (mChapPageIndexer == null) {
             throw IllegalStateException("mChapPageIndexer is not be initialized")
@@ -138,17 +238,20 @@ abstract class AbstractReadView(
         return mChapPageIndexer!!.getChapPageCount(chapIndex)
     }
 
+    /**
+     * 获取章节数量
+     */
     override fun getChapCount(): Int {
         if (mChapPageIndexer == null) {
             return 0
         }
         return mChapPageIndexer!!.chapCount
     }
+
     override fun getCurChapIndex(): Int = findChapByPosition(getCurContainerPageIndex() - 1).first
 
     override fun getCurChapPageCount(): Int = getChapPageCount(getCurChapIndex())
 
     override fun getCurChapPageIndex(): Int = findChapByPosition(getCurContainerPageIndex() - 1).second
-
 
 }
