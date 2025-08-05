@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    style="?android:attr/buttonBarStyle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:paddingHorizontal="8dp"
+    android:paddingBottom="16dp"
+    android:paddingTop="32dp">
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/menu_toc"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="目录"
+        android:textColor="@color/black"
+        android:drawableTop="@drawable/toc"
+        tools:ignore="HardcodedText" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/menu_details"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="详情"
+        android:textColor="@color/black"
+        android:drawableTop="@drawable/details"
+        android:layout_marginStart="16dp"
+        tools:ignore="HardcodedText" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/menu_switch_orientation"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="切换横屏"
+        android:textColor="@color/black"
+        android:drawableTop="@drawable/switch_orientation"
+        android:layout_marginStart="16dp"
+        tools:ignore="HardcodedText" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/menu_settings"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="设置"
+        android:textColor="@color/black"
+        android:drawableTop="@drawable/settings"
+        android:layout_marginStart="16dp"
+        tools:ignore="ContentDescription,HardcodedText" />
+
+</LinearLayout>

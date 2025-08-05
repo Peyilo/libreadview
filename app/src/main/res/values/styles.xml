@@ -1,0 +1,12 @@
+<resources>
+
+    <!-- 使用 Material 组件库的 BottomSheetDialog 主题 -->
+    <style name="BottomSheetDialogTheme" parent="Theme.Material3.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/CustomBottomSheetStyle</item>
+    </style>
+
+    <style name="CustomBottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/dialog_top_round</item>
+    </style>
+
+</resources>

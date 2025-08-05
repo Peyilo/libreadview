@@ -43,6 +43,8 @@ class ReadView(
     private lateinit var mPageContentProvider: PageContentProvider
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
 
+    private var callback: ReadViewCallback? = null
+
     init {
         mAdapterData = AdapterData()
         adapter = PageAdapter()
@@ -62,13 +64,16 @@ class ReadView(
     }
 
     private fun initToc(): Boolean {
-        try {
+        val res = try {
             mBookData = mBookLoader.initToc()
-            return true
+            onInitTocSuccess(mBookData!!.chapCount)
+            true
         } catch (e: Exception) {
             LogHelper.e(TAG, "initToc: ${e.stackTrace}")
-            return false
+            false
         }
+        callback?.onInitToc(res)
+        return res
     }
 
     /**
@@ -173,7 +178,6 @@ class ReadView(
     private fun initBook(chapIndex: Int, pageIndex: Int) = startTask {
         val initTocRes = initToc()                     // initToc()是一个耗时任务，不能在主线程执行
         if (initTocRes) {
-            onInitTocSuccess(mBookData!!.chapCount)
             // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
             // 由于涉及UI更新，需要在主线程执行
             mCurContainerPageIndex = chapIndex
@@ -408,4 +412,13 @@ class ReadView(
     override fun navigateBook(chapIndex: Int, chapPageIndex: Int): Boolean {
         TODO("Not yet implemented")
     }
+
+    fun getChap(@IntRange(from = 1) chapIndex: Int): String {
+        return mBookData?.getChap(chapIndex)?.title ?: "无标题"
+    }
+
+    fun setCallback(callback: ReadViewCallback) {
+        this.callback = callback
+    }
+
 }
