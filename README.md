@@ -4,12 +4,16 @@
 
 A lightweight and customizable Android page turning library inspired by real-world reading experiences. Supports animations like simulation, slide, cover, and scroll styles.
 
+![readview_loading](./images/readview_loading.png)
+
 ## 🚀 Features
 
 - 📖 Realistic page flip effects (Simulate, Cover, Slide, NoAnim, Scroll)
 - 🎨 Easily extendable page manager
 - 🧩 Page container layout to manage reading flow
 - 💡 Optimized for performance and customization
+
+![readview_page_turning](./images/readview_page_turning.png)
 
 ## 📦 Installation
 

@@ -34,7 +34,12 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
     companion object {
         private const val TAG = "ScrollPageManager"
     }
-    
+
+    override fun forceNotInLayoutOrScroll() {
+        super.forceNotInLayoutOrScroll()
+
+    }
+
     override fun flipToNextPage(limited: Boolean): Boolean {
 
         TODO("Not yet implemented")
