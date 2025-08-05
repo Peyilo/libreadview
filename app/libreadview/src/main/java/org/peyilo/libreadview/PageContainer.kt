@@ -339,12 +339,6 @@ open class PageContainer(
         abstract fun flipToPrevPage(limited: Boolean = true): Boolean
 
         /**
-         * describe the state of layoutmanagger is not in layout or scroll
-         * @return true if layoutmanager is not in layout or scroll, false otherwise
-         */
-        abstract fun notInLayoutOrScroll(): Boolean
-
-        /**
          * force the state of layoutmanager is not in layout or scroll.
          * this method will abort the animation of layoutmanager and enture the view not in layout.
          */

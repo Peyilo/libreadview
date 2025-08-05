@@ -63,7 +63,7 @@ class ChapLoadPage(
         drawCenterText(canvas, "冰融水镜照花影，花映人心情相牵。", 48F, 600F)
 
         textPaint.color = Color.GRAY
-        drawCenterText(canvas, "—— 夏莳 ——", 32F, height - 150F)
+        drawCenterText(canvas, "—— 尼希维尔特 ——", 32F, height - 150F)
     }
 
     override fun onDraw(canvas: Canvas) {

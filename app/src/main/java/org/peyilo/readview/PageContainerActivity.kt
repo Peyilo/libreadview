@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
+import org.peyilo.libreadview.manager.ScrollLayoutManager
+import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
 
@@ -29,24 +31,24 @@ class PageContainerActivity : AppCompatActivity() {
         supportActionBar?.hide()
 
         repeat(10000) {
-            val randomColor = generateRandomColor()
-//            val randomColor = Color.WHITE
+//            val randomColor = generateRandomColor()
+            val randomColor = Color.WHITE
             colors.add(Pair(randomColor, it + 1))
         }
 
         pageContainer = findViewById(R.id.pageContainer)
         pageContainer.initPageIndex(1)
-        pageContainer.layoutManager = IBookSlideLayoutManager()
+        pageContainer.layoutManager = ScrollLayoutManager()
 
         pageContainer.adapter = ColorAdapter(colors)
-        pageContainer.setOnClickRegionListener{ xPercent, _ ->
-            when (xPercent) {
-                in 0..30 -> pageContainer.flipToPrevPage()
-                in 70..100 -> pageContainer.flipToNextPage()
-                else -> return@setOnClickRegionListener false
-            }
-            true
-        }
+//        pageContainer.setOnClickRegionListener{ xPercent, _ ->
+//            when (xPercent) {
+//                in 0..30 -> pageContainer.flipToPrevPage()
+//                in 70..100 -> pageContainer.flipToNextPage()
+//                else -> return@setOnClickRegionListener false
+//            }
+//            true
+//        }
     }
 
     class ColorAdapter(private val items: List<Pair<Int, Int>>) :

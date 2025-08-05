@@ -81,8 +81,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      */
     open fun abortAnim() = Unit
 
-    override fun notInLayoutOrScroll(): Boolean = !(isDragging || isAnimRuning)
-
     override fun forceNotInLayoutOrScroll() {
         if (isDragging) {
             startResetAnim(initDire)

@@ -11,8 +11,6 @@ import kotlin.math.min
 /**
  * 滚动翻页实现
  * TODO: 实现flipToNextPage、flipToPrevPage
- * TODO： 支持pageContainer.onFlipListener
- * TODO: 如果PageContainer中一开始没有child，之后添加新的child，由于没有触发initPagePosition，导致所有的child都叠在一起，也就是
  */
 class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
 
@@ -28,11 +26,17 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
 
     private var isScrolling = false
 
+    /**
+     * 每次滑动手势的最大翻页数量, 某种程度上会影响滑动动画的滑动速度,最大翻页数量越大,滑动速度越快
+     */
+    var maxPagesPerSwipe = 10
+
     companion object {
         private const val TAG = "ScrollPageManager"
     }
     
     override fun flipToNextPage(limited: Boolean): Boolean {
+
         TODO("Not yet implemented")
     }
 
@@ -65,6 +69,9 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
         refreshPages()
     }
 
+    /**
+     * 滚动page
+     */
     private fun scrollBy(dy: Float) {
         var moveDis = dy
         when {
@@ -124,8 +131,9 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
     override fun onStartScroll(velocityX: Float, velocityY: Float) {
         super.onStartScroll(velocityX, velocityY)
         // 计算惯性滚动
+        lastScrollY = curPage!!.translationY.toInt()
         if (abs(velocityY) > 0) {
-            val maxFlingDis = pageContainer.height * 10
+            val maxFlingDis = pageContainer.height * maxPagesPerSwipe
             scroller.fling(
                 0, lastScrollY,
                 0, velocityY.toInt(),
@@ -134,7 +142,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
             )
             pageContainer.invalidate() // 开始滚动
             isScrolling = true
-            lastScrollY = curPage!!.translationY.toInt()
+
         }
     }
 
@@ -164,7 +172,34 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
         }
     }
 
+    /**
+     * 所有的page都是不重叠的,平铺布局
+     */
+    private fun getTranslateY(position: Int): Float {
+        val containerPageCount = pageContainer.getContainerPageCount()
+        return when {
+            containerPageCount >= 3 -> when {
+                position == 0 && pageContainer.isFirstPage() -> 2 * pageContainer.height.toFloat()
+                position == 0 && !pageContainer.isLastPage() -> pageContainer.height.toFloat()
+                position == 1 && pageContainer.isLastPage() -> -pageContainer.height.toFloat()
+                position == 1 && pageContainer.isFirstPage() -> pageContainer.height.toFloat()
+                position == 2 && !pageContainer.isFirstPage() -> -pageContainer.height.toFloat()
+                position == 2 && pageContainer.isLastPage() -> -2 * pageContainer.height.toFloat()
+                else -> 0F
+            }
+            containerPageCount == 2 -> when {
+                position == 1 && pageContainer.isLastPage() -> -pageContainer.height.toFloat()
+                position == 0 && pageContainer.isFirstPage() -> pageContainer.height.toFloat()
+                else -> 0F
+            }
+            containerPageCount == 1 -> 0F
+            else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
+        }
+    }
+
     override fun onAddPage(view: View, position: Int) {
-        TODO("Not yet implemented")
+        view.translationY = getTranslateY(position)
+        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
+                "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationY}")
     }
 }

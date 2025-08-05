@@ -23,8 +23,6 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      */
     abstract fun prepareAnim(initDire: PageDirection)
 
-    override fun notInLayoutOrScroll(): Boolean = true
-
     override fun forceNotInLayoutOrScroll() = Unit
 
     /**
@@ -35,6 +33,7 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     open fun onDragging(initDire: PageDirection, dx: Float, dy: Float) = Unit
 
     /**
+     * 遍历pageContainer中的全部child, 返回其translationY的最小值.
      * 返回值一定小于等于0
      */
     protected fun getTopTranslationY(): Float {
@@ -52,6 +51,7 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     }
 
     /**
+     * 遍历pageContainer中的全部child，返回其translationY的最大值.
      * 返回值一定大于等于0
      */
     protected fun getBottomTranslationY(): Float {
@@ -68,7 +68,14 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         return bottomTranslationY
     }
 
+    /**
+     * 是否可以滑动由child的translationY的最大值决定
+     */
     protected fun canMoveDown() = getBottomTranslationY() != 0F
+
+    /**
+     * 是否可以滑动由child的translationY的最小值决定
+     */
     protected fun canMoveUp() = getTopTranslationY() != 0F
 
     /**

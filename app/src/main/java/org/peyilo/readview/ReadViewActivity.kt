@@ -7,6 +7,7 @@ import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.NoAnimPageManagers
+import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.utils.LogHelper
@@ -26,7 +27,7 @@ class ReadViewActivity : AppCompatActivity() {
 
         readview = findViewById(R.id.readview)
 
-        readview.layoutManager = NoAnimPageManagers.Vertical()
+        readview.layoutManager = ScrollLayoutManager()
 
         filePath?.let {
             val selectedFile = File(it)

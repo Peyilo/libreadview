@@ -4,16 +4,12 @@
 
 A lightweight and customizable Android page turning library inspired by real-world reading experiences. Supports animations like simulation, slide, cover, and scroll styles.
 
-<img src=".\gif\Snipaste_2025-08-03_10-26-43.png" alt="Snipaste_2025-08-03_10-26-43" style="zoom:80%;" />
-
 ## 🚀 Features
 
 - 📖 Realistic page flip effects (Simulate, Cover, Slide, NoAnim, Scroll)
 - 🎨 Easily extendable page manager
 - 🧩 Page container layout to manage reading flow
 - 💡 Optimized for performance and customization
-
-<img src="gif/output.gif" alt="Page Flip Preview"  />
 
 ## 📦 Installation
 
@@ -123,17 +119,15 @@ class ColorAdapter(private val items: List<Pair<Int, Int>>) :
 }
 ```
 
-#### ✨ Available Page Managers
+#### ✨ Available LayoutManagers
 
-- CoverPageManager()
-- IBookSlidePageManager()
-- SlidePageManager()
-- NoAnimPageManagers.Horizontal()
-- NoAnimPageManagers.Vertical()
-- SimulationPageManagers.Style1()
-- ScrollPageManager(): TODO
-
-![Page Flip Preview](gif/combined.gif)
+- CoverLayoutManager()
+- IBookSlideLayoutManager()
+- SlideLayoutManager()
+- NoAnimLayoutManagers.Horizontal()
+- NoAnimLayoutManagers.Vertical()
+- SimulationLayoutManagers.Style1()
+- ScrollLayoutManager()
 
 ## 📄 License
 
