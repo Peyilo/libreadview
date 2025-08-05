@@ -2,6 +2,7 @@ package org.peyilo.libreadview.manager
 
 import android.view.View
 import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.utils.LogHelper
 import kotlin.math.max
 import kotlin.math.min
 
@@ -9,6 +10,10 @@ import kotlin.math.min
  * 覆盖翻页实现
  */
 class CoverLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
+
+    companion object {
+        private const val TAG = "CoverLayoutManager"
+    }
 
     private var draggedView: View? = null           // 当前滑动手势选中的page
 
@@ -92,18 +97,27 @@ class CoverLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
         isAnimRuning = false
     }
 
-    override fun onNextCarouselLayout() {
-        if (pageContainer.getContainerPageCount() >= 3) {         // 在itemCount=2时，无需处理translationX；itemCount<2的时候，这个函数不会调用
-            pageContainer.apply {
-                getNextPage()?.translationX = 0F
+    private fun getTranslateX(position: Int): Float {
+        val containerPageCount = pageContainer.getContainerPageCount()
+        return when {
+            containerPageCount >= 3 -> when {
+                position == 2 && !pageContainer.isFirstPage() -> -pageContainer.width.toFloat()
+                position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                else -> 0F
             }
+            containerPageCount == 2 -> when {
+                position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                else -> 0F
+            }
+            containerPageCount == 1 -> 0F
+            else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
         }
     }
 
-    override fun onPrevCarouselLayout() {
-        pageContainer.apply {
-            getPrevPage()?.translationX = -width.toFloat()  // 这里的PrevPage可能不存在的，如果存在就处理translationX，否则不处理
-        }
+    override fun onAddPage(view: View, position: Int) {
+        view.translationX = getTranslateX(position)
+        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
+                "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
     }
 
     override fun onDestroy() {

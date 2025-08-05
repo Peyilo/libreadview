@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.graphics.Shader
+import android.view.View
 import androidx.core.graphics.minus
 import androidx.core.graphics.plus
 import androidx.core.graphics.times
@@ -29,7 +30,7 @@ import kotlin.math.sqrt
  * 提供多种仿真翻页实现
  * TODO：仿iOS的仿真翻页实现
  */
-class SimulationPageManagers {
+class SimulationPageManagers private constructor() {
 
     companion object {
         private const val TAG = "SimulationPageManagers"
@@ -469,20 +470,40 @@ class SimulationPageManagers {
         override fun onNextCarouselLayout() {
             // 由于仿真翻页的动画实现，并不是依靠translationX，因此在动画结束后，
             // 还需将被拖动的View需要主动移出画面内，不像其他PageManager会通过设置translationX达到动画的效果
-            if (pageContainer.getContainerPageCount() >= 2) {
-                pageContainer.apply {
-                    getPrevPage()?.translationX = -containerWidth.toFloat()
-                    getNextPage()?.translationX = 0F
-                }
+            pageContainer.apply {
+                getPrevPage()?.translationX = -containerWidth.toFloat()
             }
         }
 
         override fun onPrevCarouselLayout() {
+            // 被拖动的View需要主动移出画面内，不像其他PageManager会通过设置translationX达到动画的效果
             pageContainer.apply {
-                // 被拖动的View需要主动移出画面内，不像其他PageManager会通过设置translationX达到动画的效果
-                getPrevPage()?.translationX = -containerWidth.toFloat()
                 getCurPage()?.translationX = 0F
             }
+        }
+
+        private fun getTranslateX(position: Int): Float {
+            val containerPageCount = pageContainer.getContainerPageCount()
+            return when {
+                containerPageCount >= 3 -> when {
+                    position == 2 && !pageContainer.isFirstPage() -> -pageContainer.width.toFloat()
+                    position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                    else -> 0F
+                }
+                containerPageCount == 2 -> when {
+                    position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                    else -> 0F
+                }
+                containerPageCount == 1 -> 0F
+                else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
+            }
+        }
+
+        override fun onAddPage(view: View, position: Int) {
+            view.translationX = getTranslateX(position)
+            LogHelper.d(
+                TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
+                    "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
         }
 
         override fun flipToNextPage(limited: Boolean): Boolean {
@@ -851,15 +872,11 @@ class SimulationPageManagers {
             TODO("Not yet implemented")
         }
 
-        override fun onNextCarouselLayout() {
-            TODO("Not yet implemented")
-        }
-
-        override fun onPrevCarouselLayout() {
-            TODO("Not yet implemented")
-        }
-
         override fun setAnimDuration(animDuration: Int) {
+            TODO("Not yet implemented")
+        }
+
+        override fun onAddPage(view: View, position: Int) {
             TODO("Not yet implemented")
         }
     }

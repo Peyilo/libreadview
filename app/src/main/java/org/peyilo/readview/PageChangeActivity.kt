@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.PageContainer
+import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
@@ -39,7 +40,7 @@ class PageChangeActivity : AppCompatActivity() {
 
         pageContainer = findViewById(R.id.pageContainer)
         pageContainer.initPageIndex(1)
-        pageContainer.layoutManager = IBookSlideLayoutManager()
+        pageContainer.layoutManager = CoverLayoutManager()
         pageContainer.adapter = ColorAdapter(colors)
 
 

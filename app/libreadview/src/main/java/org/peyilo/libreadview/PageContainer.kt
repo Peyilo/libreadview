@@ -360,7 +360,7 @@ open class PageContainer(
          * @param view the view be initialized
          * @param position the view will be added to this position thro ViewGroup.addView(view, position)
          */
-        open fun onAddPage(view: View, position: Int) = Unit
+        abstract fun onAddPage(view: View, position: Int)
 
     }
 

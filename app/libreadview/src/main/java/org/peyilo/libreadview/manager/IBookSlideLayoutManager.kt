@@ -156,7 +156,6 @@ class IBookSlideLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), Animated
     }
 
     override fun onAddPage(view: View, position: Int) {
-        super.onAddPage(view, position)
         view.translationX = getTranslateX(position)
         LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
                 "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
@@ -171,7 +170,6 @@ class IBookSlideLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), Animated
         primaryView = null
         followedView = null
     }
-
 
     override fun dispatchDraw(canvas: Canvas) {
         if ((isAnimRuning || isDragging) && primaryView != null) {

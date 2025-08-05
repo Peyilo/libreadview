@@ -28,7 +28,7 @@ class ReadView(
     context: Context, attrs: AttributeSet? = null
 ): AbstractReadView(context, attrs) {
 
-    private val mAdapterData: Pages
+    private val mAdapterData: AdapterData
 
     companion object {
         private const val TAG = "ReadView"
@@ -44,7 +44,7 @@ class ReadView(
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
 
     init {
-        mAdapterData = Pages()
+        mAdapterData = AdapterData()
         adapter = PageAdapter()
 
         viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
@@ -178,7 +178,7 @@ class ReadView(
             // 由于涉及UI更新，需要在主线程执行
             mCurContainerPageIndex = chapIndex
             showAllChapLoadPage()
-            LogHelper.d(TAG, "initBook: showAllChapLoadPage() curPageIndex=$mCurContainerPageIndex")
+            LogHelper.d(TAG, "initBook: showAllChapLoadPage() mCurContainerPageIndex=$mCurContainerPageIndex")
             val loadChapRes = loadNearbyChapters(chapIndex)
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
@@ -191,7 +191,7 @@ class ReadView(
                     inflateNearbyChapters(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
-                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, curPageIndex = $mCurContainerPageIndex, chapRange = $chapRange")
+                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, mCurContainerPageIndex = $mCurContainerPageIndex, chapRange = $chapRange")
                     if (needJumpPage) {
                         chapRange = getChapPageRange(chapIndex)
                         mCurContainerPageIndex = chapRange.from + pageIndex
@@ -316,7 +316,7 @@ class ReadView(
         override fun getItemCount(): Int = mAdapterData.size
     }
 
-    private class Pages {
+    private class AdapterData {
 
         private val pages = mutableListOf<Pair<PageType, Any>>()
 

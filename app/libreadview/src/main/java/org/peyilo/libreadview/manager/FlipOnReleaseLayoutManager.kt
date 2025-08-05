@@ -135,6 +135,10 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         }
     }
 
+    open fun onNextCarouselLayout() = Unit
+
+    open fun onPrevCarouselLayout() = Unit
+
     private fun startPageTurn() {
         when (decideEndDire(initDire, realTimeDire)) {
             PageDirection.NEXT -> {
@@ -299,23 +303,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         }
         return false
     }
-
-    /**
-     * 需要在这个函数里处理新添加的Page的位置
-     * 调用顺序：
-     *      startNextAnim() -> pageContainer.nextCarouselLayout() -> onNextCarouselLayout()
-     *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
-     */
-    open fun onNextCarouselLayout() = Unit
-
-    /**
-     * 需要在这个函数里处理新添加的Page的位置
-     * 调用顺序：
-     *      ACTION_UP -> startPrevAnim() -> pageContainer.prevCarouselLayout() -> onPrevCarouselLayout(
-     *  所以在onNextCarouselLayout()中获取的page顺序已经更新过位置
-     */
-    open fun onPrevCarouselLayout() = Unit
-
 
     abstract class Horizontal: FlipOnReleaseLayoutManager() {
 

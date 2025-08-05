@@ -163,4 +163,8 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
             isScrolling = false
         }
     }
+
+    override fun onAddPage(view: View, position: Int) {
+        TODO("Not yet implemented")
+    }
 }

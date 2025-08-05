@@ -4,7 +4,11 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.ReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
+import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
+import org.peyilo.libreadview.manager.NoAnimPageManagers
+import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.utils.LogHelper
 import java.io.File
 
@@ -22,7 +26,7 @@ class ReadViewActivity : AppCompatActivity() {
 
         readview = findViewById(R.id.readview)
 
-        readview.layoutManager = IBookSlideLayoutManager()
+        readview.layoutManager = NoAnimPageManagers.Vertical()
 
         filePath?.let {
             val selectedFile = File(it)

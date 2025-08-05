@@ -8,15 +8,20 @@ import kotlin.math.cos
 import kotlin.math.sqrt
 
 /**
- * 实现了覆盖翻页的阴影绘制，并且提供了多个阴影参数设置的API
+ * 实现了覆盖翻页中,page的右侧边缘的阴影绘制，并且提供了多个阴影参数设置的API
  */
 abstract class CoverShadowLayoutManager: FlipOnReleaseLayoutManager.Horizontal() {
 
     private val shadowPaint: Paint = Paint()
 
-    var shadowWidth: Int = 35               // 阴影宽度
+    /**
+     * 阴影宽度
+     */
+    var shadowWidth: Int = 35
 
-    // 设置阴影渐变的起始透明度: 0-255，first为起始透明度，second为结束透明度
+    /**
+     * 设置阴影渐变的起始透明度: 0-255，first为起始透明度，second为结束透明度
+     */
     var gradientColors: Pair<Int, Int> = Pair(90, 0)
 
     // 自定义渐变函数：输入0-1，输出0-1
@@ -29,7 +34,9 @@ abstract class CoverShadowLayoutManager: FlipOnReleaseLayoutManager.Horizontal()
      */
     protected abstract fun getCoverShadowView(): View?
 
-    // 处理阴影绘制
+    /**
+     * 处理阴影绘制
+     */
     override fun dispatchDraw(canvas: Canvas) {
         val coverShadowView = getCoverShadowView()
         if ((isAnimRuning || isDragging) && coverShadowView != null) {
@@ -54,21 +61,27 @@ abstract class CoverShadowLayoutManager: FlipOnReleaseLayoutManager.Horizontal()
         gradientFunction = function
     }
 
-    // 设置阴影的衰减速度：单位圆衰减，先快后慢
+    /**
+     * 设置阴影的衰减速度：单位圆衰减，先快后慢
+     */
     fun useCircleGradientFunction() {
         setGradientFunction { t->
             1 - sqrt(2 * t - t * t)
         }
     }
 
-    // 设置阴影的衰减速度：线性衰减
+    /**
+     * 设置阴影的衰减速度：线性衰减
+     */
     fun useLinearGradientFunction() {
         setGradientFunction { t->
             1 - t
         }
     }
 
-    // 设置阴影的衰减速度：余弦衰减，先慢后快
+    /**
+     * 设置阴影的衰减速度：余弦衰减，先慢后快
+     */
     fun useCosineGradientFunction() {
         setGradientFunction { t->
             cos(t * Math.PI / 2).toFloat()
