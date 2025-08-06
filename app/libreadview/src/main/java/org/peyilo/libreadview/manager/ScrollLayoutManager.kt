@@ -2,7 +2,7 @@ package org.peyilo.libreadview.manager
 
 import android.view.View
 import android.widget.Scroller
-import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.utils.LogHelper
 import kotlin.math.abs
 import kotlin.math.max

@@ -51,7 +51,7 @@ Or Maven:
 
 ```xml
 <!-- res/layout/activity_page_container.xml -->
-<org.peyilo.libreadview.PageContainer
+<org.peyilo.libreadview.AbstractPageContainer
     android:id="@+id/pageContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />

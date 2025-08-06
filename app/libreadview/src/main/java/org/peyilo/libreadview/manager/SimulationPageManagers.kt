@@ -14,7 +14,7 @@ import androidx.core.graphics.minus
 import androidx.core.graphics.plus
 import androidx.core.graphics.times
 import androidx.core.graphics.withClip
-import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.utils.LogHelper
 import org.peyilo.libreadview.utils.Vec
 import org.peyilo.libreadview.utils.copy

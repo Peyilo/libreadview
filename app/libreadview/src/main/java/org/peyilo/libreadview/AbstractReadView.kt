@@ -15,7 +15,7 @@ import java.util.concurrent.Executors
  */
 abstract class AbstractReadView(
     context: Context, attrs: AttributeSet? = null
-): PageContainer(context, attrs), BookNavigator {
+): ReadView(context, attrs), BookNavigator {
 
     companion object {
         private const val TAG = "AbstractReadView"

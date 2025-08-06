@@ -4,8 +4,8 @@ import android.view.MotionEvent
 import android.view.animation.LinearInterpolator
 import android.widget.Scroller
 import androidx.annotation.IntRange
-import org.peyilo.libreadview.PageContainer.Gesture
-import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.AbstractPageContainer.Gesture
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import kotlin.math.abs
 import kotlin.math.hypot
 

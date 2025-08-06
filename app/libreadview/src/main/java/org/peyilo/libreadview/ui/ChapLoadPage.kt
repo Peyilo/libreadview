@@ -1,5 +1,6 @@
 package org.peyilo.libreadview.ui
 
+import android.R.attr.text
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -21,28 +22,10 @@ class ChapLoadPage(
 
     @IntRange(from = 1) var chapIndex = 1
 
-    private var drawable: Drawable? = null
-
-    init {
-        // 从资源文件中加载一个 Drawable
-        drawable = ContextCompat.getDrawable(context, R.drawable.icon_chap_load_page)
-    }
+    private val drawable: Drawable? by lazy { ContextCompat.getDrawable(context, R.drawable.icon_chap_load_page)!! }
 
     private val textPaint = Paint().apply {
         color = Color.BLACK
-    }
-
-    private fun centerVerticalTop(height: Int): Int = (this@ChapLoadPage.height - height) / 2
-
-    private fun centerHorizontalLeft(width: Int): Int = (this@ChapLoadPage.width - width) / 2
-
-    private fun drawCenterText(canvas: Canvas, text: String, textSize: Float, y: Float = -1F) {
-        textPaint.textSize = textSize
-        val textWidth = textPaint.measureText(text)
-        val textHeight = textPaint.fontMetrics.bottom - textPaint.fontMetrics.top
-        val x = centerHorizontalLeft(textWidth.toInt())
-        val y = if (y < 0F) centerVerticalTop(textHeight.toInt()) else y
-        canvas.drawText(text, x.toFloat(), y.toFloat(), textPaint)
     }
 
     private fun drawDemo(canvas: Canvas) {
@@ -58,12 +41,9 @@ class ChapLoadPage(
         }
 
         textPaint.color = Color.BLACK
-        drawCenterText(canvas, "妖精之诗", 42F, 320F)
-        drawCenterText(canvas, "第一卷 众情相牵之花", 64F, 450F)
-        drawCenterText(canvas, "冰融水镜照花影，花映人心情相牵。", 48F, 600F)
-
-        textPaint.color = Color.GRAY
-        drawCenterText(canvas, "—— 尼希维尔特 ——", 32F, height - 150F)
+        drawCenterText(canvas, textPaint, "妖精之诗", 42F, 320F)
+        drawCenterText(canvas, textPaint, "第一卷 众情相牵之花", 64F, 450F)
+        drawCenterText(canvas, textPaint, "冰融水镜照花影，花映人心情相牵。", 48F, 600F)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -71,7 +51,7 @@ class ChapLoadPage(
         drawDemo(canvas)
 
         textPaint.color = Color.BLACK
-        drawCenterText(canvas, title, 48F, 1300F)
+        drawCenterText(canvas, textPaint, title, 48F, 1300F)
     }
 
 }

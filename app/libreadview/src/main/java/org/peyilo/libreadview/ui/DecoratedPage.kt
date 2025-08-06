@@ -16,18 +16,34 @@ open class DecoratedPage(
         setBackgroundColor(Color.WHITE)
     }
 
-    private val linePaint = Paint().apply {
+    private val paint = Paint().apply {
         strokeWidth = 3F
-        color = "#D7D7D7".toColorInt()
     }
+
+    private val signColor = Color.GRAY
+    private val lineColor = "#D7D7D7".toColorInt()
 
     private val lineMargin = 50F
     private val lineWidth = 15F
+
+    protected fun centerVerticalTop(height: Int): Int = (this.height - height) / 2
+
+    protected fun centerHorizontalLeft(width: Int): Int = (this.width - width) / 2
+
+    protected fun drawCenterText(canvas: Canvas, paint: Paint, text: String, textSize: Float, y: Float = -1F) {
+        paint.textSize = textSize
+        val textWidth = paint.measureText(text)
+        val textHeight = paint.fontMetrics.bottom - paint.fontMetrics.top
+        val x = centerHorizontalLeft(textWidth.toInt())
+        val y = if (y < 0F) centerVerticalTop(textHeight.toInt()) else y
+        canvas.drawText(text, x.toFloat(), y.toFloat(), paint)
+    }
 
     /**
      * 绘制边框
      */
     private fun drawBorder(canvas: Canvas) {
+        paint.color = lineColor
         val x1 = lineMargin
         val y1 = lineMargin - lineWidth
         val x2 = width - lineMargin
@@ -46,20 +62,23 @@ open class DecoratedPage(
         val x8 = width - lineMargin + lineWidth
         val y8 = height - lineMargin
 
-        canvas.drawLine(x1, y1, x2, y2, linePaint)
-        canvas.drawLine(x3, y3, x4, y4, linePaint)
-        canvas.drawLine(x1, y1, x3, y3, linePaint)
-        canvas.drawLine(x2, y2, x4, y4, linePaint)
+        canvas.drawLine(x1, y1, x2, y2, paint)
+        canvas.drawLine(x3, y3, x4, y4, paint)
+        canvas.drawLine(x1, y1, x3, y3, paint)
+        canvas.drawLine(x2, y2, x4, y4, paint)
 
-        canvas.drawLine(x5, y5, x6, y6, linePaint)
-        canvas.drawLine(x7, y7, x8, y8, linePaint)
-        canvas.drawLine(x5, y5, x7, y7, linePaint)
-        canvas.drawLine(x6, y6, x8, y8, linePaint)
+        canvas.drawLine(x5, y5, x6, y6, paint)
+        canvas.drawLine(x7, y7, x8, y8, paint)
+        canvas.drawLine(x5, y5, x7, y7, paint)
+        canvas.drawLine(x6, y6, x8, y8, paint)
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawBorder(canvas)
+
+        paint.color = signColor
+        drawCenterText(canvas, paint, "—— 夏莳 ——", 32F, height - 150F)
     }
 
 }

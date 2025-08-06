@@ -1,7 +1,7 @@
 package org.peyilo.libreadview.manager
 
-import org.peyilo.libreadview.PageContainer.PageDirection
-import org.peyilo.libreadview.PageContainer.LayoutManager
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
+import org.peyilo.libreadview.AbstractPageContainer.LayoutManager
 
 abstract class DirectionalLayoutManager: LayoutManager() {
 

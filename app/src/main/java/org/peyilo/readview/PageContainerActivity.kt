@@ -6,10 +6,9 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
-import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
 
@@ -52,9 +51,9 @@ class PageContainerActivity : AppCompatActivity() {
     }
 
     class ColorAdapter(private val items: List<Pair<Int, Int>>) :
-        PageContainer.Adapter<ColorAdapter.ColorViewHolder>() {
+        AbstractPageContainer.Adapter<ColorAdapter.ColorViewHolder>() {
 
-        inner class ColorViewHolder(itemView: View) : PageContainer.ViewHolder(itemView)
+        inner class ColorViewHolder(itemView: View) : AbstractPageContainer.ViewHolder(itemView)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ColorViewHolder {
             val view = GridPage(parent.context)

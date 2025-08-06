@@ -2,8 +2,8 @@ package org.peyilo.libreadview.manager
 
 import android.view.MotionEvent
 import android.view.VelocityTracker
-import org.peyilo.libreadview.PageContainer.Gesture
-import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.AbstractPageContainer.Gesture
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import kotlin.math.abs
 import kotlin.math.hypot
 

@@ -2,7 +2,7 @@ package org.peyilo.readview
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import org.peyilo.libreadview.ReadView
+import org.peyilo.libreadview.SimpleReadView
 import org.peyilo.libreadview.ReadViewCallback
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
@@ -18,7 +18,7 @@ import java.io.File
 
 class ReadViewActivity : AppCompatActivity() {
 
-    private lateinit var readview: ReadView
+    private lateinit var readview: SimpleReadView
 
     private val chapterList: MutableList<String> = mutableListOf()
 
@@ -61,6 +61,8 @@ class ReadViewActivity : AppCompatActivity() {
             }
             true
         }
+        readview.preprocessBefore = 1
+        readview.preprocessBehind = 1
     }
 
     /**

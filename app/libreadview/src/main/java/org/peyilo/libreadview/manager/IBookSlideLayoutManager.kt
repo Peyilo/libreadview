@@ -4,7 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.view.View
-import org.peyilo.libreadview.PageContainer.PageDirection
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.utils.LogHelper
 import kotlin.math.max
 import kotlin.math.min
