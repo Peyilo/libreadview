@@ -28,6 +28,12 @@ interface BookNavigator {
     fun getCurChapPageIndex(): Int
 
     /**
+     * 获取指定章节的标题
+     * @return 标题, 可能为null
+     */
+    fun getChapTitle(@IntRange(from = 1) chapIndex: Int): String?
+
+    /**
      * 跳转到指定章节的指定页
      * @param chapIndex 章节索引，从1开始
      * @param chapPageIndex 页索引，从1开始

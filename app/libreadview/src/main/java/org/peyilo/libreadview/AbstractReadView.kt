@@ -6,6 +6,7 @@ import androidx.annotation.IntRange
 import org.peyilo.libreadview.data.novel.RangeData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.pagination.DirectMapChapIndexer
+import org.peyilo.libreadview.utils.LogHelper
 import java.util.concurrent.Executors
 
 /**
@@ -191,9 +192,35 @@ abstract class AbstractReadView(
         mThreadPool.submit(task)
     }
 
+    override fun onPageChanged(oldPageIndex: Int, newPageIndex: Int) {
+        super.onPageChanged(oldPageIndex, newPageIndex)
+        val newChapIndex = findChapByPosition(newPageIndex - 1).first
+        val oldChapIndex = findChapByPosition(oldPageIndex - 1).first
+        if (newPageIndex != oldPageIndex) {
+            onChapChanged(oldChapIndex, newChapIndex)
+        }
+        LogHelper.d(TAG, "onPageChanged: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")
+    }
+
+    /**
+     * 当章节发生改变，就会回调这个函数
+     */
+    protected open fun onChapChanged(oldChapIndex: Int, newChapIndex: Int) {
+        LogHelper.d(TAG, "onChapChanged: oldChapIndex = $oldChapIndex, newChapIndex = $newChapIndex")
+        startTask {
+            processNearbyChapters(newChapIndex) {
+                loadChap(it)
+                splitChap(it)
+                post {
+                    inflateChap(it)
+                }
+            }
+        }
+    }
+
     /**
      * 获取指定章节在adapterData中的位置, 如adapterData中position为0就对应为RangeData中的1.
-     * 举个例子：第一章节有3页，位于前面三页，因此返回的是from=0, to=3, size=3
+     * 举个例子：第一章节有3页，位于前面三页，因此返回的是from=0, to=3, size=3. 返回的range是一个左闭右开区间.
      * @param chapIndex 从1开始
      */
     protected fun getChapPageRange(@IntRange(from = 1) chapIndex: Int): RangeData {

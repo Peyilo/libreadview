@@ -16,6 +16,7 @@ interface PageNavigator {
 
     /**
      * 跳转到指定章节
+     * @param pageIndex 章节索引，从1开始
      */
     fun navigatePage(@IntRange(from = 1) pageIndex: Int): Boolean
 

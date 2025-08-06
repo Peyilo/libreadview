@@ -43,7 +43,7 @@ class SimpleReadView(
     private lateinit var mPageContentProvider: PageContentProvider
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
 
-    private var callback: ReadViewCallback? = null
+    private var callback: Callback? = null
 
     init {
         mAdapterData = AdapterData()
@@ -180,9 +180,9 @@ class SimpleReadView(
         if (initTocRes) {
             // 目录初始化已经完成，接下来要开始加载章节内容，可以先将“加载目录中”视图清除，替换为“章节xxx加载中”视图
             // 由于涉及UI更新，需要在主线程执行
-            mCurContainerPageIndex = chapIndex
+            initContainerPageIndex(chapIndex)
             showAllChapLoadPage()
-            LogHelper.d(TAG, "initBook: showAllChapLoadPage() mCurContainerPageIndex=$mCurContainerPageIndex")
+            LogHelper.d(TAG, "initBook: showAllChapLoadPage() curContainerPageIndex=${getCurContainerPageIndex()}")
             val loadChapRes = loadNearbyChapters(chapIndex)
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
@@ -190,16 +190,14 @@ class SimpleReadView(
                 mReadConfig.waitForInitialized()
                 splitNearbyChapters(chapIndex)
                 post {
-                    var chapRange = getChapPageRange(chapIndex)
-                    val needJumpPage = mCurContainerPageIndex - 1 == chapRange.from
+                    val chapRange = getChapPageRange(chapIndex)
+                    val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
                     inflateNearbyChapters(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了
-                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, mCurContainerPageIndex = $mCurContainerPageIndex, chapRange = $chapRange")
+                    LogHelper.d(TAG, "initBook: needJumpPage = $needJumpPage, curContainerPageIndex = ${getCurContainerPageIndex()}, chapRange = $chapRange")
                     if (needJumpPage) {
-                        chapRange = getChapPageRange(chapIndex)
-                        mCurContainerPageIndex = chapRange.from + pageIndex
-                        adapter.notifyDataSetChanged()
+                        navigateBook(chapIndex, pageIndex)
                     }
                 }
 
@@ -352,51 +350,11 @@ class SimpleReadView(
 
     }
 
-    override fun onPageChanged(oldPageIndex: Int, newPageIndex: Int) {
-        super.onPageChanged(oldPageIndex, newPageIndex)
-        val newChapIndex = findChapByPosition(newPageIndex - 1).first
-        val oldChapIndex = findChapByPosition(oldPageIndex - 1).first
-        if (newPageIndex != oldPageIndex) {
-            onChapChanged(oldChapIndex, newChapIndex)
-        }
-        LogHelper.d(TAG, "onPageChanged: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")
-    }
-
-    /**
-     * 当章节发生改变，就会回调这个函数
-     */
-    private fun onChapChanged(oldChapIndex: Int, newChapIndex: Int) {
-        LogHelper.d(TAG, "onChapChanged: oldChapIndex = $oldChapIndex, newChapIndex = $newChapIndex")
-        startTask {
-            processNearbyChapters(newChapIndex) {
-                loadChap(it)
-                splitChap(it)
-                post {
-                    inflateChap(it)
-                }
-            }
-        }
-    }
-
     /**
      * 章节跳转
      * @param chapIndex 需要跳转到的章节
      */
-    override fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean {
-        mBookData?.let {
-            if (chapIndex >= 1 && chapIndex <= mBookData!!.chapCount) {
-                val oldChapIndex = getCurChapIndex()
-                val chapRange = getChapPageRange(chapIndex)
-                mCurContainerPageIndex = chapRange.from + 1
-                adapter.notifyDataSetChanged()
-                if (oldChapIndex != chapIndex) {
-                    onChapChanged(oldChapIndex, chapIndex)
-                }
-                return true
-            }
-        }
-        return false
-    }
+    override fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean = navigateBook(chapIndex, 1)
 
 
     /**
@@ -409,16 +367,29 @@ class SimpleReadView(
      */
     override fun navigateToPrevChapter(): Boolean = navigateToChapter(getCurChapIndex() - 1)
 
+    /**
+     * 跳转到指定章节的指定页
+     */
     override fun navigateBook(chapIndex: Int, chapPageIndex: Int): Boolean {
-        TODO("Not yet implemented")
+        if (chapIndex < 1 || chapIndex > getChapCount()) {      // chapIndex越界了
+            return false
+        }
+        val chapRange = getChapPageRange(chapIndex)
+        if (chapPageIndex > chapRange.size || chapPageIndex < 1) {                   // chapPageIndex越界了
+            return false
+        }
+        return navigatePage(chapRange.from + chapPageIndex)
     }
 
-    fun getChap(@IntRange(from = 1) chapIndex: Int): String {
-        return mBookData?.getChap(chapIndex)?.title ?: "无标题"
-    }
-
-    fun setCallback(callback: ReadViewCallback) {
+    fun setCallback(callback: Callback) {
         this.callback = callback
     }
 
+    override fun getChapTitle(chapIndex: Int): String? {
+        return mBookData?.getChap(chapIndex)?.title
+    }
+
+    interface Callback {
+        fun onInitToc(success: Boolean) = Unit
+    }
 }

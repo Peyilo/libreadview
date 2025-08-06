@@ -19,15 +19,10 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Usage:
- * > val pageContainer: AbstractPageContainer = findViewById(R.id.pageContainerTop)
- * > pageContainer.pageManager = CoverPageManager()
- * > pageContainer.adapter = MyAdapter()
  *
  * TODO: 测试100种类型以上page时的回收复用表现
  * TODO: 对于水平翻页的PageManager，考虑支持向上或向下的手势，以实现类似于起点阅读、番茄小说类似的书签、段评功能
  * TODO：横屏、竖屏状态改变时，需要保存状态、并恢复状态
- * TODO: 如果PageContainer中一开始没有child，之后添加新的child，由于没有触发initPagePosition，导致所有的child都叠在一起，也就是
  */
 abstract class AbstractPageContainer(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
@@ -90,7 +85,7 @@ abstract class AbstractPageContainer(
      * 表示当前显示页面的页码，从1开始
      */
     @IntRange(from = 1)
-    protected var mCurContainerPageIndex = 1
+    private var mCurContainerPageIndex = 1
         set(value) = synchronized(mCurPageIndexLock) {
             if (field != value) {
                 LogHelper.d(TAG, "setCurPageIndex: $field -> $value")
@@ -113,16 +108,18 @@ abstract class AbstractPageContainer(
      */
     private val mMaxAttachedPage = 3
 
+    private var initContainerPageIndexFlag = true
+
     /**
-     * 初始化页码：设置一个标记位curPageIndex，在adapter设置之后决定显示页码
-     * 注意，这个函数仅提供初始化页码功能，不能用于任意页码跳转。
-     * 该函数建议在设置Adapter之前调用，这样消耗少一点。
+     * 初始化mCurContainerPageIndex变量, 并且将initContainerPageIndexFlag置为false, 只能调用一次
      */
-    fun initPageIndex(@IntRange(from = 1) pageIndex: Int) {
-        mCurContainerPageIndex = pageIndex
-        if (innerAdapter != null) {
-            // TODO：不应该通知观察者数据集改变了，这样开销很大
-            innerAdapter!!.notifyDataSetChanged()
+    @Synchronized
+    protected fun initContainerPageIndex(@IntRange(from = 1) pageIndex: Int) {
+        if (initContainerPageIndexFlag) {
+            initContainerPageIndexFlag = false
+            mCurContainerPageIndex = pageIndex
+        } else {
+            throw IllegalStateException("initContainerPageIndex() should be called only once")
         }
     }
 
@@ -1186,7 +1183,10 @@ abstract class AbstractPageContainer(
         if (pageIndex > pageCount || pageIndex <= 0) {
             return false
         }
-
+        val oldPageIndex = mCurContainerPageIndex
+        mCurContainerPageIndex = pageIndex
+        innerAdapter!!.notifyDataSetChanged()
+        onPageChanged(oldPageIndex, pageIndex)
         return true
     }
 
@@ -1369,7 +1369,6 @@ abstract class AbstractPageContainer(
         val savedState = SavedState(superState)
         savedState.scaledTouchSlop = this.scaledTouchSlop
         savedState.flipTouchSlop = this.flipTouchSlop
-        savedState.curPageIndex = this.mCurContainerPageIndex
         savedState.maxCachedPage = this.mPageCache.maxCachedPage
         return savedState
     }
@@ -1382,7 +1381,6 @@ abstract class AbstractPageContainer(
             super.onRestoreInstanceState(state.superState)
             this.scaledTouchSlop = state.scaledTouchSlop
             this.flipTouchSlop = state.flipTouchSlop
-            initPageIndex(state.curPageIndex)       // 无法通过简单的设置curPageIndex达到恢复的目的
             setMaxCachedPageNum(state.maxCachedPage)
         } else {
             super.onRestoreInstanceState(state)
@@ -1396,7 +1394,6 @@ abstract class AbstractPageContainer(
     private class SavedState : BaseSavedState {
         var scaledTouchSlop: Int = 0
         var flipTouchSlop: Int = 0
-        var curPageIndex: Int = 0
         var maxCachedPage: Int = 0
 
 
@@ -1405,7 +1402,6 @@ abstract class AbstractPageContainer(
         private constructor(parcel: Parcel) : super(parcel) {
             scaledTouchSlop = parcel.readInt()
             flipTouchSlop = parcel.readInt()
-            curPageIndex = parcel.readInt()
             maxCachedPage = parcel.readInt()
         }
 
@@ -1413,7 +1409,6 @@ abstract class AbstractPageContainer(
             super.writeToParcel(out, flags)
             out.writeInt(scaledTouchSlop)
             out.writeInt(flipTouchSlop)
-            out.writeInt(curPageIndex)
             out.writeInt(maxCachedPage)
         }
 

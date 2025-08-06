@@ -3,7 +3,6 @@ package org.peyilo.readview
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.SimpleReadView
-import org.peyilo.libreadview.ReadViewCallback
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
@@ -39,15 +38,15 @@ class ReadViewActivity : AppCompatActivity() {
                     addTitleRegex("第\\d+章 .*")
                     networkLagFlag = true
                 },
-                chapIndex = 1,
-                pageIndex = 1,
+                chapIndex = 100,
+                pageIndex = 4,
             )
         }
-        readview.setCallback(object : ReadViewCallback {
+        readview.setCallback(object : SimpleReadView.Callback {
             override fun onInitToc(success: Boolean) {
                 if (!success) return
                 for (i in 1..readview.getChapCount()) {
-                    chapterList.add(readview.getChap(i))
+                    chapterList.add(readview.getChapTitle(i) ?: "无标题")
                 }
             }
         })
