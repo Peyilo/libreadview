@@ -3,7 +3,6 @@ package org.peyilo.libreadview.manager
 import android.view.MotionEvent
 import android.view.animation.LinearInterpolator
 import android.widget.Scroller
-import androidx.annotation.IntRange
 import org.peyilo.libreadview.AbstractPageContainer.Gesture
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import kotlin.math.abs
@@ -35,10 +34,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      * 但是置换前后的手指位置不变，这时候会导致明明本轮时间是拖动，却执行了点击事件，这个标记位就是为了解决怎么一个问题
      */
     private var forceWhenDraggingFlag = false
-    /**
-     * 最小翻页时间间隔: 限制翻页速度，取值为0时，表示不限制
-     */
-    @IntRange(from = 0) var minPageTurnInterval = 250
 
     /**
      * 上次翻页动画执行的时间
@@ -256,7 +251,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         startNextAnim()
         pageContainer.nextCarouselLayout()
         onNextCarouselLayout()
-        lastAnimTimestamp = System.currentTimeMillis()
     }
 
     private fun flipToPrevWithNoLimit() {
@@ -267,7 +261,6 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         startPrevAnim()
         pageContainer.prevCarouselLayout()
         onPrevCarouselLayout()
-        lastAnimTimestamp = System.currentTimeMillis()
     }
 
     /**
@@ -276,11 +269,13 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     override fun flipToNextPage(limited: Boolean): Boolean {
         if (!limited) {
             flipToNextWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
             return true
         }
         val internal =  System.currentTimeMillis() - lastAnimTimestamp
         if (internal > minPageTurnInterval) {
             flipToNextWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
             return true
         }
         return false
@@ -292,11 +287,13 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
     override fun flipToPrevPage(limited: Boolean): Boolean {
         if (!limited) {
             flipToPrevWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
             return true
         }
         val internal =  System.currentTimeMillis() - lastAnimTimestamp
         if (internal > minPageTurnInterval) {
             flipToPrevWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
             return true
         }
         return false

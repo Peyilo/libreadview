@@ -29,7 +29,7 @@ class ReadViewActivity : AppCompatActivity() {
         // 从 Intent 获取文件路径
         val filePath = intent.getStringExtra("SELECTED_FILE_PATH")
         readview = findViewById(R.id.readview)
-        readview.layoutManager = IBookSlideLayoutManager()
+        readview.layoutManager = ScrollLayoutManager()
         filePath?.let {
             val selectedFile = File(it)
             LogHelper.d("ReadViewActivity", "File selected: ${selectedFile.absolutePath}")
@@ -39,7 +39,7 @@ class ReadViewActivity : AppCompatActivity() {
                     networkLagFlag = true
                 },
                 chapIndex = 100,
-                pageIndex = 4,
+                pageIndex = 1,
             )
         }
         readview.setCallback(object : SimpleReadView.Callback {
@@ -60,8 +60,8 @@ class ReadViewActivity : AppCompatActivity() {
             }
             true
         }
-        readview.preprocessBefore = 1
-        readview.preprocessBehind = 1
+        readview.preprocessBefore = 0
+        readview.preprocessBehind = 0
     }
 
     /**

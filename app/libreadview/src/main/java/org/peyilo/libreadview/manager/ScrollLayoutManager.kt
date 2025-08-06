@@ -10,13 +10,12 @@ import kotlin.math.min
 
 /**
  * 滚动翻页实现
- * TODO: 实现flipToNextPage、flipToPrevPage
  */
-class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
+class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayoutManager {
 
     private var curPage: View? = null
-    private lateinit var prevPages: List<View>
-    private lateinit var nextPages: List<View>
+    private var prevPages: List<View>? = null
+    private var nextPages: List<View>? = null
 
     private var lastdy = 0F
 
@@ -25,11 +24,24 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
     private var lastScrollY = 0
 
     private var isScrolling = false
+    private var isFliping = false
 
     /**
      * 每次滑动手势的最大翻页数量, 某种程度上会影响滑动动画的滑动速度,最大翻页数量越大,滑动速度越快
      */
     var maxPagesPerSwipe = 10
+
+    private var animDuration = 300
+
+    /**
+     * Sets the animation duration for scrolling or flipping actions.
+     * 这个函数设置的翻页动画持续时间，只对flipToNextPage、flipToPrevPage的动画有效
+     *
+     * @param animDuration The duration of the animation in milliseconds.
+     */
+    override fun setAnimDuration(animDuration: Int) {
+        this.animDuration = animDuration
+    }
 
     companion object {
         private const val TAG = "ScrollPageManager"
@@ -37,16 +49,56 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
 
     override fun forceNotInLayoutOrScroll() {
         super.forceNotInLayoutOrScroll()
-
+        // 先恢复到初始位置
+        pageContainer.apply {
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
+                child.translationY = getTranslateY(i)
+            }
+        }
+        LogHelper.d(TAG, "forceNotInLayoutOrScroll: clearPages")
+        clearPages()
     }
 
-    override fun flipToNextPage(limited: Boolean): Boolean {
-
-        TODO("Not yet implemented")
+    override fun flipToNextWithNoLimit() {
+        abortAnim()
+        refreshPages()
+        val curY = curPage!!.translationY.toInt()
+        val dy = -(pageContainer.height + curY)
+        scroller.startScroll(0, curY, 0, dy, animDuration)
+        pageContainer.invalidate()
+        isFliping = true
+        lastScrollY = curY
     }
 
-    override fun flipToPrevPage(limited: Boolean): Boolean {
-        TODO("Not yet implemented")
+    override fun flipToPrevWithNoLimit() {
+        abortAnim()
+        refreshPages()
+        val curY = curPage!!.translationY.toInt()
+        val dy = pageContainer.height - curY
+        scroller.startScroll(0, curY, 0, dy, animDuration)
+        pageContainer.invalidate()
+        isFliping = true
+        lastScrollY = curY
+    }
+
+    override fun abortAnim() {
+        // 如果处于滚动状态，结束滚动动画，停在当前位置
+        if (isScrolling) {
+            scroller.forceFinished(true)
+            isScrolling = false
+            clearPages()
+            LogHelper.d(TAG, "abortAnim - isScrolling: clearPages")
+        }
+        // 如果是执行翻页动画，结束滚动动画的话，就应该跳到最终位置
+        if (isFliping) {
+            scroller.forceFinished(true)
+            isFliping = false
+            val deltaY = scroller.finalY - lastScrollY
+            scrollBy(deltaY.toFloat())
+            clearPages()
+            LogHelper.d(TAG, "abortAnim - isFliping: clearPages")
+        }
     }
 
     override fun onInitPagePosition() {
@@ -84,10 +136,10 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
                 val topTranslationY = getTopTranslationY()
                 moveDis = min(moveDis, -topTranslationY)
                 curPage?.translationY += moveDis
-                prevPages.forEach {
+                prevPages?.forEach {
                     it.translationY += moveDis
                 }
-                nextPages.forEach {
+                nextPages?.forEach {
                     it.translationY += moveDis
                 }
             }
@@ -95,10 +147,10 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
                 val bottomTranslationY = getBottomTranslationY()
                 moveDis = max(moveDis, -bottomTranslationY)
                 curPage?.translationY += moveDis
-                prevPages.forEach {
+                prevPages?.forEach {
                     it.translationY += moveDis
                 }
-                nextPages.forEach {
+                nextPages?.forEach {
                     it.translationY += moveDis
                 }
             }
@@ -135,6 +187,10 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
 
     override fun onStartScroll(velocityX: Float, velocityY: Float) {
         super.onStartScroll(velocityX, velocityY)
+        if (curPage == null) {
+            LogHelper.e(TAG, "onStartScroll: the curpage is null")
+            return
+        }
         // 计算惯性滚动
         lastScrollY = curPage!!.translationY.toInt()
         if (abs(velocityY) > 0) {
@@ -147,16 +203,6 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
             )
             pageContainer.invalidate() // 开始滚动
             isScrolling = true
-
-        }
-    }
-
-    override fun onActionDown() {
-        super.onActionDown()
-        // 如果处于滚动状态，结束滚动动画
-        if (isScrolling) {
-            scroller.forceFinished(true)
-            isScrolling = false
         }
     }
 
@@ -169,11 +215,15 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
             val deltaY = scroller.currY - lastScrollY
             lastScrollY = scroller.currY
             scrollBy( deltaY.toFloat())
-
+            if (scroller.currY == scroller.finalY) {
+                scroller.forceFinished(true)
+                isScrolling = false
+                isFliping = false
+                clearPages()
+                LogHelper.d(TAG, "computeScroll: clearPages")
+            }
             // 继续滚动，直到滚动完成
             pageContainer.invalidate()
-        } else {
-            isScrolling = false
         }
     }
 
@@ -206,5 +256,17 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical() {
         view.translationY = getTranslateY(position)
         LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
                 "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationY}")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        clearPages()
+        LogHelper.d(TAG, "onDestroy: clearPages")
+    }
+
+    private fun clearPages() {
+        curPage = null
+        prevPages = null
+        nextPages = null
     }
 }

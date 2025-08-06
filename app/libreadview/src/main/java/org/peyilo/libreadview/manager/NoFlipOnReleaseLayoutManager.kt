@@ -17,13 +17,60 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
 
     private var velocityTracker: VelocityTracker? = null
 
+    /**
+     * 上次翻页动画执行的时间
+     */
+    private var lastAnimTimestamp: Long = 0L
 
     /**
      * 当initDire完成初始化且有开启动画的需要，PageContainer就会调用该函数
      */
     abstract fun prepareAnim(initDire: PageDirection)
 
-    override fun forceNotInLayoutOrScroll() = Unit
+    override fun forceNotInLayoutOrScroll() {
+        isSwipeGesture = false
+        needStartAnim = false
+    }
+
+    protected abstract fun flipToNextWithNoLimit()
+
+    protected abstract fun flipToPrevWithNoLimit()
+
+    /**
+     * 调用该函数，将会直接触发翻向下一页动画，对一定时间内的翻页次数并没有限制
+     */
+    override fun flipToNextPage(limited: Boolean): Boolean {
+        if (!limited) {
+            flipToNextWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
+            return true
+        }
+        val internal =  System.currentTimeMillis() - lastAnimTimestamp
+        if (internal > minPageTurnInterval) {
+            flipToNextWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
+            return true
+        }
+        return false
+    }
+
+    /**
+     * 调用该函数，将会直接触发翻向上一页，对一定时间内的翻页次数并没有限制
+     */
+    override fun flipToPrevPage(limited: Boolean): Boolean {
+        if (!limited) {
+            flipToPrevWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
+            return true
+        }
+        val internal =  System.currentTimeMillis() - lastAnimTimestamp
+        if (internal > minPageTurnInterval) {
+            flipToPrevWithNoLimit()
+            lastAnimTimestamp = System.currentTimeMillis()
+            return true
+        }
+        return false
+    }
 
     /**
      * 拖动某个view滑动
@@ -83,40 +130,48 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      * 主要用于实现类似于滚动翻页的效果
      */
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        // 初始化 VelocityTracker 实例
-        if (velocityTracker == null) {
-            velocityTracker = VelocityTracker.obtain()
-        }
-
-        // 将事件加入 VelocityTracker
-        velocityTracker?.addMovement(event)
-
         gesture.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // 当手指按下时清空之前的事件
-                velocityTracker?.clear()
+                velocityTracker = VelocityTracker.obtain()
+                velocityTracker?.addMovement(event)
+
+                val internal = System.currentTimeMillis() - lastAnimTimestamp
+                // 如果还有动画正在执行、并且翻页动画间隔大于minPageTurnInterval，就结束动画
+                // 如果小于最小翻页时间间隔minPageTurnInterval，就不强制结束动画
+                if (internal > minPageTurnInterval) {
+                    abortAnim()
+                }
+
                 onActionDown()
             }
             MotionEvent.ACTION_MOVE -> {
-                val dx = gesture.dx       // 水平偏移量
-                val dy = gesture.dy       // 垂直偏移量
-                val distance = hypot(dx, dy)            // 距离
-                if (isSwipeGesture || distance > pageContainer.scaledTouchSlop) {
-                    if (!isSwipeGesture) {
-                        initDire = decideInitDire(dx, dy)
-                        if (initDire != PageDirection.NONE) {
-                            isSwipeGesture = true
-                            needStartAnim = (initDire == PageDirection.NEXT && canMoveDown())
-                                    || (initDire == PageDirection.PREV && canMoveUp())
-                            if (needStartAnim) prepareAnim(initDire)
+                velocityTracker?.addMovement(event)
+
+                val internal = System.currentTimeMillis() - lastAnimTimestamp
+                if (internal > minPageTurnInterval) {
+                    abortAnim()
+
+                    val dx = gesture.dx       // 水平偏移量
+                    val dy = gesture.dy       // 垂直偏移量
+                    val distance = hypot(dx, dy)            // 距离
+                    if (isSwipeGesture || distance > pageContainer.scaledTouchSlop) {
+                        if (!isSwipeGesture) {
+                            initDire = decideInitDire(dx, dy)
+                            if (initDire != PageDirection.NONE) {
+                                isSwipeGesture = true
+                                needStartAnim = (initDire == PageDirection.NEXT && canMoveDown())
+                                        || (initDire == PageDirection.PREV && canMoveUp())
+                                if (needStartAnim) prepareAnim(initDire)
+                            }
+                        }
+                        if (needStartAnim) {
+                            // 跟随手指滑动
+                            onDragging(initDire, dx, dy)
                         }
                     }
-                    if (needStartAnim) {
-                        // 跟随手指滑动
-                        onDragging(initDire, dx, dy)
-                    }
                 }
+
                 onActionMove()
             }
             MotionEvent.ACTION_UP -> {
@@ -129,6 +184,7 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
                     if (needStartAnim) {
                         onStartScroll(velocityX, velocityY)
                         needStartAnim = false
+                        lastAnimTimestamp = System.currentTimeMillis()
                     }
                     isSwipeGesture = false
                     initDire = PageDirection.NONE
@@ -146,14 +202,23 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
                         if (!handled) performClick()
                     }
                 }
+
+                // 回收
+                velocityTracker?.recycle()
+                velocityTracker = null
                 onActionUp(velocityX, velocityY)
             }
             MotionEvent.ACTION_CANCEL -> {
+                // 回收
+                velocityTracker?.recycle()
+                velocityTracker = null
                 onActionCancel()
             }
         }
         return true
     }
+
+    open fun abortAnim() = Unit
 
     open fun onActionDown() = Unit
     open fun onActionUp(velocityX: Float, velocityY: Float) = Unit

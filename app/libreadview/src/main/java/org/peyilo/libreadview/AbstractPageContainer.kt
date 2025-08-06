@@ -285,6 +285,11 @@ abstract class AbstractPageContainer(
         protected val pageContainer: AbstractPageContainer
             get() = _pageContainer ?: throw IllegalStateException("AbstractPageContainer is not initialized. Did you forget to call setPageContainer()?")
 
+        /**
+         * 最小翻页时间间隔: 限制翻页速度，取值为0时，表示不限制
+         */
+        @IntRange(from = 0) var minPageTurnInterval = 250
+
         internal fun setPageContainer(pageContainer: AbstractPageContainer) {
             _pageContainer = pageContainer
         }
