@@ -1,15 +1,19 @@
 package org.peyilo.readview
 
-import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.ReadView
 import org.peyilo.libreadview.ReadViewCallback
 import org.peyilo.libreadview.loader.SimpleNativeLoader
+import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
+import org.peyilo.libreadview.manager.ScrollLayoutManager
+import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.utils.LogHelper
 import org.peyilo.readview.fragment.ChapListFragment
 import org.peyilo.readview.fragment.ControlPanelFragment
+import org.peyilo.readview.fragment.SettingsFragment
 import java.io.File
 
 class ReadViewActivity : AppCompatActivity() {
@@ -49,8 +53,8 @@ class ReadViewActivity : AppCompatActivity() {
         })
         readview.setOnClickRegionListener { xPercent, yPercent ->
             when(xPercent) {
-                in 0..30 -> readview.navigateToPrevChapter()
-                in 70..100 -> readview.navigateToNextChapter()
+                in 0..30 -> readview.flipToPrevPage()
+                in 70..100 -> readview.flipToNextPage()
                 else -> {
                     showControlPanel(true)
                 }
@@ -68,10 +72,19 @@ class ReadViewActivity : AppCompatActivity() {
         val existing = fm.findFragmentByTag(tag)
         if (visible) {          // 避免重复显示
             if (existing == null) {
-                ControlPanelFragment {
+                ControlPanelFragment(onPrevChapClick = {
+                    readview.navigateToPrevChapter()
+                }, onNextChapClick = {
+                    readview.navigateToNextChapter()
+                }, onTocBtnClick = {
                     showControlPanel(false)
                     showChapList()
-                }.show(fm, tag)
+                }, onThemeBtnClick = {
+                    // TODO: 切换主题
+                }, onSettingsBtnClick = {
+                    showControlPanel(false)
+                    showSettings()
+                }).show(fm, tag)
             }
         } else {
             // 如果已显示，就 dismiss 掉
@@ -92,6 +105,33 @@ class ReadViewActivity : AppCompatActivity() {
             ChapListFragment(chapterList) { chapterIndex ->
                 readview.navigateToChapter(chapterIndex + 1)
             }.show(fm, tag)
+        }
+    }
+
+    /**
+     * 显示设置面板
+     */
+    fun showSettings() {
+        val tag = "SettingsFragment"
+        val fm = supportFragmentManager
+        val existing = fm.findFragmentByTag(tag)
+        if (existing == null) {
+            SettingsFragment({
+                if (readview.layoutManager is CoverLayoutManager) return@SettingsFragment
+                readview.layoutManager = CoverLayoutManager()
+            }, {
+                if (readview.layoutManager is SlideLayoutManager) return@SettingsFragment
+                readview.layoutManager = SlideLayoutManager()
+            }, {
+                if (readview.layoutManager is SimulationPageManagers.Style1) return@SettingsFragment
+                readview.layoutManager = SimulationPageManagers.Style1()
+            }, {
+                if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
+                readview.layoutManager = ScrollLayoutManager()
+            }, {
+                if (readview.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
+                readview.layoutManager = IBookSlideLayoutManager()
+            }).show(fm, tag)
         }
     }
 

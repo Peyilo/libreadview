@@ -56,10 +56,13 @@ open class PageContainer(
     var layoutManager: LayoutManager
         set(value) {
             _layoutManager?.apply {
+                forceNotInLayoutOrScroll()
                 destory()
             }
             _layoutManager = value        // 清除pageManager中包含的PageContainer引用
             value.setPageContainer(this)
+            resetPagePosition()
+            value.initPagePosition(false)
         }
         get() = _layoutManager
             ?: throw IllegalStateException("LayoutManager is not initialized. Did you forget to set it?")
@@ -133,6 +136,13 @@ open class PageContainer(
         if (_adapter != null) {
             // TODO：不应该通知观察者数据集改变了，这样开销很大
             _adapter!!.notifyDataSetChanged()
+        }
+    }
+
+    private fun resetPagePosition() {
+        mPageCache.getAllPages().forEach {
+            it.translationX = 0F
+            it.translationY = 0F
         }
     }
 
@@ -309,8 +319,8 @@ open class PageContainer(
         /**
          * 初始化Page的位置，调用该函数会将needInitPagePosition置为false，并回调onInitPagePosition()
          */
-        fun initPagePosition() {
-            needInitPagePosition = false
+        fun initPagePosition(changeState: Boolean = true) {
+            if (changeState) needInitPagePosition = false
             onInitPagePosition()
         }
 
@@ -526,6 +536,9 @@ open class PageContainer(
         fun getAttachedPageType(view: View): Int = getAttachedPage(view).mItemViewType
         fun getAttachedPagePosition(view: View): Int = getAttachedPage(view).mPosition
 
+        /**
+         * 返回全部attachedPages和cachedPages中保存的View
+         */
         fun getAllPages(): List<View> {
             val res = mutableListOf<View>()
             cachedPages.forEach {
