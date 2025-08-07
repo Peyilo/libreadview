@@ -24,8 +24,9 @@ To quickly see the page turning animations and layout in action, you can downloa
 
 <details>
 <summary><b>Via Jar</b></summary></details>
-You can download a jar from [GitHub's releases page](https://github.com/peyilo/libreadview/releases).
+You can download a jar from this link:
 
+ [GitHub's releases page](https://github.com/peyilo/libreadview/releases)
 
 <details>
 <summary><b>Via Gradle</b></summary></details>
