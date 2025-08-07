@@ -34,13 +34,13 @@ class ChapListFragment(
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return super.onCreateDialog(savedInstanceState).apply {
-            window?.setDimAmount(0f)        // 设置阴影程度
+            window?.setDimAmount(0f)            // 设置阴影程度
         }
     }
 
 
     override fun getTheme(): Int {
-        return R.style.BottomSheetDialogTheme // 自定义圆角样式
+        return R.style.BottomSheetDialogTheme  // 自定义圆角样式
     }
 
 }

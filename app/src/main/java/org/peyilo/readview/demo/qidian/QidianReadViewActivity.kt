@@ -1,6 +1,7 @@
-package org.peyilo.readview
+package org.peyilo.readview.demo.qidian
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.SimpleReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
@@ -9,13 +10,14 @@ import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
-import org.peyilo.libreadview.utils.LogHelper
+import org.peyilo.readview.R
+import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.fragment.ChapListFragment
 import org.peyilo.readview.fragment.ControlPanelFragment
 import org.peyilo.readview.fragment.SettingsFragment
 import java.io.File
 
-class ReadViewActivity : AppCompatActivity() {
+class QidianReadViewActivity : AppCompatActivity() {
 
     private lateinit var readview: SimpleReadView
 
@@ -23,25 +25,38 @@ class ReadViewActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_read_view)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_qidian_read_view)
         supportActionBar?.hide()
 
         // 从 Intent 获取文件路径
-        val filePath = intent.getStringExtra("SELECTED_FILE_PATH")
-        readview = findViewById(R.id.readview)
-        readview.layoutManager = ScrollLayoutManager()
-        filePath?.let {
-            val selectedFile = File(it)
-            LogHelper.d("ReadViewActivity", "File selected: ${selectedFile.absolutePath}")
-            readview.openBook(
-                SimpleNativeLoader(selectedFile).apply {
-                    addTitleRegex("第\\d+章 .*")
-                    networkLagFlag = true
-                },
-                chapIndex = 100,
-                pageIndex = 1,
-            )
+        val selectedFilePath = intent.getStringExtra("SELECTED_FILE_PATH")
+        var selectedFile: File?
+        if (selectedFilePath == null) {
+            // 未指定本地文件路径，使用内置的本地文件
+            val assetFileName = "txts/妖精之诗 作者：尼希维尔特.txt"
+            selectedFile = File(this.filesDir, assetFileName.split("/").last())
+            if (!selectedFile.exists()) {
+                copyAssetToInternalStorage(this, assetFileName, selectedFile)
+            }
+        } else {
+            // 指定了本地文件路径，直接使用该文件
+            selectedFile = File(selectedFilePath)
         }
+
+        readview = findViewById(R.id.readview)
+        readview.layoutManager = IBookSlideLayoutManager()      // Set the page turning mode to scrolling
+
+        readview.openBook(
+            SimpleNativeLoader(selectedFile).apply {
+                networkLagFlag = true           // 模拟网络延迟
+
+                // 如果有需要可以指定章节标题正则表达式,用来分割章节
+                // addTitleRegex("第\\d+章 .*")
+            },
+            chapIndex = 100,
+            pageIndex = 1,
+        )
         readview.setCallback(object : SimpleReadView.Callback {
             override fun onInitToc(success: Boolean) {
                 if (!success) return
@@ -135,5 +150,4 @@ class ReadViewActivity : AppCompatActivity() {
             }).show(fm, tag)
         }
     }
-
 }

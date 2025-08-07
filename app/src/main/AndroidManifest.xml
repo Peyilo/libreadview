@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-
 
     <application
         android:allowBackup="true"
@@ -16,13 +15,25 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ReadView">
-        <profileable android:shell="true"
-            tools:targetApi="29" />
         <activity
-            android:name=".PageChangeActivity"
+            android:name=".demo.boluobao.BoluobaoReadViewActivity"
             android:exported="false" />
         <activity
-            android:name=".ReadViewActivity"
+            android:name=".demo.ciweimao.CiweimaoReadViewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".demo.fanqie.FanqieReadViewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".demo.qidian.QidianReadViewActivity"
+            android:exported="false" />
+
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
+
+        <activity
+            android:name=".PageChangeActivity"
             android:exported="false" />
         <activity
             android:name=".PageContainerActivity"

@@ -1,7 +1,5 @@
 package org.peyilo.readview
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,12 +7,9 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.RecyclerView
+import org.peyilo.readview.demo.qidian.QidianReadViewActivity
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,40 +23,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private var selectedFile: File? = null
-
-    fun copyAssetToInternalStorage(context: Context, assetFileName: String): File? {
-        val assetManager = context.assets
-
-        // 获取应用的内部存储路径
-        val outputFile = File(context.filesDir, assetFileName.split("/").last())
-
+    // 读取文件并保存到应用的私有目录
+    private fun saveFileToAppDirectory(uri: Uri) {
         try {
-            // 打开 assets 文件流
-            val inputStream: InputStream = assetManager.open(assetFileName)
-            val outputStream: OutputStream = FileOutputStream(outputFile)
-
-            // 将文件内容从 assets 复制到内部存储
-            val buffer = ByteArray(1024)
-            var length: Int
-            while (inputStream.read(buffer).also { length = it } > 0) {
-                outputStream.write(buffer, 0, length)
+            // 获取输入流
+            val inputStream = contentResolver.openInputStream(uri)
+            inputStream?.let { input ->
+                // 创建目标文件，在应用的私有目录中
+                val selectedFile = File(filesDir, uri.path!!.split("/").let { it[it.size - 1] })
+                val outputStream = FileOutputStream(selectedFile)
+                input.copyTo(outputStream)
+                input.close()
+                outputStream.close()
+                val intent = Intent(this@MainActivity, QidianReadViewActivity::class.java)
+                intent.putExtra("SELECTED_FILE_PATH", selectedFile.absolutePath)
+                startActivity(intent)
+            } ?: run {
+                Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT).show()
             }
-
-            // 关闭流
-            inputStream.close()
-            outputStream.close()
-
-            return outputFile
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             e.printStackTrace()
-            return null
+            Toast.makeText(this, "Failed to save file", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private var recyclerView: RecyclerView? = null
-
-    @SuppressLint("SdCardPath")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -72,17 +57,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btn_select_file).setOnClickListener {
-//            selectFileLauncher.launch(arrayOf("*/*"))
-            selectedFile = copyAssetToInternalStorage(this@MainActivity, "txts/妖精之诗 作者：尼希维尔特.txt")
+            selectFileLauncher.launch(arrayOf("*/*"))
         }
 
         findViewById<Button>(R.id.btn_readview_demo).setOnClickListener {
-            val intent = Intent(this@MainActivity, ReadViewActivity::class.java)
-
-            // 传递文件路径或文件对象
-            intent.putExtra("SELECTED_FILE_PATH", "/data/user/0/org.peyilo.readview/files/妖精之诗 作者：尼希维尔特.txt")
-
-            // 启动 ReadViewActivity
+            val intent = Intent(this@MainActivity, QidianReadViewActivity::class.java)
             startActivity(intent)
         }
 
@@ -90,37 +69,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this@MainActivity, PageChangeActivity::class.java))
         }
 
-//        recyclerView!!.adapter
-
     }
 
-    // 读取文件并保存到应用的私有目录
-    private fun saveFileToAppDirectory(uri: Uri) {
-        try {
-            // 获取输入流
-            val inputStream = contentResolver.openInputStream(uri)
-            inputStream?.let { input ->
-                // 创建目标文件，在应用的私有目录中
-                selectedFile = File(filesDir, uri.path!!.split("/").let { it[it.size - 1] })
 
-                // 创建输出流
-                val outputStream = FileOutputStream(selectedFile)
-
-                // 复制输入流的内容到目标文件
-                input.copyTo(outputStream)
-
-                // 关闭流
-                input.close()
-                outputStream.close()
-
-                // 文件已成功保存到应用目录
-                Toast.makeText(this, "File saved to: ${selectedFile!!.absolutePath}", Toast.LENGTH_LONG).show()
-            } ?: run {
-                Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Failed to save file", Toast.LENGTH_SHORT).show()
-        }
-    }
 }

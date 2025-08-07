@@ -146,8 +146,6 @@ class ReadViewActivity : AppCompatActivity() {
 
     private lateinit var readview: SimpleReadView
 
-    private val chapterList: MutableList<String> = mutableListOf()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_read_view)

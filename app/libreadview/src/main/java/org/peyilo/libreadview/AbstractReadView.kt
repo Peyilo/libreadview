@@ -281,4 +281,35 @@ abstract class AbstractReadView(
 
     override fun getCurChapPageIndex(): Int = findChapByPosition(getCurContainerPageIndex() - 1).second
 
+    /**
+     * 章节跳转
+     * @param chapIndex 需要跳转到的章节
+     */
+    override fun navigateToChapter(@IntRange(from = 1) chapIndex: Int): Boolean = navigateBook(chapIndex, 1)
+
+
+    /**
+     * 跳转到下一个章节
+     */
+    override fun navigateToNextChapter(): Boolean = navigateToChapter(getCurChapIndex() + 1)
+
+    /**
+     * 跳转到上一个章节
+     */
+    override fun navigateToPrevChapter(): Boolean = navigateToChapter(getCurChapIndex() - 1)
+
+    /**
+     * 跳转到指定章节的指定页
+     */
+    override fun navigateBook(chapIndex: Int, chapPageIndex: Int): Boolean {
+        if (chapIndex < 1 || chapIndex > getChapCount()) {      // chapIndex越界了
+            return false
+        }
+        val chapRange = getChapPageRange(chapIndex)
+        if (chapPageIndex > chapRange.size || chapPageIndex < 1) {                   // chapPageIndex越界了
+            return false
+        }
+        return navigatePage(chapRange.from + chapPageIndex)
+    }
+
 }
