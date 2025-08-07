@@ -33,10 +33,10 @@
             tools:targetApi="29" />
 
         <activity
-            android:name=".PageChangeActivity"
+            android:name=".demo.pagecontainer.PageChangeActivity"
             android:exported="false" />
         <activity
-            android:name=".PageContainerActivity"
+            android:name=".demo.pagecontainer.PageContainerActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

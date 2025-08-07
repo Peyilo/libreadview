@@ -1,4 +1,4 @@
-package org.peyilo.readview
+package org.peyilo.readview.demo.pagecontainer
 
 import android.annotation.SuppressLint
 import android.graphics.Color
@@ -8,8 +8,13 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
+import org.peyilo.libreadview.manager.CoverLayoutManager
+import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.SlideLayoutManager
+import org.peyilo.readview.R
+import org.peyilo.readview.fragment.SettingsFragment
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
 
@@ -45,7 +50,7 @@ class PageContainerActivity : AppCompatActivity() {
             when (xPercent) {
                 in 0..30 -> pageContainer.flipToPrevPage()
                 in 70..100 -> pageContainer.flipToNextPage()
-                else -> return@setOnClickRegionListener false
+                else -> showSettings()
             }
             true
         }
@@ -71,5 +76,32 @@ class PageContainerActivity : AppCompatActivity() {
         }
 
         override fun getItemCount(): Int = items.size
+    }
+
+    /**
+     * 显示设置面板
+     */
+    fun showSettings() {
+        val tag = "SettingsFragment"
+        val fm = supportFragmentManager
+        val existing = fm.findFragmentByTag(tag)
+        if (existing == null) {
+            SettingsFragment({
+                if (pageContainer.layoutManager is CoverLayoutManager) return@SettingsFragment
+                pageContainer.layoutManager = CoverLayoutManager()
+            }, {
+                if (pageContainer.layoutManager is SlideLayoutManager) return@SettingsFragment
+                pageContainer.layoutManager = SlideLayoutManager()
+            }, {
+                if (pageContainer.layoutManager is SimulationPageManagers.Style1) return@SettingsFragment
+                pageContainer.layoutManager = SimulationPageManagers.Style1()
+            }, {
+                if (pageContainer.layoutManager is ScrollLayoutManager) return@SettingsFragment
+                pageContainer.layoutManager = ScrollLayoutManager()
+            }, {
+                if (pageContainer.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
+                pageContainer.layoutManager = IBookSlideLayoutManager()
+            }).show(fm, tag)
+        }
     }
 }

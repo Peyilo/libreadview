@@ -189,6 +189,12 @@ class ReadViewActivity : AppCompatActivity() {
 - SimulationLayoutManagers.Style1()
 - ScrollLayoutManager()
 
+### TODO
+
+- Long-press word capture function
+- Paragraph comment function
+- Over-drawing optimization 
+
 ## License
 
 This library is licensed under the [MIT License](https://opensource.org/licenses/MIT).

@@ -54,7 +54,7 @@ class QidianReadViewActivity : AppCompatActivity() {
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节
                 // addTitleRegex("第\\d+章 .*")
             },
-            chapIndex = 100,
+            chapIndex = 1,
             pageIndex = 1,
         )
         readview.setCallback(object : SimpleReadView.Callback {
@@ -97,6 +97,7 @@ class QidianReadViewActivity : AppCompatActivity() {
                     showChapList()
                 }, onThemeBtnClick = {
                     // TODO: 切换主题
+
                 }, onSettingsBtnClick = {
                     showControlPanel(false)
                     showSettings()
