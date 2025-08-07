@@ -24,13 +24,10 @@ class MessagePage(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (text.isNotEmpty()) {
-            val width = width.toFloat()
-            val height = height.toFloat()
             val textWidth = textPaint.measureText(text)
             val textHeight = textPaint.fontMetrics.bottom - textPaint.fontMetrics.top
-
-            val x = width / 2 - textWidth / 2
-            val y = height / 2 - textHeight / 2
+            val x = centerHorizontalLeft(textWidth.toInt())
+            val y = centerVerticalTop(textHeight.toInt())
 
             canvas.drawText(text, x, y, textPaint)
         }

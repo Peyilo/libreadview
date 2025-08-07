@@ -26,17 +26,20 @@ open class DecoratedPage(
     private val lineMargin = 50F
     private val lineWidth = 15F
 
-    protected fun centerVerticalTop(height: Int): Int = (this.height - height) / 2
+    protected fun centerVerticalTop(height: Int): Float = (this.height - height) / 2F
 
-    protected fun centerHorizontalLeft(width: Int): Int = (this.width - width) / 2
+    protected fun centerHorizontalLeft(width: Int): Float = (this.width - width) / 2F
 
+    /**
+     * 在中间绘制一个
+     */
     protected fun drawCenterText(canvas: Canvas, paint: Paint, text: String, textSize: Float, y: Float = -1F) {
         paint.textSize = textSize
         val textWidth = paint.measureText(text)
         val textHeight = paint.fontMetrics.bottom - paint.fontMetrics.top
         val x = centerHorizontalLeft(textWidth.toInt())
         val y = if (y < 0F) centerVerticalTop(textHeight.toInt()) else y
-        canvas.drawText(text, x.toFloat(), y.toFloat(), paint)
+        canvas.drawText(text, x, y, paint)
     }
 
     /**

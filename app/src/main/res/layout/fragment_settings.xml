@@ -18,7 +18,8 @@
         <Button
             android:id="@+id/pageturn_cover"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="覆盖"
             android:gravity="center"
@@ -28,7 +29,8 @@
         <Button
             android:id="@+id/pageturn_slide"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="左右"
             android:textColor="@color/black"
@@ -37,7 +39,8 @@
         <Button
             android:id="@+id/pageturn_simulation"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="仿真"
             android:textColor="@color/black"
@@ -46,7 +49,8 @@
         <Button
             android:id="@+id/pageturn_scroll"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="滚动"
             android:textColor="@color/black"
@@ -55,7 +59,8 @@
         <Button
             android:id="@+id/pageturn_ibook_slide"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="iBook"
             android:textAllCaps="false"

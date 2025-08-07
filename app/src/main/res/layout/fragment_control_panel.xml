@@ -13,13 +13,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingStart="10dp"
         tools:ignore="RtlSymmetry">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/menu_prev_chap"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="上一章"
             android:gravity="center"
@@ -29,7 +29,8 @@
 
         <androidx.appcompat.widget.AppCompatSeekBar
             android:id="@+id/menu_progress_bar"
-            android:layout_width="200dp"
+            android:layout_weight="2"
+            android:layout_width="0dp"
             android:thumbTint="#4B4B4B"
             android:progressTint="#4B4B4B"
             android:paddingTop="15dp"
@@ -38,7 +39,8 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/menu_next_chap"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="下一章"
             android:textColor="@color/black"
@@ -58,7 +60,8 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/menu_toc"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="目录"
             android:gravity="center"
@@ -69,23 +72,23 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/menu_theme"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="夜间"
             android:textColor="@color/black"
             android:drawableTop="@drawable/dark"
-            android:layout_marginStart="48dp"
             tools:ignore="HardcodedText" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/menu_settings"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="设置"
             android:textColor="@color/black"
             android:drawableTop="@drawable/settings"
-            android:layout_marginStart="48dp"
             tools:ignore="ContentDescription,HardcodedText" />
 
     </LinearLayout>

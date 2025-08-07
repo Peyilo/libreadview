@@ -17,6 +17,7 @@ import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.parser.SimpleContentParser
 import org.peyilo.libreadview.provider.PageContentProvider
 import org.peyilo.libreadview.provider.SimlpePageContentProvider
+import org.peyilo.libreadview.ui.BaseReadPage
 import org.peyilo.libreadview.ui.ChapLoadPage
 import org.peyilo.libreadview.ui.MessagePage
 import org.peyilo.libreadview.ui.ReadPage
@@ -43,7 +44,10 @@ class SimpleReadView(
     private lateinit var mPageContentProvider: PageContentProvider
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
 
-    private var callback: Callback? = null
+    private var mPageDelegate: PageDelegate? = null
+    private val mDefaultPageDelegate: PageDelegate by lazy { object : PageDelegate{} }
+
+    private var mCallback: Callback? = null
 
     init {
         mAdapterData = AdapterData()
@@ -72,7 +76,7 @@ class SimpleReadView(
             LogHelper.e(TAG, "initToc: ${e.stackTrace}")
             false
         }
-        callback?.onInitToc(res)
+        mCallback?.onInitToc(res)
         return res
     }
 
@@ -132,7 +136,8 @@ class SimpleReadView(
      * 注意：这个函数要在ReadView测量完成后调用才可以获取正确的宽高
      */
     private fun measureContentView(): Pair<Int, Int> {
-        val readPage = ReadPage(context)
+        val readPage = mPageDelegate?.createReadPage(context)
+            ?: mDefaultPageDelegate.createReadPage(context)
         val widthSize = width
         val heightSize = height
 
@@ -164,8 +169,8 @@ class SimpleReadView(
         readPage.measure(childWidthSpec, childHeightSpec)
 
         // 获取测量后的宽高
-        val measuredWidth = readPage.content.measuredWidth
-        val measuredHeight = readPage.content.measuredHeight
+        val measuredWidth = readPage.getContentWidth()
+        val measuredHeight = readPage.getContentHeight()
 
         // 返回子视图的测量宽高
         return Pair(measuredWidth, measuredHeight)
@@ -209,7 +214,9 @@ class SimpleReadView(
         }
     }
 
-
+    /**
+     * 在Activity.onCreate调用时尽量在readview相关操作中最后调用，否则可能会出现设置的参数不起作用
+     */
     override fun openBook(
         loader: BookLoader,
         @IntRange(from = 1) chapIndex: Int,
@@ -239,7 +246,7 @@ class SimpleReadView(
 
     private fun showMessagePage(text: String) = post {
         mAdapterData.clear()       // 清除全部pages
-        mAdapterData.add(PageType.MESSAGE_PAGE, text)
+        mAdapterData.add(PageType.TOC_INIT_PAGE, text)
         adapter.notifyDataSetChanged()
     }
 
@@ -258,8 +265,8 @@ class SimpleReadView(
 
 
 
-    private enum class PageType {
-        MESSAGE_PAGE, CHAP_LOAD_PAGE, READ_PAGE,
+    enum class PageType {
+        TOC_INIT_PAGE, CHAP_LOAD_PAGE, READ_PAGE,
     }
 
     private inner class PageAdapter: Adapter<PageAdapter.PageViewHolder>() {
@@ -268,43 +275,49 @@ class SimpleReadView(
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
             val page: View = when (viewType) {
-                PageType.MESSAGE_PAGE.ordinal -> {
-                    MessagePage(parent.context)
+                PageType.TOC_INIT_PAGE.ordinal -> {
+                    mPageDelegate?.createTocInitPage(parent.context)
+                        ?: mDefaultPageDelegate.createTocInitPage(parent.context)
                 }
                 PageType.CHAP_LOAD_PAGE.ordinal -> {
-                    ChapLoadPage(parent.context)
+                    mPageDelegate?.createChapLoadPage(parent.context)
+                        ?: mDefaultPageDelegate.createChapLoadPage(parent.context)
                 }
                 PageType.READ_PAGE.ordinal -> {
-                    ReadPage(parent.context)
+                    mPageDelegate?.createReadPage(parent.context)
+                        ?: mDefaultPageDelegate.createReadPage(parent.context)
                 }
                 else -> throw IllegalStateException("Unknown page type: $viewType")
             }
             return PageViewHolder(page)
         }
 
-        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
             val type = mAdapterData.getPageType(position)
             when (type) {
-                PageType.MESSAGE_PAGE -> {
-                    val page = holder.itemView as MessagePage
+                PageType.TOC_INIT_PAGE -> {
                     val text = mAdapterData.getPageContent(position) as String
-                    page.text = text
+                    mPageDelegate?.bindTocInitPage(holder.itemView, text)
+                        ?: mDefaultPageDelegate.bindTocInitPage(holder.itemView, text)
                 }
                 PageType.CHAP_LOAD_PAGE -> {
-                    val page = holder.itemView as ChapLoadPage
                     val list = mAdapterData.getPageContent(position) as List<*>
-                    page.title = list[0] as String
-                    page.chapIndex = list[1] as Int
+                    val title = list[0] as String
+                    val chapIndex = list[1] as Int
+                    mPageDelegate?.bindChapLoadPage(holder.itemView, title, chapIndex)
+                        ?: mDefaultPageDelegate.bindChapLoadPage(holder.itemView, title, chapIndex)
                 }
                 PageType.READ_PAGE -> {
                     val page = holder.itemView as ReadPage
                     val pageData = mAdapterData.getPageContent(position) as PageData
                     val indexPair = findChapByPosition(position)
-                    page.header.text = mBookData!!.getChap(indexPair.first).title
-                    page.progress.text = "${indexPair.second}/${getChapPageCount(indexPair.first)}"
-                    page.content.setContent(pageData)
-                    page.content.provider = mPageContentProvider
+                    val title = mBookData!!.getChap(indexPair.first).title ?: "无标题"
+                    mPageDelegate?.bindReadPage(holder.itemView, pageData, title,
+                        indexPair.first, indexPair.second,
+                        getChapPageCount(indexPair.first), mPageContentProvider)
+                        ?: mDefaultPageDelegate.bindReadPage(holder.itemView, pageData, title,
+                            indexPair.first, indexPair.second,
+                            getChapPageCount(indexPair.first), mPageContentProvider)
 
                     LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.header.text}, ${page.progress.text}")
                 }
@@ -351,7 +364,7 @@ class SimpleReadView(
     }
 
     fun setCallback(callback: Callback) {
-        this.callback = callback
+        this.mCallback = callback
     }
 
     override fun getChapTitle(chapIndex: Int): String? {
@@ -361,4 +374,43 @@ class SimpleReadView(
     interface Callback {
         fun onInitToc(success: Boolean) = Unit
     }
+
+    interface PageDelegate {
+
+        fun createTocInitPage(context: Context): View = MessagePage(context)
+
+        fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
+
+        fun createReadPage(context: Context): BaseReadPage = ReadPage(context)
+
+        fun bindTocInitPage(page: View, text: String) {
+            val page = page as MessagePage
+            page.text = text
+        }
+
+        fun bindChapLoadPage(page: View, title: String, chapIndex: Int) {
+            val page = page as ChapLoadPage
+            page.title = title
+            page.chapIndex = chapIndex
+        }
+
+        @SuppressLint("SetTextI18n")
+        fun bindReadPage(page: BaseReadPage, pageData: PageData, title: String, chapIndex: Int,
+                         chapPageIndex: Int, chapPageCount: Int,
+                         provider: PageContentProvider
+
+        ) {
+            val page = page as ReadPage
+            page.header.text = title
+            page.progress.text = "${chapPageIndex}/${chapPageCount}"
+            page.content.setContent(pageData)
+            page.content.provider = provider
+        }
+
+    }
+
+    fun setPageDelegate(pageDelegate: PageDelegate) {
+        this.mPageDelegate = pageDelegate
+    }
+
 }

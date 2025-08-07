@@ -1,6 +1,8 @@
 package org.peyilo.readview.demo.qidian
 
+import android.content.Context
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.SimpleReadView
@@ -31,6 +33,7 @@ class QidianReadViewActivity : AppCompatActivity() {
 
         // 从 Intent 获取文件路径
         val selectedFilePath = intent.getStringExtra("SELECTED_FILE_PATH")
+        val isDemo = selectedFilePath == null
         var selectedFile: File?
         if (selectedFilePath == null) {
             // 未指定本地文件路径，使用内置的本地文件
@@ -43,7 +46,10 @@ class QidianReadViewActivity : AppCompatActivity() {
             // 指定了本地文件路径，直接使用该文件
             selectedFile = File(selectedFilePath)
         }
+        initPageIndex(selectedFile, isDemo)
+    }
 
+    private fun initPageIndex(selectedFile: File, isDemo: Boolean) {
         readview = findViewById(R.id.readview)
         readview.layoutManager = IBookSlideLayoutManager()      // Set the page turning mode to scrolling
 
@@ -75,8 +81,23 @@ class QidianReadViewActivity : AppCompatActivity() {
             }
             true
         }
-        readview.preprocessBefore = 0
-        readview.preprocessBehind = 0
+        readview.preprocessBefore = 1
+        readview.preprocessBehind = 1
+
+        if (isDemo) {                   // 为demo专门定制的ChapLoadPage
+            readview.setPageDelegate(object : SimpleReadView.PageDelegate {
+                override fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
+                override fun bindChapLoadPage(
+                    page: View,
+                    title: String,
+                    chapIndex: Int
+                ) {
+                    val page = page as ChapLoadPage
+                    page.title = title
+                    page.chapIndex = chapIndex
+                }
+            })
+        }
     }
 
     /**

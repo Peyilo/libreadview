@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 import org.peyilo.libreadview.R
 
@@ -15,7 +14,7 @@ import org.peyilo.libreadview.R
  */
 class ReadPage (
     context: Context, attrs: AttributeSet? = null
-): ViewGroup(context, attrs) {
+): BaseReadPage(context, attrs) {
 
     init {
         LayoutInflater.from(context).inflate(R.layout.item_read_page, this)
@@ -47,5 +46,9 @@ class ReadPage (
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         root.layout(0, 0, root.measuredWidth, root.measuredHeight)
     }
+
+    override fun getContentWidth(): Int = content.measuredWidth
+
+    override fun getContentHeight(): Int = content.measuredHeight
 
 }

@@ -7,7 +7,7 @@ import org.json.JSONObject
 object LogHelper {
 
     /** 是否启用日志输出 */
-    var ENABLE_LOG = true
+    var ENABLE_LOG = false
 
     /** 默认 TAG，可自定义 */
     var DEFAULT_TAG = "LogHelper"
