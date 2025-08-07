@@ -159,7 +159,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
         curPage?.let {
             //  curPage有部分区域移动到屏幕之上的区域，尝试将prevPage进行relayout，放到nextPage之后
             if (curPage!!.translationY < - pageContainer.height / 2) {
-                pageContainer.nextCarouselLayout()      // 该函数执行以后，page顺序就发生了改变
+                nextCarouselLayout()      // 该函数执行以后，page顺序就发生了改变
                 refreshPages()
                 if (pageContainer.getContainerPageCount() >= 3) {
                     pageContainer.apply {
@@ -168,7 +168,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
                 }
                 LogHelper.d(TAG, "onDragging: nextCarouselLayout")
             } else if (curPage!!.translationY > pageContainer.height / 2) {
-                pageContainer.prevCarouselLayout()
+                prevCarouselLayout()
                 refreshPages()
                 pageContainer.apply {
                     getPrevPage()?.translationY = curPage!!.translationY - pageContainer.height

@@ -136,12 +136,12 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         when (decideEndDire(initDire, realTimeDire)) {
             PageDirection.NEXT -> {
                 startNextAnim()
-                pageContainer.nextCarouselLayout()
+                nextCarouselLayout()
                 onNextCarouselLayout()
             }
             PageDirection.PREV -> {
                 startPrevAnim()
-                pageContainer.prevCarouselLayout()
+                prevCarouselLayout()
                 onPrevCarouselLayout()
             }
             PageDirection.NONE -> {
@@ -249,7 +249,7 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         }
         prepareAnim(PageDirection.NEXT)
         startNextAnim()
-        pageContainer.nextCarouselLayout()
+        nextCarouselLayout()
         onNextCarouselLayout()
     }
 
@@ -259,7 +259,7 @@ abstract class FlipOnReleaseLayoutManager: DirectionalLayoutManager() {
         }
         prepareAnim(PageDirection.PREV)
         startPrevAnim()
-        pageContainer.prevCarouselLayout()
+        prevCarouselLayout()
         onPrevCarouselLayout()
     }
 

@@ -369,6 +369,13 @@ abstract class AbstractPageContainer(
          */
         abstract fun onAddPage(view: View, position: Int)
 
+        protected fun nextCarouselLayout() {
+            pageContainer.nextCarouselLayout()
+        }
+
+        protected fun prevCarouselLayout() {
+            pageContainer.prevCarouselLayout()
+        }
     }
 
     /**
@@ -1082,7 +1089,7 @@ abstract class AbstractPageContainer(
      * 调整child的先后关系：按照下一页的顺序进行循环轮播
      * 注意：只有当itemCount>3时，该函数才会调整childView的位置
      */
-    fun nextCarouselLayout() {
+    private fun nextCarouselLayout() {
         val isFirst = isFirstPage()
         val oldPageIndex = mCurContainerPageIndex
         val newPageIndex = mCurContainerPageIndex + 1
@@ -1112,7 +1119,7 @@ abstract class AbstractPageContainer(
      * 调整child的先后关系：按照上一页的顺序进行循环轮播
      * 注意：只有当itemCount>3时，该函数才会调整childView的位置
      */
-    fun prevCarouselLayout() {
+    private fun prevCarouselLayout() {
         val isLast = isLastPage()
         val oldPageIndex = mCurContainerPageIndex
         val newPageIndex = mCurContainerPageIndex - 1
