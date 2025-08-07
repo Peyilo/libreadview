@@ -19,13 +19,13 @@ class ReadViewActivity : AppCompatActivity() {
 
     private lateinit var readview: SimpleReadView
 
-    private val chapterList: MutableList<String> = mutableListOf()
+    private val chapTitleList: MutableList<String> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_read_view)
-
         supportActionBar?.hide()
+
         // 从 Intent 获取文件路径
         val filePath = intent.getStringExtra("SELECTED_FILE_PATH")
         readview = findViewById(R.id.readview)
@@ -46,7 +46,7 @@ class ReadViewActivity : AppCompatActivity() {
             override fun onInitToc(success: Boolean) {
                 if (!success) return
                 for (i in 1..readview.getChapCount()) {
-                    chapterList.add(readview.getChapTitle(i) ?: "无标题")
+                    chapTitleList.add(readview.getChapTitle(i) ?: "无标题")
                 }
             }
         })
@@ -103,7 +103,7 @@ class ReadViewActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            ChapListFragment(chapterList) { chapterIndex ->
+            ChapListFragment(chapTitleList) { chapterIndex ->
                 readview.navigateToChapter(chapterIndex + 1)
             }.show(fm, tag)
         }

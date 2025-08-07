@@ -6,7 +6,7 @@
 .DS_Store
 /build
 /captures
-/app/libreadview/src/main/assets/txts
+/app/src/main/assets/txts
 .externalNativeBuild
 .cxx
 *.webm
