@@ -6,6 +6,12 @@ An Android library designed specifically for eBook and novel reader apps, suppor
 
 ![readview_loading](./images/readview_loading.png)
 
+## Demo
+
+To quickly see the page turning animations and layout in action, you can download the demo app:
+
+ [Download demo.apk](https://github.com/Peyilo/libreadview/releases/download/0.0.2/demo)
+
 ## Features
 
 - Multiple page-turning animations, including cover page turn, horizontal slide, simulation, scrolling, and more.
