@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.SimpleReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
@@ -12,6 +13,7 @@ import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
+import org.peyilo.readview.AppPreferences
 import org.peyilo.readview.R
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.fragment.ChapListFragment
@@ -60,8 +62,8 @@ class QidianReadViewActivity : AppCompatActivity() {
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节
                 // addTitleRegex("第\\d+章 .*")
             },
-            chapIndex = 1,
-            pageIndex = 1,
+            chapIndex = AppPreferences.getChapIndex(),
+            pageIndex = AppPreferences.getChapPageIndex(),
         )
         readview.setCallback(object : SimpleReadView.Callback {
             override fun onInitToc(success: Boolean) {
@@ -157,19 +159,41 @@ class QidianReadViewActivity : AppCompatActivity() {
             SettingsFragment({
                 if (readview.layoutManager is CoverLayoutManager) return@SettingsFragment
                 readview.layoutManager = CoverLayoutManager()
+                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is SlideLayoutManager) return@SettingsFragment
                 readview.layoutManager = SlideLayoutManager()
+                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is SimulationPageManagers.Style1) return@SettingsFragment
                 readview.layoutManager = SimulationPageManagers.Style1()
+                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
                 readview.layoutManager = ScrollLayoutManager()
+                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
                 readview.layoutManager = IBookSlideLayoutManager()
+                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }).show(fm, tag)
         }
+    }
+
+    fun getFlipMode(layoutManager: AbstractPageContainer.LayoutManager): Int {
+        return when (layoutManager) {
+            is CoverLayoutManager -> 0
+            is SlideLayoutManager -> 1
+            is SimulationPageManagers.Style1 -> 2
+            is ScrollLayoutManager -> 3
+            is IBookSlideLayoutManager -> 4
+            else -> throw IllegalStateException()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        AppPreferences.setChapIndex(readview.getCurChapIndex())
+        AppPreferences.setChapPageIndex(readview.getCurChapPageIndex())
     }
 }
