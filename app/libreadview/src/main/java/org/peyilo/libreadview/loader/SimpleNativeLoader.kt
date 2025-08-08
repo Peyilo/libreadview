@@ -5,13 +5,14 @@ import org.peyilo.libreadview.data.novel.ChapData
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.io.InputStreamReader
 import kotlin.random.Random
 
 /**
  * 一个简单的本地文件加载器,支持自定义的章节标题匹配规则以及目录初始化和章节加载的随即延迟
  */
-open class SimpleNativeLoader(file: File): BookLoader {
+open class SimpleNativeLoader: BookLoader {
 
     /**
      * 一个模拟网络延迟的标记位,开启以后相当于在目录初始化和章节加载的基础上,添加了额外的随机延迟
@@ -24,10 +25,12 @@ open class SimpleNativeLoader(file: File): BookLoader {
      */
     private val defaultTitleRegex by lazy { Regex("(^\\s*第)(.{1,7})[章卷](\\s*)(.*)") }
 
-    private val reader: BufferedReader by lazy {
-        BufferedReader(
-            InputStreamReader(FileInputStream(file))
-        )
+    private val reader: BufferedReader
+
+    constructor(file: File): this(FileInputStream(file))
+
+    constructor(inputStream: InputStream) {
+        reader = BufferedReader(InputStreamReader(inputStream))
     }
 
     private val titlePatternList by lazy { mutableListOf<Regex>() }

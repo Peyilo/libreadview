@@ -4,8 +4,8 @@ import org.peyilo.libreadview.data.AdditionalData
 
 
 open class BookData: AdditionalData() {
-    lateinit var title: String                  // 书名
-    lateinit var author: String                 // 作者
+    var title: String? = null                  // 书名
+    var author: String? = null                  // 作者
 
     val list: MutableList<ChapData> by lazy { mutableListOf() }
 

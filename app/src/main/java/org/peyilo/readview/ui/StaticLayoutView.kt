@@ -24,7 +24,7 @@ class StaticLayoutView(context: Context?, attrs: AttributeSet?): View(context, a
         val fullLayout = StaticLayout.Builder
             .obtain(text, 0, text.length, textPaint, pageWidth)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setLineSpacing(0f, 1f)
+            .setLineSpacing(0f, 1.5f)
             .setIncludePad(false)
             .build()
 
@@ -59,7 +59,7 @@ class StaticLayoutView(context: Context?, attrs: AttributeSet?): View(context, a
             val pageLayout = StaticLayout.Builder
                 .obtain(pageText, 0, pageText.length, textPaint, pageWidth)
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                .setLineSpacing(0f, 1f)
+                .setLineSpacing(0f, 1.5f)
                 .setIncludePad(false)
                 .build()
 
@@ -94,7 +94,7 @@ class StaticLayoutView(context: Context?, attrs: AttributeSet?): View(context, a
         LogHelper.d(TAG, "onSizeChanged: w = $w, h = $h, oldw = $oldw, oldh = $oldh")
         pages = paginateText(
             text = """
-                TODO: 这是一个长文本
+            TODO: 这是一个长文本
             """.trimIndent(),
             textPaint = textPaint,
             pageWidth = w,

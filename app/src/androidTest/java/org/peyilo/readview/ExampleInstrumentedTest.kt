@@ -1,12 +1,15 @@
 package org.peyilo.readview
 
-import androidx.test.platform.app.InstrumentationRegistry
+import android.graphics.Paint
+import android.graphics.text.LineBreaker
+import android.graphics.text.LineBreaker.ParagraphConstraints
+import android.graphics.text.MeasuredText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
-import org.junit.Assert.*
 
 /**
  * Instrumented test, which will execute on an Android device.

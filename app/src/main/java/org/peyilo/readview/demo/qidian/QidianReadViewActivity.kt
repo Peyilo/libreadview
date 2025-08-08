@@ -53,7 +53,7 @@ class QidianReadViewActivity : AppCompatActivity() {
 
     private fun initPageIndex(selectedFile: File, isDemo: Boolean) {
         readview = findViewById(R.id.readview)
-        readview.layoutManager = IBookSlideLayoutManager()      // Set the page turning mode to scrolling
+        readview.layoutManager = getLayoutManager(AppPreferences.getFlipMode())      // Set the page turning mode
 
         readview.openBook(
             SimpleNativeLoader(selectedFile).apply {
@@ -87,7 +87,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         readview.preprocessBehind = 1
 
         if (isDemo) {                   // 为demo专门定制的ChapLoadPage
-            readview.setPageDelegate(object : SimpleReadView.PageDelegate {
+            readview.setPageDelegate(object : SimpleReadView.PageDelegate() {
                 override fun createChapLoadPage(context: Context): View = QidianChapLoadPage(context)
                 override fun bindChapLoadPage(
                     page: View,
@@ -187,6 +187,17 @@ class QidianReadViewActivity : AppCompatActivity() {
             is SimulationPageManagers.Style1 -> 2
             is ScrollLayoutManager -> 3
             is IBookSlideLayoutManager -> 4
+            else -> throw IllegalStateException()
+        }
+    }
+
+    fun getLayoutManager(flipModel: Int): AbstractPageContainer.LayoutManager {
+        return when(flipModel) {
+            0 -> CoverLayoutManager()
+            1 -> SlideLayoutManager()
+            2 -> SimulationPageManagers.Style1()
+            3 -> ScrollLayoutManager()
+            4 -> IBookSlideLayoutManager()
             else -> throw IllegalStateException()
         }
     }

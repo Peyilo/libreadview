@@ -40,6 +40,6 @@ object AppPreferences {
     }
 
     fun getFlipMode(): Int {
-        return getSharedPreferences().getInt("flipMode", 0)
+        return getSharedPreferences().getInt("flipMode", 4)     // 默认值4：IBookSlideLayoutManager
     }
 }

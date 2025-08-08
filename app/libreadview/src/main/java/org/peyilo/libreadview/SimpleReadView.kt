@@ -17,8 +17,8 @@ import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.parser.SimpleContentParser
 import org.peyilo.libreadview.provider.PageContentProvider
 import org.peyilo.libreadview.provider.SimlpePageContentProvider
-import org.peyilo.libreadview.ui.BaseReadPage
 import org.peyilo.libreadview.ui.ChapLoadPage
+import org.peyilo.libreadview.ui.ContentMetrics
 import org.peyilo.libreadview.ui.MessagePage
 import org.peyilo.libreadview.ui.ReadPage
 import org.peyilo.libreadview.utils.LogHelper
@@ -45,7 +45,7 @@ class SimpleReadView(
     private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
 
     private var mPageDelegate: PageDelegate? = null
-    private val mDefaultPageDelegate: PageDelegate by lazy { object : PageDelegate{} }
+    private val mDefaultPageDelegate: PageDelegate by lazy { PageDelegate() }
 
     private var mCallback: Callback? = null
 
@@ -136,8 +136,12 @@ class SimpleReadView(
      * 注意：这个函数要在ReadView测量完成后调用才可以获取正确的宽高
      */
     private fun measureContentView(): Pair<Int, Int> {
-        val readPage = mPageDelegate?.createReadPage(context)
+        val contentMetrics = mPageDelegate?.createReadPage(context)
             ?: mDefaultPageDelegate.createReadPage(context)
+        if (contentMetrics !is View) {
+            throw IllegalStateException("The readpage must be a view implemented the ContentMetrics interface.")
+        }
+        val createdReadPage = contentMetrics as View
         val widthSize = width
         val heightSize = height
 
@@ -155,7 +159,7 @@ class SimpleReadView(
         var childWidth = availableWidth
         var childHeight = availableHeight
         // 子 View 的测量尺寸 = 可用空间 - margin
-        val lp = readPage.layoutParams
+        val lp = createdReadPage.layoutParams
         if (lp is MarginLayoutParams) {
             childWidth -= lp.leftMargin + lp.rightMargin
             childHeight -= lp.topMargin + lp.bottomMargin
@@ -166,11 +170,11 @@ class SimpleReadView(
         // 开始测量子View
         val childWidthSpec = MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY)
         val childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY)
-        readPage.measure(childWidthSpec, childHeightSpec)
+        createdReadPage.measure(childWidthSpec, childHeightSpec)
 
         // 获取测量后的宽高
-        val measuredWidth = readPage.getContentWidth()
-        val measuredHeight = readPage.getContentHeight()
+        val measuredWidth = contentMetrics.getContentWidth()
+        val measuredHeight = contentMetrics.getContentHeight()
 
         // 返回子视图的测量宽高
         return Pair(measuredWidth, measuredHeight)
@@ -263,8 +267,6 @@ class SimpleReadView(
         adapter.notifyDataSetChanged()
     }
 
-
-
     enum class PageType {
         TOC_INIT_PAGE, CHAP_LOAD_PAGE, READ_PAGE,
     }
@@ -284,8 +286,12 @@ class SimpleReadView(
                         ?: mDefaultPageDelegate.createChapLoadPage(parent.context)
                 }
                 PageType.READ_PAGE.ordinal -> {
-                    mPageDelegate?.createReadPage(parent.context)
+                    val createdPage = mPageDelegate?.createReadPage(parent.context)
                         ?: mDefaultPageDelegate.createReadPage(parent.context)
+                    if (createdPage !is View) {
+                        throw IllegalStateException("The readpage must be a view implemented the ContentMetrics interface.")
+                    }
+                    createdPage as View
                 }
                 else -> throw IllegalStateException("Unknown page type: $viewType")
             }
@@ -331,6 +337,9 @@ class SimpleReadView(
         override fun getItemCount(): Int = mAdapterData.size
     }
 
+    /**
+     * 用于保存SimpleReadView.adapter的数据
+     */
     private class AdapterData {
 
         private val pages = mutableListOf<Pair<PageType, Any>>()
@@ -372,33 +381,46 @@ class SimpleReadView(
     }
 
     interface Callback {
+        /**
+         * 当目录完成初始化，就会调用这个函数
+         */
         fun onInitToc(success: Boolean) = Unit
+
     }
 
-    interface PageDelegate {
+    /**
+     * 如果需要自定义TocInitPage、ChapLoadPage、ReadPage，可以通过重写这个类并设置setPageDelegate(
+     * pageDelegate: PageDelegate)以达到一个自定义的效果
+     */
+    open class PageDelegate {
 
-        fun createTocInitPage(context: Context): View = MessagePage(context)
+        open fun createTocInitPage(context: Context): View = MessagePage(context)
 
-        fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
+        open fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
 
-        fun createReadPage(context: Context): BaseReadPage = ReadPage(context)
+        /**
+         * 创建的ReadView必须是一个实现了ContentMetrics接口的View
+         */
+        open fun createReadPage(context: Context): ContentMetrics {
+            val res = ReadPage(context)
+            return res
+        }
 
-        fun bindTocInitPage(page: View, text: String) {
+        open fun bindTocInitPage(page: View, text: String) {
             val page = page as MessagePage
             page.text = text
         }
 
-        fun bindChapLoadPage(page: View, title: String, chapIndex: Int) {
+        open fun bindChapLoadPage(page: View, title: String, chapIndex: Int) {
             val page = page as ChapLoadPage
             page.title = title
             page.chapIndex = chapIndex
         }
 
         @SuppressLint("SetTextI18n")
-        fun bindReadPage(page: BaseReadPage, pageData: PageData, title: String, chapIndex: Int,
+        open fun bindReadPage(page: ContentMetrics, pageData: PageData, title: String, chapIndex: Int,
                          chapPageIndex: Int, chapPageCount: Int,
                          provider: PageContentProvider
-
         ) {
             val page = page as ReadPage
             page.header.text = title
