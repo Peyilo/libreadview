@@ -71,6 +71,10 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this@MainActivity, PageChangeActivity::class.java))
         }
 
+        findViewById<Button>(R.id.btn_test).setOnClickListener {
+            startActivity(Intent(this@MainActivity, TestActivity::class.java))
+        }
+
     }
 
 

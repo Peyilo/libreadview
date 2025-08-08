@@ -13,7 +13,7 @@
         android:gravity="center"
         android:textSize="11sp"
         android:lines="1"
-        android:paddingTop="60dp"
+        android:paddingTop="64dp"
         android:paddingBottom="20dp"/>
 
     <org.peyilo.libreadview.ui.ReadContent

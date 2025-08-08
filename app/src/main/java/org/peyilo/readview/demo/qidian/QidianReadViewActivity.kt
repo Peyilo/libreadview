@@ -86,13 +86,13 @@ class QidianReadViewActivity : AppCompatActivity() {
 
         if (isDemo) {                   // 为demo专门定制的ChapLoadPage
             readview.setPageDelegate(object : SimpleReadView.PageDelegate {
-                override fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
+                override fun createChapLoadPage(context: Context): View = QidianChapLoadPage(context)
                 override fun bindChapLoadPage(
                     page: View,
                     title: String,
                     chapIndex: Int
                 ) {
-                    val page = page as ChapLoadPage
+                    val page = page as QidianChapLoadPage
                     page.title = title
                     page.chapIndex = chapIndex
                 }

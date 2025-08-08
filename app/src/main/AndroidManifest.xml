@@ -7,6 +7,7 @@
         android:maxSdkVersion="32" />
 
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -15,6 +16,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ReadView">
+        <activity
+            android:name=".TestActivity"
+            android:exported="false" />
         <activity
             android:name=".demo.boluobao.BoluobaoReadViewActivity"
             android:exported="false" />

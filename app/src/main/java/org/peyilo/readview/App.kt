@@ -7,7 +7,7 @@ class App: Application() {
 
     override fun onCreate() {
         super.onCreate()
-        LogHelper.ENABLE_LOG = false            // 关闭内部的日志
+        LogHelper.ENABLE_LOG = true            // 内部的日志开关
     }
 
 }

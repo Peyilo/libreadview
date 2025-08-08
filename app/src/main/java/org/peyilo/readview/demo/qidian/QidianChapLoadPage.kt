@@ -14,7 +14,7 @@ import org.peyilo.readview.R
 /**
  * 章节加载中视图
  */
-class ChapLoadPage(
+class QidianChapLoadPage(
     context: Context, attrs: AttributeSet? = null
 ): DecoratedPage(context, attrs) {
 
