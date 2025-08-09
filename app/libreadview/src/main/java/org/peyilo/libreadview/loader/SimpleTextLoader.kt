@@ -22,5 +22,4 @@ class SimpleTextLoader(private val text: String): BookLoader {
 
     override fun loadChap(chapData: ChapData) = Unit
 
-
 }

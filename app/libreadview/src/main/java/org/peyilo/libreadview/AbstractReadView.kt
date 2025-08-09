@@ -10,6 +10,7 @@ import org.peyilo.libreadview.utils.LogHelper
 import java.util.concurrent.Executors
 
 /**
+ * AbstractReadView没有保存任何小说数据（除了pageview），小说数据如何表示如何处理都交给实现类；
  * ReadView必须支持以下功能：
  *  - 书籍导航
  *  - 长按选择页面中的文字

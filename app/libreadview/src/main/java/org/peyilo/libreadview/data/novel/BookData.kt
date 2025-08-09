@@ -4,10 +4,10 @@ import org.peyilo.libreadview.data.AdditionalData
 
 
 open class BookData: AdditionalData() {
-    var title: String? = null                  // 书名
+    var title: String? = null                   // 书名
     var author: String? = null                  // 作者
 
-    val list: MutableList<ChapData> by lazy { mutableListOf() }
+    private val list: MutableList<ChapData> =  mutableListOf()
 
     open val chapCount get() = list.size        // 章节数
 

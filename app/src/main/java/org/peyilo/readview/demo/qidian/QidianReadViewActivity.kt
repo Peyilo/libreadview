@@ -51,6 +51,9 @@ class QidianReadViewActivity : AppCompatActivity() {
         initPageIndex(selectedFile, isDemo)
     }
 
+    /**
+     * isDemo指的是当前打开的是默认的txt文件，而不是通过选择文件传过来的文件
+     */
     private fun initPageIndex(selectedFile: File, isDemo: Boolean) {
         readview = findViewById(R.id.readview)
         readview.layoutManager = getLayoutManager(AppPreferences.getFlipMode())      // Set the page turning mode
@@ -62,8 +65,8 @@ class QidianReadViewActivity : AppCompatActivity() {
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节
                 // addTitleRegex("第\\d+章 .*")
             },
-            chapIndex = AppPreferences.getChapIndex(),
-            pageIndex = AppPreferences.getChapPageIndex(),
+            chapIndex = if (isDemo) AppPreferences.getChapIndex() else 1,
+            pageIndex = if (isDemo) AppPreferences.getChapPageIndex() else 1,
         )
         readview.setCallback(object : SimpleReadView.Callback {
             override fun onInitToc(success: Boolean) {
@@ -149,7 +152,7 @@ class QidianReadViewActivity : AppCompatActivity() {
     }
 
     /**
-     * 显示设置面板
+     * 显示设置面板: 切换翻页模式
      */
     fun showSettings() {
         val tag = "SettingsFragment"

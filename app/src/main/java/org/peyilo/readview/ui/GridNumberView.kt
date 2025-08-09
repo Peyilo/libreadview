@@ -31,7 +31,7 @@ class GridNumberView (
         textAlign = Paint.Align.CENTER
     }
 
-    val gridPaint = Paint().apply {
+    private val gridPaint = Paint().apply {
         color = Color.BLACK
         strokeWidth = 1f
         style = Paint.Style.STROKE
