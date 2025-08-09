@@ -1,13 +1,13 @@
 package org.peyilo.libreadview.loader
 
-import org.peyilo.libreadview.data.novel.BookData
-import org.peyilo.libreadview.data.novel.ChapData
+import org.peyilo.libreadview.data.Book
+import org.peyilo.libreadview.data.Chapter
 
 
 interface BookLoader {
 
-    fun initToc(): BookData
+    fun initToc(): Book
 
-    fun loadChap(chapData: ChapData)
+    fun loadChap(chapter: Chapter): Chapter
 
 }

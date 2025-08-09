@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.annotation.IntRange
-import org.peyilo.libreadview.data.novel.BookData
+import org.peyilo.libreadview.data.Book
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.loader.SimpleNativeLoader
@@ -35,7 +35,7 @@ class SimpleReadView(
         private const val TAG = "SimpleReadView"
     }
 
-    private var mBookData: BookData? = null
+    private var mBook: Book? = null
 
     private val mReadConfig = ReadConfig()
 
@@ -69,8 +69,8 @@ class SimpleReadView(
 
     private fun initToc(): Boolean {
         val res = try {
-            mBookData = mBookLoader.initToc()
-            onInitTocSuccess(mBookData!!.chapCount)
+            mBook = mBookLoader.initToc()
+            onInitTocSuccess(mBook!!.chapCount)
             true
         } catch (e: Exception) {
             LogHelper.e(TAG, "initToc: ${e.stackTrace}")
@@ -87,7 +87,7 @@ class SimpleReadView(
      */
     override fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean = loadChapWithLock(chapIndex) {
         try {
-            val chapData = mBookData!!.getChap(chapIndex)
+            val chapData = mBook!!.getChap(chapIndex - 1)
             mBookLoader.loadChap(chapData)
             mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
             LogHelper.d(TAG, "loadChap: $chapIndex")
@@ -259,9 +259,8 @@ class SimpleReadView(
      */
     private fun showAllChapLoadPage() = post {
         mAdapterData.clear()
-        for (i in 1..mBookData!!.chapCount) {
-            val chap = mBookData!!.getChap(i)
-            mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(chap.title ?: "", i))
+        for (i in 1..mBook!!.chapCount) {
+            mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(getChapTitle(i), i))
             updateChapPageCount(i, 1)
         }
         adapter.notifyDataSetChanged()
@@ -317,7 +316,7 @@ class SimpleReadView(
                     val page = holder.itemView as ReadPage
                     val pageData = mAdapterData.getPageContent(position) as PageData
                     val indexPair = findChapByPosition(position)
-                    val title = mBookData!!.getChap(indexPair.first).title ?: "无标题"
+                    val title = getChapTitle(indexPair.first)
                     mPageDelegate?.bindReadPage(holder.itemView, pageData, title,
                         indexPair.first, indexPair.second,
                         getChapPageCount(indexPair.first), mPageContentProvider)
@@ -376,8 +375,11 @@ class SimpleReadView(
         this.mCallback = callback
     }
 
-    override fun getChapTitle(chapIndex: Int): String? {
-        return mBookData?.getChap(chapIndex)?.title
+    override fun getChapTitle(chapIndex: Int): String {
+        if (mBook == null) {
+            throw IllegalStateException("the mBook is not initialized")
+        }
+        return mBook!!.getChap(chapIndex - 1).title
     }
 
     interface Callback {

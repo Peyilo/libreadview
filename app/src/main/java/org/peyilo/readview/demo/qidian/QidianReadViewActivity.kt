@@ -72,7 +72,8 @@ class QidianReadViewActivity : AppCompatActivity() {
             override fun onInitToc(success: Boolean) {
                 if (!success) return
                 for (i in 1..readview.getChapCount()) {
-                    chapTitleList.add(readview.getChapTitle(i) ?: "无标题")
+                    val chapTitle = readview.getChapTitle(i)
+                    chapTitleList.add(chapTitle)
                 }
             }
         })

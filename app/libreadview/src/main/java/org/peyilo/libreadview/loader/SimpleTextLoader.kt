@@ -1,7 +1,7 @@
 package org.peyilo.libreadview.loader
 
-import org.peyilo.libreadview.data.novel.BookData
-import org.peyilo.libreadview.data.novel.ChapData
+import org.peyilo.libreadview.data.Book
+import org.peyilo.libreadview.data.Chapter
 
 
 /**
@@ -9,17 +9,21 @@ import org.peyilo.libreadview.data.novel.ChapData
  */
 class SimpleTextLoader(private val text: String): BookLoader {
 
-    override fun initToc(): BookData {
-        val book = BookData()
-        book.addChild(
-            ChapData(1).apply {
-                title = "无标题"
-                content = text
+    override fun initToc(): Book {
+        val book = Book("")
+        book.addBookNode(Chapter("").apply {
+            val lines = text.split("\n")
+            for (line in lines) {
+                // 跳过空白行
+                if (line.isBlank()) {
+                    continue
+                }
+                addParagraph(line.trim())
             }
-        )
+        })
         return book
     }
 
-    override fun loadChap(chapData: ChapData) = Unit
+    override fun loadChap(chapter: Chapter): Chapter = chapter
 
 }

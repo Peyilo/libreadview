@@ -1,7 +1,7 @@
 package org.peyilo.libreadview.loader
 
-import org.peyilo.libreadview.data.novel.BookData
-import org.peyilo.libreadview.data.novel.ChapData
+import org.peyilo.libreadview.data.Book
+import org.peyilo.libreadview.data.Chapter
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -13,6 +13,9 @@ import kotlin.random.Random
  * 一个简单的本地文件加载器,支持自定义的章节标题匹配规则以及目录初始化和章节加载的随即延迟
  */
 open class SimpleNativeLoader: BookLoader {
+
+    var bookTitle = "No book title"
+    val encoding: String            // 编码方式
 
     /**
      * 一个模拟网络延迟的标记位,开启以后相当于在目录初始化和章节加载的基础上,添加了额外的随机延迟
@@ -27,10 +30,13 @@ open class SimpleNativeLoader: BookLoader {
 
     private val reader: BufferedReader
 
-    constructor(file: File): this(FileInputStream(file))
+    constructor(file: File, encoding: String = "UTF-8"): this(FileInputStream(file), encoding) {
+        bookTitle = file.nameWithoutExtension
+    }
 
-    constructor(inputStream: InputStream) {
-        reader = BufferedReader(InputStreamReader(inputStream))
+    constructor(inputStream: InputStream, encoding: String = "UTF-8") {
+        reader = BufferedReader(InputStreamReader(inputStream, encoding))
+        this.encoding = encoding
     }
 
     private val titlePatternList by lazy { mutableListOf<Regex>() }
@@ -74,62 +80,43 @@ open class SimpleNativeLoader: BookLoader {
     /**
      * 对于本地文件来说,在加载目录的时候就已经完成了所有章节的解析了
      */
-    override fun initToc(): BookData {
-        val bookData = BookData()
-        var chapIndex = 1
-        val stringBuilder = StringBuilder()
-        var chap: ChapData? = null
-        var line: String?
-        var firstChapInitialized = false
-        do {
-            line = reader.readLine()
-            if (line == null) {
-                // 处理剩余内容
-                if (firstChapInitialized) {
-                    chap?.content = stringBuilder.toString()
-                } else if (stringBuilder.isNotEmpty()) {
-                    bookData.addChild(ChapData(chapIndex).apply {
-                        content = stringBuilder.toString()
-                    })
-                }
-                stringBuilder.clear()
-                break
-            }
+    override fun initToc(): Book {
+        val book = Book(bookTitle)
+        var chap: Chapter? = null
+        var line: String? = reader.readLine()
+        while(line != null) {
             // 跳过空白行
-            if (line.isBlank())
+            if (line.isBlank()) {
+                line = reader.readLine()
                 continue
+            }
             if (line.startsWith(UTF8_BOM_PREFIX)) {
                 line = line.substring(1)
             }
             // 开始解析内容
             if (isTitle(line)) {
-                // 在第一个标题出现之前，可能会出现部分没有章节标题所属的行，将这些作为一个无标题章节
-                if (stringBuilder.isNotEmpty()) {
-                    if (!firstChapInitialized) {
-                        chap = ChapData(chapIndex).apply {
-                            content = stringBuilder.toString()
-                            stringBuilder.delete(0, stringBuilder.length)
-                        }
-                        bookData.addChild(chap)
-                        chapIndex++
-                    } else {
-                        chap!!.content = stringBuilder.toString()
-                        stringBuilder.delete(0, stringBuilder.length)
-                    }
+                chap?.let {
+                    book.addBookNode(chap)
                 }
-                if (!firstChapInitialized) firstChapInitialized = true
-                chap = ChapData(chapIndex).apply { title = line }
-                bookData.addChild(chap)
-                chapIndex++
+                chap = Chapter(line.trim())
             } else {
-                stringBuilder.append(line).append('\n')
+                if (chap == null) {                     // 如果第一行并不是标题，也就意味着第一章是没有标题的，那就使用第一行作为第一章的标题
+                    chap = Chapter(line.trim())
+                } else {
+                    chap.addParagraph(line.trim())
+                }
             }
-        } while (true)
+            line = reader.readLine()
+        }
+        chap?.let {
+            book.addBookNode(chap)
+        }
         if (networkLagFlag) Thread.sleep(networkLagTime)
-        return bookData
+        return book
     }
 
-    override fun loadChap(chapData: ChapData) {
+    override fun loadChap(chapter: Chapter): Chapter {
         if (networkLagFlag) Thread.sleep(networkLagTime)
+        return chapter
     }
 }
