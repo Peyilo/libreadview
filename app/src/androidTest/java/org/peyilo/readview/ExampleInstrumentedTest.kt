@@ -1,9 +1,5 @@
 package org.peyilo.readview
 
-import android.graphics.Paint
-import android.graphics.text.LineBreaker
-import android.graphics.text.LineBreaker.ParagraphConstraints
-import android.graphics.text.MeasuredText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals

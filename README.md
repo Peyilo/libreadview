@@ -201,6 +201,9 @@ class ReadViewActivity : AppCompatActivity() {
 - Long-press word capture function
 - Paragraph comment function
 - Over-drawing optimization 
+- 背景设置API
+- 标题、正文字体大小、字体、颜色相关API
+- 各种间距相关API
 
 ## License
 

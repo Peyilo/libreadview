@@ -1,10 +1,10 @@
 package org.peyilo.libreadview.data
 
-
 /**
  * 携带额外的数据
  */
 open class AdditionalData {
+    var id: Long = 0L
     var what: String? = null
     var obj: Any? = null
 }
@@ -199,4 +199,3 @@ data class Book(
     }
 
 }
-

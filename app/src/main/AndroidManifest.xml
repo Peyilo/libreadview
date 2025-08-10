@@ -6,6 +6,8 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -30,6 +32,9 @@
             android:exported="false" />
         <activity
             android:name=".demo.qidian.QidianReadViewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".demo.NetworkLoadActivity"
             android:exported="false" />
 
         <profileable

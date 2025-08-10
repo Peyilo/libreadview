@@ -53,6 +53,17 @@ dependencies {
 
     implementation(project(":app:libreadview"))
 
+    // 检测txt文本的编码格式
+    implementation(libs.juniversalchardet)
+
+    implementation(libs.gson)
+    implementation(libs.jsoup)
+    implementation(libs.json.path)
+    implementation(libs.jsoupxpath)
+//    implementation(libs.okhttp)
+//    implementation("com.squareup.okhttp3:okhttp-java-net-cookiejar:5.1.0")
+
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
