@@ -3,7 +3,6 @@ package org.peyilo.readview.demo
 import android.content.Context
 import android.os.Bundle
 import android.view.View
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.SimpleReadView
 import org.peyilo.libreadview.manager.CoverLayoutManager
@@ -11,7 +10,7 @@ import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
-import org.peyilo.readview.R
+import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.qidian.QidianChapLoadPage
 import org.peyilo.readview.fragment.ChapListFragment
 import org.peyilo.readview.fragment.ControlPanelFragment
@@ -20,16 +19,18 @@ import org.peyilo.readview.loader.BiqugeBookLoader
 
 class NetworkLoadActivity : AppCompatActivity() {
 
-    private lateinit var readview: SimpleReadView
+    private lateinit var binding: ActivityUniversalReadViewBinding
+
+    private val readview: SimpleReadView get() = binding.readview
 
     private val chapTitleList: MutableList<String> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_universal_read_view)
+        binding = ActivityUniversalReadViewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
         supportActionBar?.hide()
-        readview = findViewById(R.id.readview)
         readview.layoutManager = IBookSlideLayoutManager()      // Set the page turning mode
 
         // 网络加载: https://www.yuyouku.com/book/185030

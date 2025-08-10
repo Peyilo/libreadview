@@ -50,7 +50,9 @@ class DirectMapChapIndexer(val chapCount: Int) {
      */
     fun findChapForPage(pageIndex: Int): Pair<Int, Int> {
         rebuildIfDirty()
-        require(pageIndex in 1..totalPages)
+        require(pageIndex in 1..totalPages) {
+            "the pageIndex is $pageIndex, but totalPages is $totalPages, out of range"
+        }
         val chapter = pageToChapMap[pageIndex - 1]
         val chapterStart = chapStartPage[chapter]
         return Pair(chapter, pageIndex - chapterStart)

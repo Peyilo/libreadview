@@ -3,7 +3,6 @@ package org.peyilo.readview.demo.qidian
 import android.content.Context
 import android.os.Bundle
 import android.view.View
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import org.mozilla.universalchardet.UniversalDetector
 import org.peyilo.libreadview.AbstractPageContainer
@@ -15,8 +14,8 @@ import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.AppPreferences
-import org.peyilo.readview.R
 import org.peyilo.readview.copyAssetToInternalStorage
+import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.fragment.ChapListFragment
 import org.peyilo.readview.fragment.ControlPanelFragment
 import org.peyilo.readview.fragment.SettingsFragment
@@ -24,19 +23,26 @@ import java.io.File
 
 class QidianReadViewActivity : AppCompatActivity() {
 
-    private lateinit var readview: SimpleReadView
-
     private val chapTitleList: MutableList<String> = mutableListOf()
+
+    private lateinit var binding: ActivityUniversalReadViewBinding
+
+    private val readview: SimpleReadView get() = binding.readview
+
+    /**
+     * isDemo指的是当前打开的是默认的txt文件，而不是通过选择文件传过来的文件
+     */
+    private var isDemo = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_universal_read_view)
+        binding = ActivityUniversalReadViewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         supportActionBar?.hide()
 
         // 从 Intent 获取文件路径
         val selectedFilePath = intent.getStringExtra("SELECTED_FILE_PATH")
-        val isDemo = selectedFilePath == null
+        isDemo = selectedFilePath == null
         var selectedFile: File?
         if (selectedFilePath == null) {
             // 未指定本地文件路径，使用内置的本地文件
@@ -49,7 +55,7 @@ class QidianReadViewActivity : AppCompatActivity() {
             // 指定了本地文件路径，直接使用该文件
             selectedFile = File(selectedFilePath)
         }
-        initPageIndex(selectedFile, isDemo)
+        initPageIndex(selectedFile)
     }
 
     private fun getEncodeing(file: File): String {
@@ -57,19 +63,12 @@ class QidianReadViewActivity : AppCompatActivity() {
         return encoding ?: "UTF-8"
     }
 
-    /**
-     * isDemo指的是当前打开的是默认的txt文件，而不是通过选择文件传过来的文件
-     */
-    private fun initPageIndex(selectedFile: File, isDemo: Boolean) {
-        readview = findViewById(R.id.readview)
+    private fun initPageIndex(selectedFile: File) {
         readview.layoutManager = getLayoutManager(AppPreferences.getFlipMode())      // Set the page turning mode
-
         readview.openBook(
             SimpleNativeLoader(
                 selectedFile, encoding = getEncodeing(selectedFile)
             ).apply {
-                networkLagFlag = true           // 模拟网络延迟
-
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节
                 // addTitleRegex("第\\d+章 .*")
             },
@@ -216,7 +215,9 @@ class QidianReadViewActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        AppPreferences.setChapIndex(readview.getCurChapIndex())
-        AppPreferences.setChapPageIndex(readview.getCurChapPageIndex())
+        if (isDemo) {
+            AppPreferences.setChapIndex(readview.getCurChapIndex())
+            AppPreferences.setChapPageIndex(readview.getCurChapPageIndex())
+        }
     }
 }

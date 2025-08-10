@@ -13,19 +13,22 @@ import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
-import org.peyilo.readview.R
+import org.peyilo.readview.databinding.ActivityPageContainerBinding
 import org.peyilo.readview.fragment.SettingsFragment
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
 
 class PageContainerActivity : AppCompatActivity() {
 
-    private lateinit var pageContainer: PageContainer
+    private lateinit var binding: ActivityPageContainerBinding
+
+    private val pageContainer: PageContainer get() = binding.pageContainer
     private val colors = mutableListOf<Pair<Int, Int>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_page_container)
+        binding = ActivityPageContainerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         supportActionBar?.hide()
 
         // Generate demo data: 1000 pages with random background colors and numbers
@@ -33,8 +36,6 @@ class PageContainerActivity : AppCompatActivity() {
             val randomColor = Color.rgb(Random.nextInt(256), Random.nextInt(256), Random.nextInt(256))
             colors.add(Pair(randomColor, it + 1))
         }
-
-        pageContainer = findViewById(R.id.pageContainer)
 
         // Set the initial page index
         pageContainer.initPageIndex(1)

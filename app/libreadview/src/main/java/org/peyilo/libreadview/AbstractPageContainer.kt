@@ -801,8 +801,12 @@ abstract class AbstractPageContainer(
 
             val oldPageIndex = mCurContainerPageIndex
 
-            val conatinerPageCount = getContainerPageCount()
-            val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage, conatinerPageCount)
+            val containerPageCount = getContainerPageCount()
+            if (containerPageCount != 0 && oldPageIndex > containerPageCount) {
+                throw IllegalStateException("the containerPageCount is $containerPageCount, " +
+                        "but mCurContainerPageIndex is $mCurContainerPageIndex, out of range")
+            }
+            val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage, containerPageCount)
             pageRange.reversed().forEachIndexed { i,  pageIndex ->
                 val position = pageIndex - 1            // 页码转position
                 val holder = mPageCache.getViewHolder(position)

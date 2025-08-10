@@ -15,13 +15,16 @@ import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.R
+import org.peyilo.readview.databinding.ActivityPageChangeBinding
 import org.peyilo.readview.fragment.SettingsFragment
 import org.peyilo.readview.ui.GridPage
 import kotlin.random.Random
 
 class PageChangeActivity : AppCompatActivity() {
 
-    private lateinit var pageContainer: PageContainer
+    private lateinit var binding: ActivityPageChangeBinding
+    private val pageContainer: PageContainer get() = binding.pageContainer
+
     private val colors = mutableListOf<Pair<Int, Int>>()
 
     private fun generateRandomColor(): Int {
@@ -35,7 +38,8 @@ class PageChangeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_page_change)
+        binding = ActivityPageChangeBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         supportActionBar?.hide()
 
         repeat(0) {
@@ -43,7 +47,6 @@ class PageChangeActivity : AppCompatActivity() {
             colors.add(Pair(randomColor, it + 1))
         }
 
-        pageContainer = findViewById(R.id.pageContainer)
         pageContainer.initPageIndex(1)
         pageContainer.layoutManager = CoverLayoutManager()
         pageContainer.adapter = ColorAdapter(colors)
