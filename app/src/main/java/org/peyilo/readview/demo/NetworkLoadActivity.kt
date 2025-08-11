@@ -1,9 +1,15 @@
 package org.peyilo.readview.demo
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.peyilo.libreadview.SimpleReadView
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
@@ -75,6 +81,16 @@ class NetworkLoadActivity : AppCompatActivity() {
                 page.chapIndex = chapIndex
             }
         })
+
+        lifecycleScope.launch {
+            delay(5_000)
+            val result = Intent().apply {
+                putExtra("book", readview.book) // book : Parcelable
+            }
+            setResult(RESULT_OK, result)
+            finish()
+        }
+
     }
 
     /**

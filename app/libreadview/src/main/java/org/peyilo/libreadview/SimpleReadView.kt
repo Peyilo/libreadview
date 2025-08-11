@@ -35,7 +35,11 @@ class SimpleReadView(
         private const val TAG = "SimpleReadView"
     }
 
-    private var mBook: Book? = null
+    /**
+     * 不要主动更改book的数据，只能通过openBook()函数
+     */
+    var book: Book? = null
+        private set
 
     private val mReadConfig = ReadConfig()
 
@@ -69,8 +73,8 @@ class SimpleReadView(
 
     private fun initToc(): Boolean {
         val res = try {
-            mBook = mBookLoader.initToc()
-            onInitTocSuccess(mBook!!.chapCount)
+            book = mBookLoader.initToc()
+            onInitTocSuccess(book!!.chapCount)
             true
         } catch (e: Exception) {
             LogHelper.e(TAG, "initToc: ${e.stackTrace}")
@@ -87,7 +91,7 @@ class SimpleReadView(
      */
     override fun loadChap(@IntRange(from = 1) chapIndex: Int): Boolean = loadChapWithLock(chapIndex) {
         try {
-            val chapData = mBook!!.getChap(chapIndex - 1)
+            val chapData = book!!.getChap(chapIndex - 1)
             mBookLoader.loadChap(chapData)
             mReadChapterTable[chapIndex] = mContentParser.parse(chapData)    // 解析ChapData
             LogHelper.d(TAG, "loadChap: $chapIndex")
@@ -259,7 +263,7 @@ class SimpleReadView(
      */
     private fun showAllChapLoadPage() = post {
         mAdapterData.clear()
-        for (i in 1..mBook!!.chapCount) {
+        for (i in 1..book!!.chapCount) {
             mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(getChapTitle(i), i))
             updateChapPageCount(i, 1)
         }
@@ -376,10 +380,10 @@ class SimpleReadView(
     }
 
     override fun getChapTitle(chapIndex: Int): String {
-        if (mBook == null) {
+        if (book == null) {
             throw IllegalStateException("the mBook is not initialized")
         }
-        return mBook!!.getChap(chapIndex - 1).title
+        return book!!.getChap(chapIndex - 1).title
     }
 
     interface Callback {

@@ -1,12 +1,65 @@
 package org.peyilo.libreadview.data
 
+import android.os.Build
+import android.os.Parcel
+import android.os.Parcelable
+
+// 兼容读取：API 33+ 用新签名，旧版走 deprecated 并做安全转换
+private fun <T : Parcelable> Parcel.readParcelableCompat(
+    loader: ClassLoader?,
+    clazz: Class<T>
+): T? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        readParcelable(loader, clazz)
+    } else {
+        @Suppress("DEPRECATION")
+        readParcelable(loader) as? T
+    }
+}
+
 /**
  * 携带额外的数据
  */
-open class AdditionalData {
+open class AdditionalData(): Parcelable {
+
     var id: Long = 0L
     var what: String? = null
-    var obj: Any? = null
+    var obj: Parcelable? = null
+
+    constructor(source: Parcel) : this() {
+        id = source.readLong()
+        what = source.readString()
+        obj = source.readParcelableCompat(
+            AdditionalData::class.java.classLoader,
+            Parcelable::class.java
+        )
+    }
+
+    override fun writeToParcel(dest: Parcel, flags: Int) = with(dest) {
+        writeLong(id)
+        writeString(what)
+        writeParcelable(obj, flags)
+    }
+
+    // 如果 obj 里有 FileDescriptor，需要把标记往外传
+    override fun describeContents(): Int {
+        return if (((obj?.describeContents() ?: 0) and Parcelable.CONTENTS_FILE_DESCRIPTOR) != 0)
+            Parcelable.CONTENTS_FILE_DESCRIPTOR
+        else 0
+    }
+
+    companion object {
+        @JvmField
+        val CREATOR: Parcelable.Creator<AdditionalData> =
+            object : Parcelable.Creator<AdditionalData> {
+                override fun createFromParcel(source: Parcel): AdditionalData =
+                    AdditionalData(source)
+
+                override fun newArray(size: Int): Array<AdditionalData?> =
+                    arrayOfNulls(size)
+            }
+    }
+
 }
 
 /**
@@ -21,7 +74,7 @@ sealed interface BookContent {
     }
 }
 
-sealed interface BookNode: BookContent
+sealed interface BookNode: BookContent, Parcelable
 
 /**
  * Leaf: 叶子节点 - Chapter（章节）
@@ -31,9 +84,21 @@ data class Chapter(
     private val paragraphs: MutableList<String> = mutableListOf()               // 章节中的段落
 ) : BookNode, AdditionalData() {
 
-
     // 段落数量
     val paragraphCount: Int get() = paragraphs.size
+
+    private constructor(parcel: Parcel) : this(
+        title = parcel.readString().orEmpty(),
+        paragraphs = parcel.createStringArrayList() ?: mutableListOf()
+    ) {
+        // 在这里手动读取父类字段
+        id = parcel.readLong()
+        what = parcel.readString()
+        obj = parcel.readParcelableCompat(
+            AdditionalData::class.java.classLoader,
+            Parcelable::class.java
+        )
+    }
 
     fun clearParagraph() {
         paragraphs.clear()
@@ -55,6 +120,23 @@ data class Chapter(
     }
 
     override fun toString(): String = formatString("")
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        dest.writeString(title)
+        dest.writeStringList(paragraphs)
+        // 写父类
+        super.writeToParcel(dest, flags)
+    }
+
+    override fun describeContents(): Int = super.describeContents()
+
+    companion object {
+        @JvmField val CREATOR: Parcelable.Creator<Chapter> =
+            object : Parcelable.Creator<Chapter> {
+                override fun createFromParcel(parcel: Parcel) = Chapter(parcel)
+                override fun newArray(size: Int) = arrayOfNulls<Chapter>(size)
+            }
+    }
 }
 
 /**
