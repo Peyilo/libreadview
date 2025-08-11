@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.core.view.ViewCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.peyilo.readview.R
@@ -35,4 +37,18 @@ class SettingsFragment(
         return dialog
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // 使得 BottomSheetDialog 显示的区域可以包含导航栏,避免总是被design_bottom_sheet设置一个24dp的paddingBottom
+        val bottomSheet = dialog!!.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)!!
+        bottomSheet.post {
+            bottomSheet.let {
+                ViewCompat.setOnApplyWindowInsetsListener(it) { v, insets ->
+                    // 不调用 super，不加 padding
+                    insets
+                }
+            }
+        }
+    }
 }

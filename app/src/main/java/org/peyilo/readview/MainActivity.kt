@@ -3,10 +3,10 @@ package org.peyilo.readview
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import org.peyilo.readview.databinding.ActivityMainBinding
 import org.peyilo.readview.demo.NetworkLoadActivity
 import org.peyilo.readview.demo.pagecontainer.PageChangeActivity
 import org.peyilo.readview.demo.pagecontainer.PageContainerActivity
@@ -15,6 +15,8 @@ import java.io.File
 import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
 
     private val selectFileLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
@@ -52,31 +54,32 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         supportActionBar?.hide()
 
-        findViewById<Button>(R.id.btn_pagecontainer_demo).setOnClickListener {
+        binding.btnPagecontainerDemo.setOnClickListener {
             startActivity(Intent(this@MainActivity, PageContainerActivity::class.java))
         }
 
-        findViewById<Button>(R.id.btn_select_file).setOnClickListener {
+        binding.btnSelectFile.setOnClickListener {
             selectFileLauncher.launch(arrayOf("*/*"))
         }
 
-        findViewById<Button>(R.id.btn_readview_demo).setOnClickListener {
+        binding.btnReadviewDemo.setOnClickListener {
             val intent = Intent(this@MainActivity, QidianReadViewActivity::class.java)
             startActivity(intent)
         }
 
-        findViewById<Button>(R.id.btn_page_change_demo).setOnClickListener {
+        binding.btnPageChangeDemo.setOnClickListener {
             startActivity(Intent(this@MainActivity, PageChangeActivity::class.java))
         }
 
-        findViewById<Button>(R.id.btn_network).setOnClickListener {
+        binding.btnNetwork.setOnClickListener {
             startActivity(Intent(this@MainActivity, NetworkLoadActivity::class.java))
         }
 
-        findViewById<Button>(R.id.btn_test).setOnClickListener {
+        binding.btnTest.setOnClickListener {
             startActivity(Intent(this@MainActivity, TestActivity::class.java))
         }
 
