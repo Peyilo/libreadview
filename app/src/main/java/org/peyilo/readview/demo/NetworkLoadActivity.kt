@@ -81,16 +81,6 @@ class NetworkLoadActivity : AppCompatActivity() {
                 page.chapIndex = chapIndex
             }
         })
-
-        lifecycleScope.launch {
-            delay(5_000)
-            val result = Intent().apply {
-                putExtra("book", readview.book) // book : Parcelable
-            }
-            setResult(RESULT_OK, result)
-            finish()
-        }
-
     }
 
     /**

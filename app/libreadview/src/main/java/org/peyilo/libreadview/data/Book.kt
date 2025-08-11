@@ -48,16 +48,9 @@ open class AdditionalData(): Parcelable {
         else 0
     }
 
-    companion object {
-        @JvmField
-        val CREATOR: Parcelable.Creator<AdditionalData> =
-            object : Parcelable.Creator<AdditionalData> {
-                override fun createFromParcel(source: Parcel): AdditionalData =
-                    AdditionalData(source)
-
-                override fun newArray(size: Int): Array<AdditionalData?> =
-                    arrayOfNulls(size)
-            }
+    companion object CREATOR: Parcelable.Creator<AdditionalData> {
+        override fun createFromParcel(source: Parcel) = AdditionalData(source)
+        override fun newArray(size: Int) = arrayOfNulls<AdditionalData>(size)
     }
 
 }
@@ -130,12 +123,9 @@ data class Chapter(
 
     override fun describeContents(): Int = super.describeContents()
 
-    companion object {
-        @JvmField val CREATOR: Parcelable.Creator<Chapter> =
-            object : Parcelable.Creator<Chapter> {
-                override fun createFromParcel(parcel: Parcel) = Chapter(parcel)
-                override fun newArray(size: Int) = arrayOfNulls<Chapter>(size)
-            }
+    companion object CREATOR: Parcelable.Creator<Chapter> {
+        override fun createFromParcel(parcel: Parcel) = Chapter(parcel)
+        override fun newArray(size: Int) = arrayOfNulls<Chapter>(size)
     }
 }
 
@@ -152,6 +142,19 @@ data class Volume(
         return "$indent${if(isTitleEmpty()) "No title volume" else title}\n$chaptersPrint"
     }
 
+    private constructor(parcel: Parcel) : this(
+        title = parcel.readString().orEmpty(),
+        chapters = parcel.createTypedArrayList(Chapter.CREATOR)?.toMutableList() ?: mutableListOf()
+    ) {
+        // 在这里手动读取父类字段
+        id = parcel.readLong()
+        what = parcel.readString()
+        obj = parcel.readParcelableCompat(
+            AdditionalData::class.java.classLoader,
+            Parcelable::class.java
+        )
+    }
+
     override fun toString(): String = formatString("")
 
     val chapCount = chapters.size
@@ -166,6 +169,19 @@ data class Volume(
 
     fun clearChapter() {
         chapters.clear()
+    }
+
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        super.writeToParcel(dest, flags)            // 写父类
+        dest.writeString(title)               // 写子类
+        dest.writeTypedList(chapters)         // 写子类的列表（每个 Chapter 自带 CREATOR）
+    }
+
+    override fun describeContents(): Int = super.describeContents()
+
+    companion object CREATOR: Parcelable.Creator<Volume> {
+        override fun createFromParcel(parcel: Parcel) = Volume(parcel)
+        override fun newArray(size: Int) = arrayOfNulls<Volume>(size)
     }
 }
 
@@ -202,6 +218,33 @@ data class Book(
             }
             return field
         }
+
+    private constructor(parcel: Parcel) : this(
+        // —— 子类字段 ——（读）
+        title = parcel.readString().orEmpty(),
+        bookNodes = MutableList(parcel.readInt()) {
+            when (parcel.readInt()) { // 类型标签
+                1 -> {
+                    val chapter = parcel.readParcelableCompat(Chapter::class.java.classLoader, Chapter::class.java)
+                    chapter!!
+                }
+                2 -> {
+                    val volume = parcel.readParcelableCompat(Volume::class.java.classLoader, Volume::class.java)
+                    volume!!
+                }
+                else -> error("Unknown BookNode type tag")
+            }
+        }
+    ) {
+        // —— 父类字段 ——（读）
+        id = parcel.readLong()
+        what = parcel.readString()
+        obj = parcel.readParcelableCompat(
+            AdditionalData::class.java.classLoader,
+            Parcelable::class.java
+        )
+    }
+
 
     private fun recomputeChapCount(): Int {
         var count = 0
@@ -280,4 +323,36 @@ data class Book(
         return allChapters!![index]
     }
 
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        // —— 子类字段 ——（写）
+        dest.writeString(title)
+        dest.writeInt(bookNodes.size)
+        for (node in bookNodes) {
+            when (node) {
+                is Chapter -> {
+                    dest.writeInt(1)              // 类型标签
+                    dest.writeParcelable(node, flags)
+                }
+                is Volume -> {
+                    dest.writeInt(2)
+                    dest.writeParcelable(node, flags)
+                }
+            }
+        }
+        // —— 父类字段 ——（写，顺序与上面的读保持一致）——
+        dest.writeLong(id)
+        dest.writeString(what)
+        dest.writeParcelable(obj, flags)
+    }
+
+    override fun describeContents(): Int {
+        // 若父类的 obj 可能包含 FileDescriptor，需把标记带出来
+        val fd = (obj?.describeContents() ?: 0) and Parcelable.CONTENTS_FILE_DESCRIPTOR
+        return if (fd != 0) Parcelable.CONTENTS_FILE_DESCRIPTOR else 0
+    }
+
+    companion object CREATOR: Parcelable.Creator<Book> {
+        override fun createFromParcel(parcel: Parcel) = Book(parcel)
+        override fun newArray(size: Int) = arrayOfNulls<Book>(size)
+    }
 }

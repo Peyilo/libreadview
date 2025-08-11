@@ -1,17 +1,11 @@
 package org.peyilo.readview
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import org.peyilo.libreadview.data.Book
-import org.peyilo.libreadview.data.Chapter
-import org.peyilo.libreadview.utils.LogHelper
-import org.peyilo.readview.data.User
 import org.peyilo.readview.databinding.ActivityMainBinding
 import org.peyilo.readview.demo.NetworkLoadActivity
 import org.peyilo.readview.demo.pagecontainer.PageChangeActivity
@@ -62,28 +56,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 注册结果回调
-    private val activityResultLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val data = result.data
-
-            val returned: Book? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                data?.getParcelableExtra("book", Book::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                data?.getParcelableExtra("book")
-            }
-
-            // —— 验证序列化是否“完好” ——
-            if (returned != null) {
-                // 你也可以拿它和原始对象对比
-                LogHelper.d(TAG, "returned: $returned")
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -109,19 +81,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnNetwork.setOnClickListener {
             val intent = Intent(this@MainActivity, NetworkLoadActivity::class.java)
-            activityResultLauncher.launch(intent)
             startActivity(intent)
         }
 
         binding.btnTest.setOnClickListener {
             val intent = Intent(this@MainActivity, TestActivity::class.java)
-            val user = User("peyilo", 20, "Shanghai")
-            user.apply {
-                id = 2025
-                what = "peyilo"
-                obj = intent
-            }
-            intent.putExtra("user", user)
             startActivity(intent)
         }
 
