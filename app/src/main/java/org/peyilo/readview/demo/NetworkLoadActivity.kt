@@ -10,7 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.peyilo.libreadview.SimpleReadView
+import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager

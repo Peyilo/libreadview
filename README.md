@@ -198,9 +198,9 @@ class ReadViewActivity : AppCompatActivity() {
 
 ### TODO
 
-- Long-press word capture function
-- Paragraph comment function
-- Over-drawing optimization 
+- 长按选择文字功能
+- 段评功能：支持章节标题、段落、图片的段评按钮功能。段评按钮绘制方式分为两种，一种是直接绘制一个图标，另一种是作为一个view。另外，段评按钮的位置也分为多种：紧接在段落最后一个字的后面；或者，在x轴方向紧贴在页面的右侧，在y轴方向和段落的最后一行对齐。
+- 过度绘制优化
 - 背景设置API
 - 标题、正文字体大小、字体、颜色相关API
 - 各种间距相关API

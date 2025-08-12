@@ -1,4 +1,4 @@
-package org.peyilo.libreadview
+package org.peyilo.libreadview.simple
 
 import android.graphics.Color
 import android.graphics.Paint

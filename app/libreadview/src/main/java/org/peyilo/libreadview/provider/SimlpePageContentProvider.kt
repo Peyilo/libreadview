@@ -3,7 +3,7 @@ package org.peyilo.libreadview.provider
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
-import org.peyilo.libreadview.ReadConfig
+import org.peyilo.libreadview.simple.ReadConfig
 import org.peyilo.libreadview.data.page.CharData
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.data.page.StringLineData

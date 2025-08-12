@@ -1,4 +1,5 @@
-package org.peyilo.libreadview
+package org.peyilo.libreadview.simple
+
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.annotation.IntRange
+import org.peyilo.libreadview.AbstractReadView
 import org.peyilo.libreadview.data.Book
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.loader.BookLoader
@@ -425,8 +427,8 @@ class SimpleReadView(
 
         @SuppressLint("SetTextI18n")
         open fun bindReadPage(page: ContentMetrics, pageData: PageData, title: String, chapIndex: Int,
-                         chapPageIndex: Int, chapPageCount: Int,
-                         provider: PageContentProvider
+                              chapPageIndex: Int, chapPageCount: Int,
+                              provider: PageContentProvider
         ) {
             val page = page as ReadPage
             page.header.text = title

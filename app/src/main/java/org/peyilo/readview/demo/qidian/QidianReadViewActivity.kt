@@ -6,7 +6,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import org.mozilla.universalchardet.UniversalDetector
 import org.peyilo.libreadview.AbstractPageContainer
-import org.peyilo.libreadview.SimpleReadView
+import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
