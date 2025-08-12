@@ -5,12 +5,10 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingHorizontal="20dp"
-    android:paddingBottom="40dp"
-    android:paddingTop="64dp"
     tools:context=".TestActivity">
 
-    <org.peyilo.readview.ui.StaticLayoutView
+    <org.peyilo.readview.ui.MeshCurlView
+        android:id="@+id/test_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:ignore="NewApi" />

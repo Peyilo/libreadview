@@ -36,6 +36,39 @@ class SimulationPageManagers private constructor() {
         private const val TAG = "SimulationPageManagers"
     }
 
+    private class PageBitmap {
+        var topBitmap: Bitmap? = null
+            set(value) {
+                field?.let {
+                    try {           // 如果不为null，尝试释放bitmap
+                        field!!.recycle()
+                    } catch (e: Exception) {
+                        LogHelper.e(TAG, "topBitmap: ${e.stackTrace}")
+                    }
+                }
+                field = value
+            }
+
+        var bottomBitmap: Bitmap? = null
+            set(value) {
+                field?.let {
+                    try {           // 如果不为null，尝试释放bitmap
+                        field!!.recycle()
+                    } catch (e: Exception) {
+                        LogHelper.e(TAG, "topBitmap: ${e.stackTrace}")
+                    }
+                }
+                field = value
+            }
+
+        fun clearBitmap() {
+            topBitmap?.recycle()
+            bottomBitmap?.recycle()
+            topBitmap = null
+            bottomBitmap = null
+        }
+    }
+
     /**
      * 仿真翻页实现1，常见于Android端各种小说阅读软件的仿真翻页实现
      * TODO：尽可能不在绘制中创建大量的PointF对象，由于对象全部保存在堆上，可能造成频繁地GC
@@ -113,39 +146,6 @@ class SimulationPageManagers private constructor() {
         var regionAMeshHeight = 40
         private val regionAMeshVertsCount = (regionAMeshWidth + 1) * (regionAMeshHeight + 1)
         private val regionAMeshVerts = FloatArray(regionAMeshVertsCount * 2)
-
-        private class PageBitmap {
-            var topBitmap: Bitmap? = null
-                set(value) {
-                    field?.let {
-                        try {           // 如果不为null，尝试释放bitmap
-                            field!!.recycle()
-                        } catch (e: Exception) {
-                            LogHelper.e(TAG, "topBitmap: ${e.stackTrace}")
-                        }
-                    }
-                    field = value
-                }
-
-            var bottomBitmap: Bitmap? = null
-                set(value) {
-                    field?.let {
-                        try {           // 如果不为null，尝试释放bitmap
-                            field!!.recycle()
-                        } catch (e: Exception) {
-                            LogHelper.e(TAG, "topBitmap: ${e.stackTrace}")
-                        }
-                    }
-                    field = value
-                }
-
-            fun clearBitmap() {
-                topBitmap?.recycle()
-                bottomBitmap?.recycle()
-                topBitmap = null
-                bottomBitmap = null
-            }
-        }
 
         /**
          * 注意控制Bitmap的回收，避免出现内存泄漏
@@ -860,24 +860,63 @@ class SimulationPageManagers private constructor() {
 
     class Style2: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
+        private val pageBitmap = PageBitmap()
+
         override fun prepareAnim(initDire: PageDirection) {
-            TODO("Not yet implemented")
+            when (initDire) {
+                PageDirection.NEXT -> {
+                    pageBitmap.topBitmap = pageContainer.getCurPage()!!.screenshot()
+                    pageBitmap.bottomBitmap = pageContainer.getNextPage()!!.screenshot()
+                }
+                PageDirection.PREV -> {
+                    pageBitmap.topBitmap = pageContainer.getPrevPage()!!.screenshot()
+                    pageBitmap.bottomBitmap = pageContainer.getCurPage()!!.screenshot()
+                }
+                else -> throw IllegalStateException()
+            }
+        }
+
+        override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
+            assert(initDire == PageDirection.NEXT)
+            val aspect = pageContainer.width.toFloat() / pageContainer.height
+
+
         }
 
         override fun startNextAnim() {
-            TODO("Not yet implemented")
+
         }
 
         override fun startPrevAnim() {
-            TODO("Not yet implemented")
+
         }
 
         override fun setAnimDuration(animDuration: Int) {
-            TODO("Not yet implemented")
+
+        }
+
+        private fun getTranslateX(position: Int): Float {
+            val containerPageCount = pageContainer.getContainerPageCount()
+            return when {
+                containerPageCount >= 3 -> when {
+                    position == 2 && !pageContainer.isFirstPage() -> -pageContainer.width.toFloat()
+                    position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                    else -> 0F
+                }
+                containerPageCount == 2 -> when {
+                    position == 1 && pageContainer.isLastPage() -> -pageContainer.width.toFloat()
+                    else -> 0F
+                }
+                containerPageCount == 1 -> 0F
+                else -> throw IllegalStateException("onAddPage: The pageContainer.itemCount is 0.")
+            }
         }
 
         override fun onAddPage(view: View, position: Int) {
-            TODO("Not yet implemented")
+            view.translationX = getTranslateX(position)
+            LogHelper.d(
+                TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
+                        "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
         }
     }
 
