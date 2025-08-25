@@ -19,10 +19,10 @@ import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.parser.SimpleContentParser
 import org.peyilo.libreadview.provider.PageContentProvider
 import org.peyilo.libreadview.provider.SimlpePageContentProvider
-import org.peyilo.libreadview.ui.ChapLoadPage
-import org.peyilo.libreadview.ui.ContentMetrics
-import org.peyilo.libreadview.ui.MessagePage
-import org.peyilo.libreadview.ui.ReadPage
+import org.peyilo.libreadview.simple.page.ChapLoadPage
+import org.peyilo.libreadview.simple.page.ContentMetrics
+import org.peyilo.libreadview.simple.page.MessagePage
+import org.peyilo.libreadview.simple.page.ReadPage
 import org.peyilo.libreadview.utils.LogHelper
 import java.io.File
 import kotlin.math.max

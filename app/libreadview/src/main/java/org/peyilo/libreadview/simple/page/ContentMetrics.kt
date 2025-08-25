@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.ui
+package org.peyilo.libreadview.simple.page
 
 interface ContentMetrics {
 
