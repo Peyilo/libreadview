@@ -861,7 +861,7 @@ class SimulationPageManagers private constructor() {
     class Style2: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
         private val pageBitmap = PageBitmap()
-        private val gl = GLRenderer()
+        private val gl by lazy { GLRenderer(pageContainer.context) }
 
         override fun prepareAnim(initDire: PageDirection) {
             when (initDire) {
@@ -879,8 +879,6 @@ class SimulationPageManagers private constructor() {
 
         override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
             pageContainer.invalidate()
-
-
         }
 
         override fun startNextAnim() {
