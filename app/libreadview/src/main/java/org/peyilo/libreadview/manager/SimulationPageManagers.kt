@@ -861,6 +861,7 @@ class SimulationPageManagers private constructor() {
     class Style2: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
         private val pageBitmap = PageBitmap()
+        private val gl = GLRenderer()
 
         override fun prepareAnim(initDire: PageDirection) {
             when (initDire) {
@@ -877,8 +878,7 @@ class SimulationPageManagers private constructor() {
         }
 
         override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
-            assert(initDire == PageDirection.NEXT)
-            val aspect = pageContainer.width.toFloat() / pageContainer.height
+            pageContainer.invalidate()
 
 
         }
@@ -893,6 +893,18 @@ class SimulationPageManagers private constructor() {
 
         override fun setAnimDuration(animDuration: Int) {
 
+        }
+
+        override fun dispatchDraw(canvas: Canvas) {
+            super.dispatchDraw(canvas)
+            if (isDragging || isAnimRuning) {
+                gl.render(
+                    canvas,
+                    topBitmap = pageBitmap.topBitmap!!,
+                    bottomBitmap = pageBitmap.bottomBitmap!!,
+                    mouseX = gesture.cur.x, mouseY = gesture.cur.y, mouseZ = gesture.down.x, mouseW = gesture.down.y
+                )
+            }
         }
 
         private fun getTranslateX(position: Int): Float {

@@ -6,13 +6,13 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import org.mozilla.universalchardet.UniversalDetector
 import org.peyilo.libreadview.AbstractPageContainer
-import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimulationPageManagers
 import org.peyilo.libreadview.manager.SlideLayoutManager
+import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.AppPreferences
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
@@ -176,8 +176,8 @@ class QidianReadViewActivity : AppCompatActivity() {
                 readview.layoutManager = SlideLayoutManager()
                 AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
-                if (readview.layoutManager is SimulationPageManagers.Style1) return@SettingsFragment
-                readview.layoutManager = SimulationPageManagers.Style1()
+                if (readview.layoutManager is SimulationPageManagers.Style2) return@SettingsFragment
+                readview.layoutManager = SimulationPageManagers.Style2()
                 AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
@@ -195,7 +195,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when (layoutManager) {
             is CoverLayoutManager -> 0
             is SlideLayoutManager -> 1
-            is SimulationPageManagers.Style1 -> 2
+            is SimulationPageManagers.Style2 -> 2
             is ScrollLayoutManager -> 3
             is IBookSlideLayoutManager -> 4
             else -> throw IllegalStateException()
@@ -206,7 +206,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when(flipModel) {
             0 -> CoverLayoutManager()
             1 -> SlideLayoutManager()
-            2 -> SimulationPageManagers.Style1()
+            2 -> SimulationPageManagers.Style2()
             3 -> ScrollLayoutManager()
             4 -> IBookSlideLayoutManager()
             else -> throw IllegalStateException()
