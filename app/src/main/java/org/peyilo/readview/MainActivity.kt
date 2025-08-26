@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnTest.setOnClickListener {
-            val intent = Intent(this@MainActivity, TestActivity::class.java)
+            val intent = Intent(this@MainActivity, OpenGLActivity::class.java)
             startActivity(intent)
         }
 

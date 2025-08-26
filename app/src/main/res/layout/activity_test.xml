@@ -7,10 +7,5 @@
     android:layout_height="match_parent"
     tools:context=".TestActivity">
 
-    <org.peyilo.readview.ui.MeshCurlView
-        android:id="@+id/test_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:ignore="NewApi" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

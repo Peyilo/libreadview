@@ -22,13 +22,7 @@
             android:name=".TestActivity"
             android:exported="false" />
         <activity
-            android:name=".demo.boluobao.BoluobaoReadViewActivity"
-            android:exported="false" />
-        <activity
-            android:name=".demo.ciweimao.CiweimaoReadViewActivity"
-            android:exported="false" />
-        <activity
-            android:name=".demo.fanqie.FanqieReadViewActivity"
+            android:name=".OpenGLActivity"
             android:exported="false" />
         <activity
             android:name=".demo.qidian.QidianReadViewActivity"
