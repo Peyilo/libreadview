@@ -89,6 +89,11 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        binding.btnOpengl.setOnClickListener {
+            val intent = Intent(this@MainActivity, OpenGLActivity::class.java)
+            startActivity(intent)
+        }
+
     }
 
 

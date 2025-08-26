@@ -45,4 +45,10 @@
         android:text="Test"
         android:textAllCaps="false"/>
 
+    <Button android:id="@+id/btn_opengl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="OpenGL Demo"
+        android:textAllCaps="false"/>
+
 </LinearLayout>
