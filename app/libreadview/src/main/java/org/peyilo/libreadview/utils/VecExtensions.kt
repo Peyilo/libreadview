@@ -58,3 +58,32 @@ fun PointF.copy() = PointF().apply {
 }
 
 fun PointF.rakeRadio() = y / x
+
+/**
+ * 把点 (px, py) 关于由 (ax, ay)-(bx, by) 定义的直线镜像，返回对称点 (x', y')
+ */
+fun reflectPointAboutLine(
+    px: Float, py: Float,
+    ax: Float, ay: Float,
+    bx: Float, by: Float
+): Pair<Float, Float> {
+    val vx = bx - ax
+    val vy = by - ay
+    val denom = vx*vx + vy*vy
+    require(denom > 0f) { "对称轴的两点不能重合" }
+
+    // 投影参数 t
+    val wx = px - ax
+    val wy = py - ay
+    val t = (wx*vx + wy*vy) / denom
+
+    // 投影点 H
+    val hx = ax + t * vx
+    val hy = ay + t * vy
+
+    // 对称点 P' = 2H - P
+    val rx = 2f * hx - px
+    val ry = 2f * hy - py
+
+    return Pair(rx, ry)
+}
