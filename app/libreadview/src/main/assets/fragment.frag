@@ -29,8 +29,15 @@ void main() {
 
     float mouseDist = clamp(length(mouse - origin) + (aspect - (abs(iMouse.z) / iResolution.x) * aspect) / mouseDir.x, 0., aspect / mouseDir.x);
 
+    // 由cur指向down的向量，在x轴方向的分量小于0，说明cur在down的右侧
     if (mouseDir.x < 0.) {
         mouseDist = distance(mouse, origin);
+
+//        vec4 fragColor;
+//        fragColor = texture2D(iChannel1, vTexCoord);
+//        fragColor.rgb = vec3(1.0);
+//        gl_FragColor = fragColor;
+        return;
     }
 
     float proj = dot(uv - origin, mouseDir);
@@ -41,6 +48,7 @@ void main() {
     if (dist > radius) {
         fragColor = texture2D(iChannel1, vTexCoord);
         fragColor.rgb *= pow(clamp(dist - radius, 0., 1.) * 1.5, .2);
+//        fragColor.rgb = vec3(1.0);
     }
     else if (dist >= 0.) {
         float theta = asin(dist / radius);
@@ -49,12 +57,13 @@ void main() {
         uv = (p2.x <= aspect && p2.y <= 1. && p2.x > 0. && p2.y > 0.) ? p2 : p1;
         fragColor = texture2D(iChannel0, uv / vec2(aspect,1.));
         fragColor.rgb *= pow(clamp((radius - dist) / radius, 0., 1.), .2);
+//        fragColor.rgb = vec3(1.0);
     }
     else {
         vec2 p = linePoint + mouseDir * (abs(dist) + pi * radius);
         uv = (p.x <= aspect && p.y <= 1. && p.x > 0. && p.y > 0.) ? p : uv;
         fragColor = texture2D(iChannel0, uv / vec2(aspect,1.));
+//        fragColor.rgb = vec3(1.0);
     }
-
     gl_FragColor = fragColor;
 }

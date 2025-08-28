@@ -893,16 +893,97 @@ class SimulationPageManagers private constructor() {
 
         }
 
+        private val debugPosPaint = Paint().apply {
+            textSize = 36F
+            color = Color.RED
+        }
+
+        private val debugLinePaint = Paint().apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 3F
+            color = Color.WHITE
+        }
+
         override fun dispatchDraw(canvas: Canvas) {
             super.dispatchDraw(canvas)
-            if (isDragging || isAnimRuning) {
+            if (pageBitmap.topBitmap != null && pageBitmap.bottomBitmap != null) {
                 gl.render(
                     canvas,
                     topBitmap = pageBitmap.topBitmap!!,
                     bottomBitmap = pageBitmap.bottomBitmap!!,
                     mouseX = gesture.cur.x, mouseY = gesture.cur.y, mouseZ = gesture.down.x, mouseW = gesture.down.y
                 )
+                canvas.drawPoint("Down", gesture.down.x, gesture.down.y)
+                canvas.drawPoint("Cur", gesture.cur.x, gesture.cur.y)
+                canvas.drawLine(gesture.down.x, gesture.down.y, gesture.cur.x, gesture.cur.y, debugLinePaint)
+
+                // process origin point
+                var mouseDirX = gesture.down.x - gesture.cur.x
+                var mouseDirY = gesture.down.y - gesture.cur.y
+                val len = hypot(mouseDirX, mouseDirY)
+                mouseDirX /= len
+                mouseDirY /= len
+                val originX = 0F
+                val originY = (gesture.cur.y - mouseDirY * gesture.cur.x / mouseDirX).coerceIn(0F, pageContainer.height.toFloat())
+                canvas.drawPoint("Origin", originX, originY)
+                canvas.drawLine(originX, originY, gesture.cur.x, gesture.cur.y, debugLinePaint)
+
+                // process end point
+                val endX = pageContainer.width.toFloat()
+                val endY = gesture.down.y + mouseDirY / mouseDirX * (endX - gesture.down.x)
+                canvas.drawPoint("End", endX, endY)
+                canvas.drawLine(endX, endY, gesture.down.x, gesture.down.y, debugLinePaint)
+
+                // process axis point
+                val L1 = hypot(gesture.cur.x - originX, gesture.cur.y - originY)
+                val L2 = hypot(endX - gesture.down.x, endY - gesture.down.y)
+                val axisX = gesture.cur.x + mouseDirX * L2
+                val axisY = gesture.cur.y + mouseDirY * L2
+                canvas.drawPoint("Axis", axisX, axisY)
+
+                // draw axis line
+                // 正交于mouseDir，(mouseDirY, -mouseDirX)
+                val axisLineStartX = axisX + mouseDirY / mouseDirX * axisY
+                val axisLineStartY = 0F
+
+                val axisLineEndX = axisX - mouseDirY / mouseDirX * (pageContainer.height - axisY)
+                val axisLineEndY = pageContainer.height.toFloat()
+                canvas.drawLine(axisLineStartX, axisLineStartY, axisLineEndX, axisLineEndY, debugLinePaint)
+
+                // draw engle point
+                val radius = 0.05F * pageContainer.height
+                val engleX = axisX + mouseDirX * radius
+                val engleY = axisY + mouseDirY * radius
+                canvas.drawPoint("Engle", engleX, engleY)
+
+                // draw engle line
+                val engleLineStartX = engleX + mouseDirY / mouseDirX * engleY
+                val engleLineStartY = 0F
+                val engleLineEndX =  engleX - mouseDirY / mouseDirX * (pageContainer.height - engleY)
+                val engleLineEndY = pageContainer.height.toFloat()
+                canvas.drawLine(engleLineStartX, engleLineStartY, engleLineEndX, engleLineEndY, debugLinePaint)
+
+                val engleProjX = axisX + mouseDirX * radius * 0.5 * PI
+                val engleProjY = axisY + mouseDirY * radius * 0.5 * PI
+                val engleProjLineStartX = engleProjX + mouseDirY / mouseDirX * engleProjY
+                val engleProjLineStartY = 0F
+                val engleProjLineEndX =  engleProjX - mouseDirY / mouseDirX * (pageContainer.height - engleProjY)
+                val engleProjLineEndY = pageContainer.height.toFloat()
+                canvas.drawLine(engleProjLineStartX.toFloat(), engleProjLineStartY, engleProjLineEndX.toFloat(), engleProjLineEndY, debugLinePaint)
+
+                val axisProjX = axisX + mouseDirX * radius * PI
+                val axisProjY = axisY + mouseDirY * radius * PI
+                val axisProjLineStartX = axisProjX + mouseDirY / mouseDirX * axisProjY
+                val axisProjLineStartY = 0F
+                val axisProjLineEndX =  axisProjX - mouseDirY / mouseDirX * (pageContainer.height - axisProjY)
+                val axisProjLineEndY = pageContainer.height.toFloat()
+                canvas.drawLine(axisProjLineStartX.toFloat(), axisProjLineStartY, axisProjLineEndX.toFloat(), axisProjLineEndY, debugLinePaint)
             }
+        }
+
+        private fun Canvas.drawPoint(text: String, x: Float, y: Float,) {
+            drawCircle(x, y, 6F, debugPosPaint)
+            drawText(text, x, y, debugPosPaint)
         }
 
         private fun getTranslateX(position: Int): Float {
