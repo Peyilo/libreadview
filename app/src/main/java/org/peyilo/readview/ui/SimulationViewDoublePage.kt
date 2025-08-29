@@ -8,11 +8,14 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.widget.Scroller
 import androidx.core.graphics.toColorInt
 import org.peyilo.libreadview.utils.reflectPointAboutLine
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.sin
 
@@ -64,7 +67,17 @@ class SimulationViewDoublePage(
         style = Paint.Style.FILL
     }
 
-    private val cylinderRadius get() = pageHeight * 0.05F
+    // TODO: 不应该仅和dy有关系，如果没有触及装订线时，应该保持正常的radius
+    private val cylinderRadius: Float get() {
+        val radius = pageHeight * 0.075F
+        val dy = abs(touchPos.y - downPos.y)
+        val scale = 3
+        return if (dy >= radius * scale) {
+            radius
+        } else {
+            dy / scale
+        }
+    }
 
     private val touchPos = PointF()
     private val downPos = PointF()
@@ -142,9 +155,18 @@ class SimulationViewDoublePage(
             canvas.drawPath(pathC, purplePaint)
             canvas.drawPath(pathB, bluePaint)
             canvas.drawPath(pathA, yellowPaint)
+            if (getMode() == Mode.Landscape) {
+                Log.d(TAG, "onDraw: Landscape")
+            }
             debug(canvas)
         }
     }
+
+    companion object {
+        private const val TAG = "SimulationViewDoublePag"
+    }
+
+    private val scroller = Scroller(context)
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -152,6 +174,9 @@ class SimulationViewDoublePage(
             MotionEvent.ACTION_DOWN -> {
                 downPos.x = event.x
                 downPos.y = event.y
+                if (!scroller.isFinished) {
+                    scroller.forceFinished(true)
+                }
             }
             MotionEvent.ACTION_MOVE -> {
                 touchPos.x = event.x
@@ -162,10 +187,23 @@ class SimulationViewDoublePage(
                 invalidate()
             }
             MotionEvent.ACTION_UP -> {
-
+                scroller.startScroll(
+                    touchPos.x.toInt(), touchPos.y.toInt(),
+                    - touchPos.x.toInt() + topLeftPoint.x.toInt(),
+                    - touchPos.y.toInt() + downPos.y.toInt(), 2000)
+                invalidate()
             }
         }
         return true
+    }
+
+    override fun computeScroll() {
+        super.computeScroll()
+        if (scroller.computeScrollOffset()) {
+            touchPos.x = scroller.currX.toFloat()
+            touchPos.y = scroller.currY.toFloat()
+            invalidate()
+        }
     }
 
     private val debugPosPaint = Paint().apply {
@@ -195,13 +233,52 @@ class SimulationViewDoublePage(
         else -> Mode.Landscape
     }
 
+    /**
+     * 计算点 A 到线段 BC 的垂足坐标
+     *
+     * @param ax 点 A 的 X
+     * @param ay 点 A 的 Y
+     * @param bx 点 B 的 X
+     * @param by 点 B 的 Y
+     * @param cx 点 C 的 X
+     * @param cy 点 C 的 Y
+     * @return 垂足坐标 PointF
+     */
+    fun perpendicularFoot(
+        ax: Float, ay: Float,
+        bx: Float, by: Float,
+        cx: Float, cy: Float,
+        res: PointF
+    )  {
+        val vx = cx - bx
+        val vy = cy - by
+        val wx = ax - bx
+        val wy = ay - by
+
+        val vDotV = vx * vx + vy * vy
+        if (vDotV == 0f) {
+            // B 与 C 重合，无法定义直线，返回 B
+            res.x = bx
+            res.y = by
+            return
+        }
+
+        val t = (wx * vx + wy * vy) / vDotV
+
+        val px = bx + t * vx
+        val py = by + t * vy
+
+        res.x = px
+        res.y = py
+    }
+
     private fun calcPointers() {
         val mode = getMode()
 
         // process origin point
         var mouseDirX = downPos.x - touchPos.x
         var mouseDirY = downPos.y - touchPos.y
-        val len = hypot(mouseDirX, mouseDirY)
+        var len = hypot(mouseDirX, mouseDirY)
         mouseDirX /= len
         mouseDirY /= len
         originPos.x = topMiddlePoint.x
@@ -212,8 +289,8 @@ class SimulationViewDoublePage(
         endPos.y = downPos.y + mouseDirY / mouseDirX * (endPos.x - downPos.x)
 
         // process axis point
-        val L1 = hypot(touchPos.x - originPos.x, touchPos.y - originPos.y)
-        val L2 = hypot(endPos.x - downPos.x, endPos.y - downPos.y)
+        var L1 = hypot(touchPos.x - originPos.x, touchPos.y - originPos.y)
+        var L2 = hypot(endPos.x - downPos.x, endPos.y - downPos.y)
         cylinderAxisPos.x = touchPos.x + mouseDirX * L2
         cylinderAxisPos.y = touchPos.y + mouseDirY * L2
 
@@ -231,6 +308,64 @@ class SimulationViewDoublePage(
 
             cylinderAxisLineEndPos.x = topRightPoint.x
             cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+        }
+
+        // 限制页面左侧不能翻起来, 模拟真实书籍的装订
+        if (cylinderAxisLineStartPos.x < topMiddlePoint.x && mode != Mode.Landscape) {
+            if (mode == Mode.TopRightCorner) {
+                perpendicularFoot(topMiddlePoint.x, topMiddlePoint.y,
+                    touchPos.x, touchPos.y,
+                    downPos.x, downPos.y,
+                    cylinderAxisPos
+                    )
+                touchPos.x = cylinderAxisPos.x - mouseDirX * L2
+                touchPos.y = cylinderAxisPos.y - mouseDirY * L2
+            } else if (mode == Mode.BottomRightCorner) {
+                perpendicularFoot(bottomMiddlePoint.x, bottomMiddlePoint.y,
+                    touchPos.x, touchPos.y,
+                    downPos.x, downPos.y,
+                    cylinderAxisPos
+                )
+                touchPos.x = cylinderAxisPos.x - mouseDirX * L2
+                touchPos.y = cylinderAxisPos.y - mouseDirY * L2
+            }
+
+            // touchPoint更新后，需要重新计算与touchPoint有关系的坐标
+            // process origin point
+            mouseDirX = downPos.x - touchPos.x
+            mouseDirY = downPos.y - touchPos.y
+            len = hypot(mouseDirX, mouseDirY)
+            mouseDirX /= len
+            mouseDirY /= len
+            originPos.x = topMiddlePoint.x
+            originPos.y = (touchPos.y - mouseDirY * (touchPos.x - topMiddlePoint.x) / mouseDirX).coerceIn(topMiddlePoint.y, bottomMiddlePoint.y)
+
+            // process end point
+            endPos.x = topRightPoint.x
+            endPos.y = downPos.y + mouseDirY / mouseDirX * (endPos.x - downPos.x)
+
+            // process axis point
+            L1 = hypot(touchPos.x - originPos.x, touchPos.y - originPos.y)
+            L2 = hypot(endPos.x - downPos.x, endPos.y - downPos.y)
+            cylinderAxisPos.x = touchPos.x + mouseDirX * L2
+            cylinderAxisPos.y = touchPos.y + mouseDirY * L2
+
+            // draw axis line
+            // 正交于mouseDir，(mouseDirY, -mouseDirX)
+            if (mode == Mode.TopRightCorner) {
+                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
+                cylinderAxisLineStartPos.y = topMiddlePoint.y
+
+                cylinderAxisLineEndPos.x = topRightPoint.x
+                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+            } else if (mode == Mode.BottomRightCorner) {
+                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
+                cylinderAxisLineStartPos.y = bottomMiddlePoint.y
+
+                cylinderAxisLineEndPos.x = topRightPoint.x
+                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+            }
+
         }
 
         // draw engle point
