@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".TestActivity">
 
-    <org.peyilo.readview.ui.GLRenderView
+    <org.peyilo.readview.ui.SimulationViewDoublePage
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 

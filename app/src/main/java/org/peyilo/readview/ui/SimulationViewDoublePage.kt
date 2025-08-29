@@ -11,7 +11,10 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.graphics.toColorInt
-import kotlin.math.abs
+import org.peyilo.libreadview.utils.reflectPointAboutLine
+import kotlin.math.PI
+import kotlin.math.hypot
+import kotlin.math.sin
 
 class SimulationViewDoublePage(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
@@ -20,6 +23,12 @@ class SimulationViewDoublePage(
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int): this(context, attrs, defStyleAttr, 0)
     constructor(context: Context, attrs: AttributeSet?): this(context, attrs, 0)
     constructor(context: Context): this(context, null)
+
+    init {
+        setBackgroundColor(Color.GRAY)
+    }
+
+    private var isFlipping = false
 
     private val topLeftPoint = PointF()
     private val topMiddlePoint = PointF()
@@ -30,7 +39,8 @@ class SimulationViewDoublePage(
 
     private val rightPageRegion = Path()
     private val leftPageRigion = Path()
-    private val viewPadding = 400F
+    private val viewVerticalPadding = 200F
+    private val viewHorizontalPadding = 400F
     private val pageWidth get() =  topRightPoint.x - topMiddlePoint.x
     private val pageHeight get() = bottomRightPoint.y - topRightPoint.y
 
@@ -52,61 +62,48 @@ class SimulationViewDoublePage(
         style = Paint.Style.FILL
     }
 
-    private val bezierStart1 = PointF()         // 第一条贝塞尔曲线的起始点、终点、控制点
-    private val bezierEnd1 = PointF()
-    private val bezierControl1 = PointF()
+    private val cylinderRadius get() = pageHeight * 0.05F
 
-    private val bezierStart2 = PointF()         // 第二条贝塞尔曲线的起始点、终点、控制点
-    private val bezierEnd2 = PointF()
-    private val bezierControl2 = PointF()
+    private val touchPos = PointF()
+    private val downPos = PointF()
 
-    private val bezierVertex1 = PointF()        // C区域直角三角形（近似为直角，实际上比90°稍大）斜边与两条贝塞尔曲线相切的两个点
-    private val bezierVertex2 = PointF()
+    private val selectedCornerPos = PointF()
+    private val originPos = PointF()
+    private val endPos = PointF()
+    private val cylinderAxisPos = PointF()
+    private val cylinderEnglePos = PointF()
+    private val cylinderAxisProjPos = PointF()
+    private val cylinderEngleProjPos = PointF()
 
-    private val touchPoint = PointF()                    // 触摸点
-    private val selectedCornerPoint = PointF()
-    private val fixedCornerPoint = PointF()            // 页脚顶点
-    private val middlePoint = PointF()                // 触摸点、页脚定点连线的中点
-    private val m1 = PointF()                         // bezierStart1、bezierEnd1连线的中点
-    private val m2 = PointF()                         // bezierStart2、bezierEnd2连线的中点
+    private val cylinderAxisLineStartPos = PointF()
+    private val cylinderAxisLineEndPos = PointF()
+    private val cylinderEngleLineStartPos = PointF()
+    private val cylinderEngleLineEndPos = PointF()
 
-    private val pathA = Path()
-    private val pathC = Path()
-    private val pathB = Path()
+    private val cylinderAxisProjStartPos = PointF()
+    private val cylinderAxisProjEndPos = PointF()
+    private val cylinderEngleProjStartPos = PointF()
+    private val cylinderEngleProjEndPos = PointF()
 
-    /**
-     * 求解直线P1P2和直线P3P4的交点坐标，并将交点坐标保存到result中
-     */
-    private fun calcCrossPoint(P1: PointF, P2: PointF, P3: PointF, P4: PointF, result: PointF) {
-        // 二元函数通式： y=ax+b
-        val a1 = (P2.y - P1.y) / (P2.x - P1.x)
-        val b1 = (P1.x * P2.y - P2.x * P1.y) / (P1.x - P2.x)
-        val a2 = (P4.y - P3.y) / (P4.x - P3.x)
-        val b2 = (P3.x * P4.y - P4.x * P3.y) / (P3.x - P4.x)
-        result.x = (b2 - b1) / (a1 - a2)
-        result.y = a1 * result.x + b1
-    }
-
-    // 计算P1P2的中点坐标，并保存到result中
-    private fun calcMiddlePoint(P1: PointF, P2: PointF, result: PointF) {
-        result.x = (P1.x + P2.x) / 2
-        result.y = (P1.y + P2.y) / 2
-    }
+    private val sineStartPos1 = PointF()
+    private val sineStartPos2 = PointF()
+    private val sineMaxPos1 = PointF()
+    private val sineMaxPos2 = PointF()
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        topLeftPoint.x = viewPadding
-        topLeftPoint.y = viewPadding
-        topRightPoint.x = width.toFloat() - viewPadding
-        topRightPoint.y = viewPadding
-        bottomLeftPoint.x = viewPadding
-        bottomLeftPoint.y = height.toFloat() - viewPadding
-        bottomRightPoint.x = width.toFloat() - viewPadding
-        bottomRightPoint.y = height.toFloat() - viewPadding
+        topLeftPoint.x = viewHorizontalPadding
+        topLeftPoint.y = viewVerticalPadding
+        topRightPoint.x = width.toFloat() - viewHorizontalPadding
+        topRightPoint.y = viewVerticalPadding
+        bottomLeftPoint.x = viewHorizontalPadding
+        bottomLeftPoint.y = height.toFloat() - viewVerticalPadding
+        bottomRightPoint.x = width.toFloat() - viewHorizontalPadding
+        bottomRightPoint.y = height.toFloat() - viewVerticalPadding
         topMiddlePoint.x = (topRightPoint.x + topLeftPoint.x) / 2
-        topMiddlePoint.y = viewPadding
+        topMiddlePoint.y = viewVerticalPadding
         bottomMiddlePoint.x = (bottomLeftPoint.x + bottomRightPoint.x) / 2
-        bottomMiddlePoint.y = height.toFloat() - viewPadding
+        bottomMiddlePoint.y = height.toFloat() - viewVerticalPadding
         rightPageRegion.apply {
             reset()
             moveTo(topMiddlePoint.x, topMiddlePoint.y)
@@ -125,113 +122,28 @@ class SimulationViewDoublePage(
         }
     }
 
-    private val linePaint = Paint().apply {
-        color = Color.RED
-        strokeWidth = 3F
-    }
-    private val posPaint = Paint().apply {
-        color = Color.BLACK
-        textSize = 32F
-    }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawPath(leftPageRigion, greenPaint)
         canvas.drawPath(rightPageRegion, yellowPaint)
-
-//        canvas.withClip(rightPageRegion) {
-//            canvas.drawPath(pathA, yellowPaint)
-//            canvas.drawPath(pathB, bluePaint)
-//            canvas.drawPath(pathC, purplePaint)
-//        }
-
-        canvas.drawPath(pathA, yellowPaint)
-        canvas.drawPath(pathB, bluePaint)
-        canvas.drawPath(pathC, purplePaint)
-
-        debug(canvas)
-    }
-
-    private fun debug(canvas: Canvas) {
-        canvas.drawText("selectedCornerPoint", selectedCornerPoint.x - 60, selectedCornerPoint.y, posPaint)
-        canvas.drawText("middlePoint", middlePoint.x - 60, middlePoint.y, posPaint)
-
-        canvas.drawText("bezierStart1", bezierStart1.x - 60, bezierStart1.y, posPaint)
-        canvas.drawText("bezierControl1", bezierControl1.x - 60, bezierControl1.y, posPaint)
-        canvas.drawText("bezierEnd1", bezierEnd1.x - 60, bezierEnd1.y, posPaint)
-
-        canvas.drawText("bezierStart2", bezierStart2.x - 60, bezierStart2.y, posPaint)
-        canvas.drawText("bezierControl2", bezierControl2.x - 60, bezierControl2.y, posPaint)
-        canvas.drawText("bezierEnd2", bezierEnd2.x - 60, bezierEnd2.y, posPaint)
-
-        canvas.drawText("m1", m1.x, m1.y, posPaint)
-        canvas.drawText("m2", m2.x, m2.y, posPaint)
-        canvas.drawText("bezierVertex1", bezierVertex1.x - 60, bezierVertex1.y, posPaint)
-        canvas.drawText("bezierVertex2", bezierVertex2.x - 60, bezierVertex2.y, posPaint)
-
-        canvas.drawText("cornerVertex: (${fixedCornerPoint.x}, ${fixedCornerPoint.y})",
-            40F, 80F, posPaint)
-        canvas.drawText("touchPoint: (${selectedCornerPoint.x}, ${selectedCornerPoint.y})",
-            40F, 120F, posPaint)
-        canvas.drawText("middlePoint: (${middlePoint.x}, ${middlePoint.y})",
-            40F, 160F, posPaint)
-
-        canvas.drawText("bezierStart1: (${bezierStart1.x}, ${bezierStart1.y})",
-            40F, 200F, posPaint)
-        canvas.drawText("bezierControl1: (${bezierControl1.x}, ${bezierControl1.y})",
-            40F, 240F, posPaint)
-        canvas.drawText("bezierEnd1: (${bezierEnd1.x}, ${bezierEnd1.y})",
-            40F, 280F, posPaint)
-
-        canvas.drawText("bezierStart2: (${bezierStart2.x}, ${bezierStart2.y})",
-            40F, 320F, posPaint)
-        canvas.drawText("bezierControl2: (${bezierControl2.x}, ${bezierControl2.y})",
-            40F, 360F, posPaint)
-        canvas.drawText("bezierEnd2: (${bezierEnd2.x}, ${bezierEnd2.y})",
-            40F, 400F, posPaint)
-
-        canvas.drawText("m1: (${m1.x}, ${m1.y})",
-            40F, 440F, posPaint)
-        canvas.drawText("m2: (${m2.x}, ${m2.y})",
-            40F, 480F, posPaint)
-        canvas.drawText("bezierVertex1: (${bezierVertex1.x}, ${bezierVertex1.y})",
-            40F, 520F, posPaint)
-        canvas.drawText("bezierVertex2: (${bezierVertex2.x}, ${bezierVertex2.y})",
-            40F, 560F, posPaint)
-
-        canvas.drawLine(fixedCornerPoint.x, fixedCornerPoint.y, selectedCornerPoint.x, selectedCornerPoint.y, linePaint)
-        canvas.drawLine(bezierControl1.x, bezierControl1.y, bezierControl2.x, bezierControl2.y, linePaint)
-        canvas.drawLine(bezierControl1.x, bezierControl1.y, selectedCornerPoint.x, selectedCornerPoint.y, linePaint)
-        canvas.drawLine(bezierControl2.x, bezierControl2.y, selectedCornerPoint.x, selectedCornerPoint.y, linePaint)
-        canvas.drawLine(bezierStart1.x, bezierStart1.y, bezierStart2.x, bezierStart2.y, linePaint)
-        canvas.drawLine(bezierVertex1.x, bezierVertex1.y, bezierVertex2.x, bezierVertex2.y, linePaint)
-        canvas.drawLine(m1.x, m1.y, bezierControl1.x, bezierControl1.y, linePaint)
-        canvas.drawLine(m2.x, m2.y, bezierControl2.x, bezierControl2.y, linePaint)
-    }
-
-    private fun decideCorner(y: Float) {
-        if (y > height / 2) {     // 右下角顶点
-            fixedCornerPoint.x = bottomRightPoint.x
-            fixedCornerPoint.y = bottomRightPoint.y
-        } else {                // 右上角顶点
-            fixedCornerPoint.x = topRightPoint.x
-            fixedCornerPoint.y = topRightPoint.y
+        if (isFlipping) {
+            calcPointers(canvas)
         }
     }
-
-    private fun inPageRegision(x: Float, y: Float): Boolean = (x > topLeftPoint.x && x < topRightPoint.x && y > topLeftPoint.y && y < bottomLeftPoint.y)
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when(event.action) {
             MotionEvent.ACTION_DOWN -> {
-                decideCorner(event.y)
+                downPos.x = event.x
+                downPos.y = event.y
             }
-            MotionEvent.ACTION_MOVE -> if (inPageRegision(event.x, event.y)) {
-                touchPoint.x = event.x
-                touchPoint.y = event.y
-                calcPoints()
-                calcPaths()
+            MotionEvent.ACTION_MOVE -> {
+                touchPos.x = event.x
+                touchPos.y = event.y
+                if (!isFlipping) {
+                    isFlipping = true
+                }
                 invalidate()
             }
             MotionEvent.ACTION_UP -> {
@@ -241,107 +153,205 @@ class SimulationViewDoublePage(
         return true
     }
 
-    private fun calcPaths() {
-        // 计算A区域的边界
-        pathA.reset()
-        pathA.moveTo(bezierStart1.x, bezierStart1.y)
-        pathA.quadTo(bezierControl1.x, bezierControl1.y, bezierEnd1.x, bezierEnd1.y)
-        pathA.lineTo(selectedCornerPoint.x, selectedCornerPoint.y)
-        pathA.lineTo(bezierEnd2.x, bezierEnd2.y)
-        pathA.quadTo(bezierControl2.x, bezierControl2.y, bezierStart2.x, bezierStart2.y)
-        pathA.lineTo(fixedCornerPoint.x, bottomRightPoint.y + viewPadding - fixedCornerPoint.y)   // 根据cornerVertex位置不同（左上角或者右上角）绘制区域A
-        pathA.lineTo(bottomMiddlePoint.x, bottomRightPoint.y + viewPadding - fixedCornerPoint.y)
-        pathA.lineTo(topMiddlePoint.x, fixedCornerPoint.y)
-        pathA.close()
-        // 计算C区域的边界
-        pathC.reset()
-        pathC.moveTo(bezierVertex1.x, bezierVertex1.y)      // 将曲线简化为直线，再减去与A区域相交的区域即可获得C区域
-        pathC.lineTo(bezierEnd1.x, bezierEnd1.y)
-        pathC.lineTo(selectedCornerPoint.x, selectedCornerPoint.y)
-        pathC.lineTo(bezierEnd2.x, bezierEnd2.y)
-        pathC.lineTo(bezierVertex2.x, bezierVertex2.y)
-        pathC.close()
-        pathC.op(pathA, Path.Op.DIFFERENCE)
-        // 计算B区域的边界
-        pathB.reset()
-        pathB.set(rightPageRegion)
-        // 先取整个视图区域，然后减去A和C区域即可获得B区域
-        pathB.op(pathA, Path.Op.DIFFERENCE)
-        pathB.op(pathC, Path.Op.DIFFERENCE)
+    private val debugPosPaint = Paint().apply {
+        textSize = 18F
+        color = Color.RED
     }
 
-    // 计算各个点坐标，假设调用该函数之前touchPoint、cornerVertex已经初始化
-    private fun calcPoints() {
-        selectedCornerPoint.x = touchPoint.x
-        selectedCornerPoint.y = touchPoint.y
-        calcMiddlePoint(selectedCornerPoint, fixedCornerPoint, middlePoint)
-        bezierControl1.y = fixedCornerPoint.y
-        bezierControl2.x = fixedCornerPoint.x
-        // 设touchPoint和cornerVertex连线为直线L1，过middlePoint作L1的垂直平分线L2
-        // 与矩形屏幕边界相交于bezierControl1、bezierControl2
-        var k1 = (selectedCornerPoint.y - fixedCornerPoint.y) / (selectedCornerPoint.x - fixedCornerPoint.x)  // 直线L1斜率
-        var k2 = -1/k1      // 直线L2斜率
-        bezierControl1.x = middlePoint.x + (fixedCornerPoint.y - middlePoint.y) / k2
-        bezierControl2.y = middlePoint.y + (fixedCornerPoint.x - middlePoint.x) * k2
-        // 设bezierStart1、bezierStart2连线为L3，则L3为touchPoint、middlePoint线段的垂直平分线
-        bezierStart1.y = fixedCornerPoint.y
-        bezierStart1.x = bezierControl1.x - (fixedCornerPoint.x - bezierControl1.x) / 2
-        if (touchPoint.x > topMiddlePoint.x) {
-            if (bezierStart1.x < topMiddlePoint.x) {
-                val w0 = fixedCornerPoint.x - bezierStart1.x           // 限制bezierStart1.x不能小于0
-                val w1 = abs(fixedCornerPoint.x - selectedCornerPoint.x)      // 如果小于0，需要对touchPoint进行特殊处理
-                val w2 = pageWidth * w1 / w0
-                selectedCornerPoint.x = abs(fixedCornerPoint.x - w2)
-                val h1 = abs(fixedCornerPoint.y - selectedCornerPoint.y)
-                val h2 = w2 * h1 / w1
-                selectedCornerPoint.y = if (isTopCorner())  fixedCornerPoint.y + h2 else fixedCornerPoint.y - h2
-                // touchPoint更新后，需要重新计算与touchPoint有关系的坐标
-                calcMiddlePoint(selectedCornerPoint, fixedCornerPoint, middlePoint)
-                k1 = (selectedCornerPoint.y - fixedCornerPoint.y) / (selectedCornerPoint.x - fixedCornerPoint.x)  // 直线L1斜率
-                k2 = -1/k1      // 直线L2斜率
-                bezierControl1.x = middlePoint.x + (fixedCornerPoint.y - middlePoint.y) / k2
-                bezierControl2.y = middlePoint.y + (fixedCornerPoint.x - middlePoint.x) * k2
-                bezierStart1.x = bezierControl1.x - (fixedCornerPoint.x - bezierControl1.x) / 2
-            }
-            bezierStart2.x = fixedCornerPoint.x
-            bezierStart2.y = bezierControl2.y - (fixedCornerPoint.y- bezierControl2.y) / 2
-            // 设bezierEnd1为bezierControl1和touchPoint连线与bezierStart1、bezierStart2连线的交点
-            // 设bezierEnd1为bezierControl2和touchPoint连线与bezierStart1、bezierStart2连线的交点
-            calcCrossPoint(selectedCornerPoint, bezierControl1, bezierStart1, bezierStart2, bezierEnd1)
-            calcCrossPoint(selectedCornerPoint, bezierControl2, bezierStart1, bezierStart2, bezierEnd2)
-            calcMiddlePoint(bezierStart1, bezierEnd1, m1)
-            calcMiddlePoint(bezierStart2, bezierEnd2, m2)
-            calcMiddlePoint(m1, bezierControl1, bezierVertex1)      // bezierVertex1为m1、bezierControl1连线的中点
-            calcMiddlePoint(m2, bezierControl2, bezierVertex2)      // bezierVertex2为m2、bezierControl2连线的中点
-        } else {
-            if (bezierStart1.x > topMiddlePoint.x) {
-                bezierStart2.x = fixedCornerPoint.x
-                bezierStart2.y = bezierControl2.y - (fixedCornerPoint.y- bezierControl2.y) / 2
-                // 设bezierEnd1为bezierControl1和touchPoint连线与bezierStart1、bezierStart2连线的交点
-                // 设bezierEnd1为bezierControl2和touchPoint连线与bezierStart1、bezierStart2连线的交点
-                calcCrossPoint(selectedCornerPoint, bezierControl1, bezierStart1, bezierStart2, bezierEnd1)
-                calcCrossPoint(selectedCornerPoint, bezierControl2, bezierStart1, bezierStart2, bezierEnd2)
-                calcMiddlePoint(bezierStart1, bezierEnd1, m1)
-                calcMiddlePoint(bezierStart2, bezierEnd2, m2)
-                calcMiddlePoint(m1, bezierControl1, bezierVertex1)      // bezierVertex1为m1、bezierControl1连线的中点
-                calcMiddlePoint(m2, bezierControl2, bezierVertex2)      // bezierVertex2为m2、bezierControl2连线的中点
-            } else {
-                bezierStart2.x = fixedCornerPoint.x
-                bezierStart2.y = bezierControl2.y - (fixedCornerPoint.y- bezierControl2.y) / 2
-                // 设bezierEnd1为bezierControl1和touchPoint连线与bezierStart1、bezierStart2连线的交点
-                // 设bezierEnd1为bezierControl2和touchPoint连线与bezierStart1、bezierStart2连线的交点
-                calcCrossPoint(selectedCornerPoint, bezierControl1, bezierStart1, bezierStart2, bezierEnd1)
-                calcCrossPoint(selectedCornerPoint, bezierControl2, bezierStart1, bezierStart2, bezierEnd2)
-                calcMiddlePoint(bezierStart1, bezierEnd1, m1)
-                calcMiddlePoint(bezierStart2, bezierEnd2, m2)
-                calcMiddlePoint(m1, bezierControl1, bezierVertex1)      // bezierVertex1为m1、bezierControl1连线的中点
-                calcMiddlePoint(m2, bezierControl2, bezierVertex2)      // bezierVertex2为m2、bezierControl2连线的中点
+    private val debugLinePaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1F
+        color = Color.BLACK
+    }
+
+    private fun Canvas.drawPoint(text: String, x: Float, y: Float,) {
+        drawCircle(x, y, 6F, debugLinePaint)
+        drawText(text, x, y, debugPosPaint)
+    }
+
+    private fun calcPointers(canvas: Canvas) {
+        canvas.drawPoint("Down", downPos.x, downPos.y)
+        canvas.drawPoint("Touch", touchPos.x, touchPos.y)
+        canvas.drawLine(downPos.x, downPos.y, touchPos.x, touchPos.y, debugLinePaint)
+
+        // process origin point
+        var mouseDirX = downPos.x - touchPos.x
+        var mouseDirY = downPos.y - touchPos.y
+        val len = hypot(mouseDirX, mouseDirY)
+        mouseDirX /= len
+        mouseDirY /= len
+        originPos.x = topMiddlePoint.x
+        originPos.y = (touchPos.y - mouseDirY * (touchPos.x - topMiddlePoint.x) / mouseDirX).coerceIn(topMiddlePoint.y, bottomMiddlePoint.y)
+        canvas.drawPoint("Origin", originPos.x, originPos.y)
+        canvas.drawLine(originPos.x, originPos.y, touchPos.x, touchPos.y, debugLinePaint)
 
 
-            }
+        // process end point
+        endPos.x = topRightPoint.x
+        endPos.y = downPos.y + mouseDirY / mouseDirX * (endPos.x - downPos.x)
+        canvas.drawPoint("EndPos", endPos.x, endPos.y)
+        canvas.drawLine(endPos.x, endPos.y, downPos.x, downPos.y, debugLinePaint)
+
+        // process axis point
+        val L1 = hypot(touchPos.x - originPos.x, touchPos.y - originPos.y)
+        val L2 = hypot(endPos.x - downPos.x, endPos.y - downPos.y)
+        cylinderAxisPos.x = touchPos.x + mouseDirX * L2
+        cylinderAxisPos.y = touchPos.y + mouseDirY * L2
+        canvas.drawPoint("Axis", cylinderAxisPos.x, cylinderAxisPos.y)
+
+        // draw axis line
+        // 正交于mouseDir，(mouseDirY, -mouseDirX)
+        cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
+        cylinderAxisLineStartPos.y = topMiddlePoint.y
+        canvas.drawPoint("Start", cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+
+        cylinderAxisLineEndPos.x = topRightPoint.x
+        cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+        canvas.drawPoint("Start", cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y)
+        canvas.drawLine(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
+            cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y, debugLinePaint)
+
+        // draw engle point
+        cylinderEnglePos.x = cylinderAxisPos.x + mouseDirX * cylinderRadius
+        cylinderEnglePos.y = cylinderAxisPos.y + mouseDirY * cylinderRadius
+        canvas.drawPoint("Engle", cylinderEnglePos.x, cylinderEnglePos.y)
+
+        // draw engle line
+        cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - topMiddlePoint.y)
+        cylinderEngleLineStartPos.y = topMiddlePoint.y
+        cylinderEngleLineEndPos.x =  topRightPoint.x
+        cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
+        canvas.drawPoint("Start", cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y)
+        canvas.drawPoint("End", cylinderEngleLineEndPos.x, cylinderEngleLineEndPos.y)
+        canvas.drawLine(cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y,
+            cylinderEngleLineEndPos.x, cylinderEngleLineEndPos.y, debugLinePaint)
+
+        cylinderEngleProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * 0.5 * PI).toFloat()
+        cylinderEngleProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * 0.5 * PI).toFloat()
+        cylinderEngleProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - topMiddlePoint.y)
+        cylinderEngleProjStartPos.y = topMiddlePoint.y
+        cylinderEngleProjEndPos.x =  topRightPoint.x
+        cylinderEngleProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleProjEndPos.x - cylinderEngleProjPos.x)
+        canvas.drawPoint("", cylinderEngleProjPos.x, cylinderEngleProjPos.y)
+        canvas.drawPoint("Start", cylinderEngleProjStartPos.x, cylinderEngleProjStartPos.y)
+        canvas.drawPoint("End", cylinderEngleProjEndPos.x, cylinderEngleProjEndPos.y)
+        canvas.drawLine(cylinderEngleProjStartPos.x, cylinderEngleProjStartPos.y,
+            cylinderEngleProjEndPos.x, cylinderEngleProjEndPos.y, debugLinePaint)
+
+        cylinderAxisProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * PI).toFloat()
+        cylinderAxisProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * PI).toFloat()
+        cylinderAxisProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - topMiddlePoint.y)
+        cylinderAxisProjStartPos.y = topMiddlePoint.y
+        cylinderAxisProjEndPos.x =  topRightPoint.x
+        cylinderAxisProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisProjEndPos.x - cylinderAxisProjPos.x)
+        canvas.drawPoint("", cylinderAxisProjPos.x, cylinderAxisProjPos.y)
+        canvas.drawPoint("Start", cylinderAxisProjStartPos.x, cylinderAxisProjStartPos.y)
+        canvas.drawPoint("End", cylinderAxisProjEndPos.x, cylinderAxisProjEndPos.y)
+        canvas.drawLine(cylinderAxisProjStartPos.x, cylinderAxisProjStartPos.y,
+            cylinderAxisProjEndPos.x, cylinderAxisProjEndPos.y, debugLinePaint)
+
+
+        val cornerPosX = topRightPoint.x
+        val cornerPosY = topRightPoint.y
+        canvas.drawPoint("", cornerPosX, cornerPosY)
+        reflectPointAboutLine(cornerPosX, cornerPosY,
+            cylinderEngleProjStartPos.x, cylinderEngleProjStartPos.y,
+            cylinderEngleProjEndPos.x, cylinderEngleProjEndPos.y).apply {
+            selectedCornerPos.x = first
+            selectedCornerPos.y = second
+        }
+        canvas.drawPoint("Corner", selectedCornerPos.x, selectedCornerPos.y)
+        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, cornerPosX, cornerPosY, debugLinePaint)
+        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, cylinderEngleProjStartPos.x, cylinderEngleProjStartPos.y, debugLinePaint)
+        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, cylinderEngleProjEndPos.x, cylinderEngleProjEndPos.y, debugLinePaint)
+
+        reflectPointAboutLine(cylinderAxisProjStartPos.x, cylinderAxisProjStartPos.y,
+            cylinderEngleProjStartPos.x, cylinderEngleProjStartPos.y,
+            cylinderEngleProjEndPos.x, cylinderEngleProjEndPos.y).apply {
+            sineStartPos1.x = first
+            sineStartPos1.y = second
+        }
+        canvas.drawLine(sineStartPos1.x, sineStartPos1.y, cylinderAxisProjStartPos.x, cylinderAxisProjStartPos.y, debugLinePaint)
+        reflectPointAboutLine(cylinderAxisProjEndPos.x, cylinderAxisProjEndPos.y,
+            cylinderEngleProjStartPos.x, cylinderEngleProjStartPos.y,
+            cylinderEngleProjEndPos.x, cylinderEngleProjEndPos.y).apply {
+            sineStartPos2.x = first
+            sineStartPos2.y = second
+        }
+        canvas.drawLine(sineStartPos2.x, sineStartPos2.y, cylinderAxisProjEndPos.x, cylinderAxisProjEndPos.y, debugLinePaint)
+        canvas.drawPoint("", sineStartPos1.x, sineStartPos1.y)
+        canvas.drawPoint("", sineStartPos2.x, sineStartPos2.y)
+        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, sineStartPos1.x, sineStartPos1.y, debugLinePaint)
+        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, sineStartPos2.x, sineStartPos2.y, debugLinePaint)
+
+        val deltaX1 = hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)
+        val deltaX2 = hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)
+        drawHalfSineCurve(
+            canvas, debugLinePaint,
+            sineStartPos1.x, sineStartPos1.y,
+            cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
+            cylinderRadius, deltaX1
+        )
+        drawHalfSineCurve(
+            canvas, debugLinePaint,
+            sineStartPos2.x, sineStartPos2.y,
+            cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y,
+            cylinderRadius, deltaX2, direction = -1
+        )
+    }
+
+    /**
+     * 在 Canvas 上绘制从 (x0,y0) 到 (x1,y1) 的半周期正弦曲线
+     *
+     * @param canvas    画布
+     * @param paint     画笔
+     * @param x0,y0     起点
+     * @param x1,y1     终点
+     * @param R         振幅
+     * @param deltaX    横向跨度（通常设为起点和终点的距离）
+     * @param direction 正弦波在法向的方向：+1=正向，-1=反向
+     * @param samples   采样点数（越大越平滑）
+     */
+    fun drawHalfSineCurve(
+        canvas: Canvas,
+        paint: Paint,
+        x0: Float, y0: Float,
+        x1: Float, y1: Float,
+        R: Float,
+        deltaX: Float,
+        direction: Int = 1,
+        samples: Int = 64
+    ) {
+        val dx = x1 - x0
+        val dy = y1 - y0
+        val len = hypot(dx, dy)
+        if (len == 0f) return
+
+        // 单位向量
+        val ux = dx / len
+        val uy = dy / len
+        // 法向量
+        val nx = -uy
+        val ny = ux
+
+        var prevX = x0
+        var prevY = y0
+
+        for (i in 1..samples) {
+            val t = i.toFloat() / samples
+            val localX = deltaX * t
+            val localY = R * sin(Math.PI * t).toFloat() * direction
+
+            val gx = x0 + localX * ux + localY * nx
+            val gy = y0 + localX * uy + localY * ny
+
+            canvas.drawLine(prevX, prevY, gx, gy, paint)
+
+            prevX = gx
+            prevY = gy
         }
     }
 
-    private fun isTopCorner() = fixedCornerPoint.y == topRightPoint.y
-
 }
+
+
