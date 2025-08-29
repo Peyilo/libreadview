@@ -70,7 +70,11 @@ fun reflectPointAboutLine(
     val vx = bx - ax
     val vy = by - ay
     val denom = vx*vx + vy*vy
-    require(denom > 0f) { "对称轴的两点不能重合" }
+    if (denom == 0f) {
+        // 对称轴的两点重合，无法计算
+//        require(denom > 0f) { "对称轴的两点不能重合" }
+        return 0F to 0F
+    }
 
     // 投影参数 t
     val wx = px - ax
