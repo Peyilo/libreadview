@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Scroller
@@ -82,7 +81,19 @@ class SimulationViewDoublePage(
     private val touchPos = PointF()
     private val downPos = PointF()
 
-    private val selectedCornerPos = PointF()
+    // 以下四个点用于touchPos.y == downPos.y时的水平滑动
+    private val landscapeP1 = PointF()       // 左上角
+    private val landscapeP2 = PointF()       // 右上角
+    private val landscapeP3 = PointF()       // 左下角
+    private val landscapeP4 = PointF()       // 右下角
+
+    // 以下两个点用于只剩下一条sine曲线的情形
+    private val sineP1 = PointF()
+    private val sineP2 = PointF()
+    
+    private val cornerPos = PointF()
+    private val cornerProjPos = PointF()
+    
     private val endPos = PointF()
     private val cylinderAxisPos = PointF()
     private val cylinderEnglePos = PointF()
@@ -149,14 +160,11 @@ class SimulationViewDoublePage(
         canvas.drawPath(leftPageRigion, greenPaint)
         canvas.drawPath(rightPageRegion, yellowPaint)
         if (isFlipping) {
-            calcPointers()
-            calcPaths()
+            val pointMode = computePoints()
+            computePaths(pointMode)
             canvas.drawPath(pathC, purplePaint)
             canvas.drawPath(pathB, bluePaint)
             canvas.drawPath(pathA, yellowPaint)
-            if (getMode() == Mode.Landscape) {
-                Log.d(TAG, "onDraw: Landscape")
-            }
             debug(canvas)
         }
     }
@@ -219,17 +227,23 @@ class SimulationViewDoublePage(
     private fun Canvas.drawPoint(text: String, x: Float, y: Float,) {
         drawCircle(x, y, 6F, debugLinePaint)
         val length = debugPosPaint.measureText(text)
-        drawText(text, x - length / 2, y + debugPosPaint.textSize / 4, debugPosPaint)
+        var dy = 0F
+        if (y <= 0F) {
+            dy = debugPosPaint.textSize
+        } else if (y >= pageHeight) {
+            dy = -debugPosPaint.textSize
+        }
+        drawText(text, x - length / 2, y + dy, debugPosPaint)
     }
 
-    enum class Mode {
+    enum class CornerMode {
         TopRightCorner, BottomRightCorner, Landscape
     }
 
-    private fun getMode(): Mode = when {
-        downPos.y < touchPos.y -> Mode.TopRightCorner
-        downPos.y > touchPos.y -> Mode.BottomRightCorner
-        else -> Mode.Landscape
+    private fun getCornerMode(): CornerMode = when {
+        downPos.y < touchPos.y -> CornerMode.TopRightCorner
+        downPos.y > touchPos.y -> CornerMode.BottomRightCorner
+        else -> CornerMode.Landscape
     }
 
     /**
@@ -271,8 +285,33 @@ class SimulationViewDoublePage(
         res.y = py
     }
 
-    private fun calcPointers() {
-        val mode = getMode()
+    private fun computeLandscapeWidth(allWidth: Float, cylinderRadius: Float): Float {
+        val cylinderHalfCircumference = (PI * cylinderRadius).toFloat()
+        if (allWidth > cylinderHalfCircumference) {     // 大于1/2圆周长时,有一部分是平铺的
+            return allWidth - cylinderHalfCircumference + cylinderRadius
+        } else if (allWidth >= 0.5 * cylinderHalfCircumference) {   // 介于1/4圆周长到1/2圆周长之间时
+            val theta = allWidth / cylinderRadius
+            return cylinderRadius * (1 - sin(theta))
+        } else {        // 小于1/4圆周长时
+            return 0F
+        }
+    }
+
+    /**
+     * 求解直线P1P2和直线P3P4的交点坐标，并将交点坐标保存到result中
+     */
+    private fun computeCrossPoint(p1: PointF, p2: PointF, p3: PointF, p4: PointF, result: PointF) {
+        // 二元函数通式： y=ax+b
+        val a1 = (p2.y - p1.y) / (p2.x - p1.x)
+        val b1 = (p1.x * p2.y - p2.x * p1.y) / (p1.x - p2.x)
+        val a2 = (p4.y - p3.y) / (p4.x - p3.x)
+        val b2 = (p3.x * p4.y - p4.x * p3.y) / (p3.x - p4.x)
+        result.x = (b2 - b1) / (a1 - a2)
+        result.y = a1 * result.x + b1
+    }
+
+    private fun computePoints(): Int {
+        val cornerMode = getCornerMode()
 
         // process origin point
         var mouseDirX = downPos.x - touchPos.x
@@ -290,15 +329,32 @@ class SimulationViewDoublePage(
         cylinderAxisPos.x = touchPos.x + mouseDirX * L
         cylinderAxisPos.y = touchPos.y + mouseDirY * L
 
+        if (cornerMode == CornerMode.Landscape) {
+            // 在水平滑动状态时，只需要确定四个点的坐标即可确定A、B、C三个区域
+            landscapeP1.y = topMiddlePoint.y
+            landscapeP2.y = topMiddlePoint.y
+            landscapeP3.y = bottomMiddlePoint.y
+            landscapeP4.y = bottomMiddlePoint.y
+
+            val allWidth = topRightPoint.x - cylinderAxisPos.x
+            assert(allWidth >= 0)
+            val landscapeWidth = computeLandscapeWidth(allWidth, cylinderRadius)
+            landscapeP1.x = cylinderEnglePos.x - landscapeWidth
+            landscapeP2.x = cylinderEnglePos.x
+            landscapeP3.x = cylinderEnglePos.x - landscapeWidth
+            landscapeP4.x = cylinderEnglePos.x
+            return 0
+        }
+
         // process axis line
         // 正交于mouseDir，(mouseDirY, -mouseDirX)
-        if (mode == Mode.TopRightCorner) {
+        if (cornerMode == CornerMode.TopRightCorner) {
             cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
             cylinderAxisLineStartPos.y = topMiddlePoint.y
 
             cylinderAxisLineEndPos.x = topRightPoint.x
             cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-        } else if (mode == Mode.BottomRightCorner) {
+        } else if (cornerMode == CornerMode.BottomRightCorner) {
             cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
             cylinderAxisLineStartPos.y = bottomMiddlePoint.y
 
@@ -307,16 +363,16 @@ class SimulationViewDoublePage(
         }
 
         // 限制页面左侧不能翻起来, 模拟真实书籍的装订
-        if (cylinderAxisLineStartPos.x < topMiddlePoint.x && mode != Mode.Landscape) {
-            if (mode == Mode.TopRightCorner) {
+        if (cylinderAxisLineStartPos.x < topMiddlePoint.x) {
+            if (cornerMode == CornerMode.TopRightCorner) {
                 perpendicularFoot(topMiddlePoint.x, topMiddlePoint.y,
                     touchPos.x, touchPos.y,
                     downPos.x, downPos.y,
                     cylinderAxisPos
-                    )
+                )
                 touchPos.x = cylinderAxisPos.x - mouseDirX * L
                 touchPos.y = cylinderAxisPos.y - mouseDirY * L
-            } else if (mode == Mode.BottomRightCorner) {
+            } else if (cornerMode == CornerMode.BottomRightCorner) {
                 perpendicularFoot(bottomMiddlePoint.x, bottomMiddlePoint.y,
                     touchPos.x, touchPos.y,
                     downPos.x, downPos.y,
@@ -343,103 +399,141 @@ class SimulationViewDoublePage(
             cylinderAxisPos.x = touchPos.x + mouseDirX * L
             cylinderAxisPos.y = touchPos.y + mouseDirY * L
 
-            // draw axis line
+            // process axis line
             // 正交于mouseDir，(mouseDirY, -mouseDirX)
-            if (mode == Mode.TopRightCorner) {
+            if (cornerMode == CornerMode.TopRightCorner) {
                 cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
                 cylinderAxisLineStartPos.y = topMiddlePoint.y
 
                 cylinderAxisLineEndPos.x = topRightPoint.x
                 cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-            } else if (mode == Mode.BottomRightCorner) {
+            } else if (cornerMode == CornerMode.BottomRightCorner) {
                 cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
                 cylinderAxisLineStartPos.y = bottomMiddlePoint.y
 
                 cylinderAxisLineEndPos.x = topRightPoint.x
                 cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
             }
-
         }
 
-        // draw engle point
+        // process engle point
         cylinderEnglePos.x = cylinderAxisPos.x + mouseDirX * cylinderRadius
         cylinderEnglePos.y = cylinderAxisPos.y + mouseDirY * cylinderRadius
 
-        // draw engle line
-        if (mode == Mode.TopRightCorner) {
+        // process engle project point
+        cylinderEngleProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * 0.5 * PI).toFloat()
+        cylinderEngleProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * 0.5 * PI).toFloat()
+
+        // process axis project point
+        cylinderAxisProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * PI).toFloat()
+        cylinderAxisProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * PI).toFloat()
+
+
+        if (cornerMode == CornerMode.TopRightCorner) {
+            // process corner point
+            cornerPos.x = topRightPoint.x
+            cornerPos.y = topRightPoint.y
+
+            // process engle line
             cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - topMiddlePoint.y)
             cylinderEngleLineStartPos.y = topMiddlePoint.y
             cylinderEngleLineEndPos.x =  topRightPoint.x
             cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
-        } else if (mode == Mode.BottomRightCorner) {
-            cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - bottomMiddlePoint.y)
-            cylinderEngleLineStartPos.y = bottomMiddlePoint.y
-            cylinderEngleLineEndPos.x =  topRightPoint.x
-            cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
-        }
 
-
-        cylinderEngleProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * 0.5 * PI).toFloat()
-        cylinderEngleProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * 0.5 * PI).toFloat()
-        if (mode == Mode.TopRightCorner) {
+            // process engle project line
             cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - topMiddlePoint.y)
             cylinderEngleLineProjStartPos.y = topMiddlePoint.y
             cylinderEngleLineProjEndPos.x =  topRightPoint.x
             cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
-        } else if (mode == Mode.BottomRightCorner) {
-            cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - bottomMiddlePoint.y)
-            cylinderEngleLineProjStartPos.y = bottomMiddlePoint.y
-            cylinderEngleLineProjEndPos.x =  topRightPoint.x
-            cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
-        }
 
-
-        cylinderAxisProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * PI).toFloat()
-        cylinderAxisProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * PI).toFloat()
-        if (mode == Mode.TopRightCorner) {
+            // process axis project line
             cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - topMiddlePoint.y)
             cylinderAxisLineProjStartPos.y = topMiddlePoint.y
             cylinderAxisLineProjEndPos.x =  topRightPoint.x
             cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
-        } else if (mode == Mode.BottomRightCorner) {
+        } else if (cornerMode == CornerMode.BottomRightCorner) {
+            // process corner point
+            cornerPos.x = bottomRightPoint.x
+            cornerPos.y = bottomRightPoint.y
+
+            // process engle line
+            cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - bottomMiddlePoint.y)
+            cylinderEngleLineStartPos.y = bottomMiddlePoint.y
+            cylinderEngleLineEndPos.x =  topRightPoint.x
+            cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
+
+            // process engle project line
+            cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - bottomMiddlePoint.y)
+            cylinderEngleLineProjStartPos.y = bottomMiddlePoint.y
+            cylinderEngleLineProjEndPos.x =  topRightPoint.x
+            cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
+
+            // process axis project line
             cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - bottomMiddlePoint.y)
             cylinderAxisLineProjStartPos.y = bottomMiddlePoint.y
             cylinderAxisLineProjEndPos.x =  topRightPoint.x
             cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
         }
 
-        // 只有当翻页角不在水平线上时，才进行曲线计算
-        if (mode != Mode.Landscape) {
-            val cornerPosX = if (mode == Mode.TopRightCorner) topRightPoint.x else bottomRightPoint.x
-            val cornerPosY = if (mode == Mode.TopRightCorner) topRightPoint.y else bottomRightPoint.y
-            reflectPointAboutLine(cornerPosX, cornerPosY,
-                cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
-                cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y).apply {
-                selectedCornerPos.x = first
-                selectedCornerPos.y = second
-            }
+        // 处理镜像对称点: 关于cylinderEngleProjLine的镜像
+        reflectPointAboutLine(cornerPos.x, cornerPos.y,
+            cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
+            cylinderEngleProjPos.x, cylinderEngleProjPos.y).apply {
+            cornerProjPos.x = first
+            cornerProjPos.y = second
+        }
+        reflectPointAboutLine(cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y,
+            cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
+            cylinderEngleProjPos.x, cylinderEngleProjPos.y).apply {
+            sineStartPos1.x = first
+            sineStartPos1.y = second
+        }
+        reflectPointAboutLine(cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y,
+            cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
+            cylinderEngleProjPos.x, cylinderEngleProjPos.y).apply {
+            sineStartPos2.x = first
+            sineStartPos2.y = second
+        }
 
-            reflectPointAboutLine(cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y,
-                cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
-                cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y).apply {
-                sineStartPos1.x = first
-                sineStartPos1.y = second
-            }
-            reflectPointAboutLine(cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y,
-                cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
-                cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y).apply {
-                sineStartPos2.x = first
-                sineStartPos2.y = second
-            }
+        // 处理正弦波最高点
+        sineMaxPos1.x = (cylinderAxisLineStartPos.x + sineStartPos1.x) / 2
+        sineMaxPos1.y = (cylinderAxisLineStartPos.y + sineStartPos1.y) / 2
+        sineMaxPos2.x = (cylinderAxisLineEndPos.x + sineStartPos2.x) / 2
+        sineMaxPos2.y = (cylinderAxisLineEndPos.y + sineStartPos2.y) / 2
+        sineMaxPos1.x = sineMaxPos1.x + mouseDirX * cylinderRadius
+        sineMaxPos1.y = sineMaxPos1.y + mouseDirY * cylinderRadius
+        sineMaxPos2.x = sineMaxPos2.x + mouseDirX * cylinderRadius
+        sineMaxPos2.y = sineMaxPos2.y + mouseDirY * cylinderRadius
 
-            sineMaxPos1.x = (cylinderAxisLineStartPos.x + sineStartPos1.x) / 2
-            sineMaxPos1.y = (cylinderAxisLineStartPos.y + sineStartPos1.y) / 2
-            sineMaxPos2.x = (cylinderAxisLineEndPos.x + sineStartPos2.x) / 2
-            sineMaxPos2.y = (cylinderAxisLineEndPos.y + sineStartPos2.y) / 2
-            sineMaxPos1.x = sineMaxPos1.x + mouseDirX * cylinderRadius
-            sineMaxPos1.y = sineMaxPos1.y + mouseDirY * cylinderRadius
-            sineMaxPos2.x = sineMaxPos2.x + mouseDirX * cylinderRadius
-            sineMaxPos2.y = sineMaxPos2.y + mouseDirY * cylinderRadius
+        // 处理只显示一条正弦曲线的情形
+        // 当sineStartPos2处于屏幕之外时，只会显示sineStartPos1的正弦曲线
+        // 此时需要额外增加两个点，用于确定A、B、C三个区域(之所以要这样做，是因为当一条sine曲线消失时，如果依旧按照两条sine曲线来计算区域，由于此时
+        // 有些点的坐标其实已经接近无穷大了，导致计算不准确，从而出现渲染错误)
+        if (abs(cornerPos.y - sineStartPos2.y) >= pageHeight) {
+            if (cornerMode == CornerMode.TopRightCorner) {
+                reflectPointAboutLine(bottomRightPoint.x, bottomRightPoint.y,
+                    cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
+                    cylinderEngleProjPos.x, cylinderEngleProjPos.y).apply {
+                    computeCrossPoint(bottomLeftPoint, bottomRightPoint,
+                        cornerProjPos, PointF(first, second), sineP1)
+                }
+                val x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - bottomMiddlePoint.y)
+                computeCrossPoint(bottomLeftPoint, bottomRightPoint,
+                    cylinderEngleLineStartPos, PointF(x, bottomMiddlePoint.y), sineP2)
+            } else if (cornerMode == CornerMode.BottomRightCorner) {
+                reflectPointAboutLine(topRightPoint.x, topRightPoint.y,
+                    cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
+                    cylinderEngleProjPos.x, cylinderEngleProjPos.y).apply {
+                    computeCrossPoint(topLeftPoint, topRightPoint,
+                        cornerProjPos, PointF(first, second), sineP1)
+                }
+                val x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - topMiddlePoint.y)
+                computeCrossPoint(topLeftPoint, topRightPoint,
+                    cylinderEngleLineStartPos, PointF(x, topMiddlePoint.y), sineP2)
+            }
+            return 2
+        } else {
+            return 1
         }
     }
 
@@ -469,93 +563,191 @@ class SimulationViewDoublePage(
         canvas.drawPoint("End", cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y)
         canvas.drawLine(cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y,
             cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y, debugLinePaint)
-        canvas.drawPoint("Corner", selectedCornerPos.x, selectedCornerPos.y)
-        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y, debugLinePaint)
-        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y, debugLinePaint)
+        canvas.drawPoint("Corner", cornerProjPos.x, cornerProjPos.y)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y, debugLinePaint)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y, debugLinePaint)
         canvas.drawLine(sineStartPos1.x, sineStartPos1.y, cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y, debugLinePaint)
         canvas.drawLine(sineStartPos2.x, sineStartPos2.y, cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y, debugLinePaint)
         canvas.drawPoint("sineStartPos1", sineStartPos1.x, sineStartPos1.y)
         canvas.drawPoint("sineStartPos2", sineStartPos2.x, sineStartPos2.y)
-        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, sineStartPos1.x, sineStartPos1.y, debugLinePaint)
-        canvas.drawLine(selectedCornerPos.x, selectedCornerPos.y, sineStartPos2.x, sineStartPos2.y, debugLinePaint)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, sineStartPos1.x, sineStartPos1.y, debugLinePaint)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, sineStartPos2.x, sineStartPos2.y, debugLinePaint)
         val deltaX1 = hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)
         val deltaX2 = hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)
         drawHalfSineCurve(
             canvas, debugLinePaint,
             sineStartPos1.x, sineStartPos1.y,
             cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
-            cylinderRadius, deltaX1, direction = if (getMode() == Mode.TopRightCorner) 1 else -1
+            cylinderRadius, deltaX1, direction = if (getCornerMode() == CornerMode.TopRightCorner) 1 else -1
         )
         drawHalfSineCurve(
             canvas, debugLinePaint,
             sineStartPos2.x, sineStartPos2.y,
             cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y,
-            cylinderRadius, deltaX2, direction = if (getMode() == Mode.TopRightCorner) -1 else 1
+            cylinderRadius, deltaX2, direction = if (getCornerMode() == CornerMode.TopRightCorner) -1 else 1
         )
         canvas.drawPoint("", sineMaxPos1.x, sineMaxPos1.y)
         canvas.drawPoint("", sineMaxPos2.x, sineMaxPos2.y)
+
+        canvas.drawPoint("landscapeP1", landscapeP1.x, landscapeP1.y)
+        canvas.drawPoint("landscapeP2", landscapeP2.x, landscapeP2.y)
+        canvas.drawPoint("landscapeP3", landscapeP3.x, landscapeP3.y)
+        canvas.drawPoint("landscapeP4", landscapeP4.x, landscapeP4.y)
     }
 
-    private fun calcPaths() {
-        val mode = getMode()
-        pathC.reset()
-        pathC.moveTo(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
-        if (mode == Mode.TopRightCorner) {
-            pathC.lineTo(topRightPoint.x, topRightPoint.y)
-        } else if (mode == Mode.BottomRightCorner) {
-            pathC.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+    private fun computePaths(pointMode: Int) {
+        when (pointMode) {
+            0 -> {
+                pathB.reset()
+                pathB.moveTo(landscapeP2.x, landscapeP2.y)
+                pathB.lineTo(topRightPoint.x, topRightPoint.y)
+                pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+                pathB.lineTo(landscapeP4.x, landscapeP4.y)
+                pathB.close()
+                pathB.op(rightPageRegion, Path.Op.INTERSECT)
+
+                pathC.reset()
+                pathC.moveTo(landscapeP1.x, landscapeP1.y)
+                pathC.lineTo(landscapeP2.x, landscapeP2.y)
+                pathC.lineTo(landscapeP4.x, landscapeP4.y)
+                pathC.lineTo(landscapeP3.x, landscapeP3.y)
+                pathC.close()
+                pathC.op(allPageRegion, Path.Op.INTERSECT)
+            }
+            1 -> {
+                val cornerMode = getCornerMode()
+                pathB.reset()
+                pathB.moveTo(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+                if (cornerMode == CornerMode.TopRightCorner) {
+                    pathB.lineTo(topRightPoint.x, topRightPoint.y)
+                } else if (cornerMode == CornerMode.BottomRightCorner) {
+                    pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+                }
+                pathB.lineTo(cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y)
+                pathB.addQuarterSineFromHalfPeriod(
+                    startX = cylinderAxisLineEndPos.x,
+                    startY = cylinderAxisLineEndPos.y,
+                    endX = sineStartPos2.x,
+                    endY = sineStartPos2.y,
+                    amplitude = cylinderRadius,
+                    angularFrequency = (PI / hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)).toFloat(),
+                    direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
+                )
+                pathB.lineTo(sineMaxPos1.x, sineMaxPos1.y)
+                pathB.addQuarterSineFromHalfPeriod(
+                    startX = sineStartPos1.x,
+                    startY = sineStartPos1.y,
+                    endX = cylinderAxisLineStartPos.x,
+                    endY = cylinderAxisLineStartPos.y,
+                    amplitude = cylinderRadius,
+                    angularFrequency = (PI / hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)).toFloat(),
+                    isFirstQuarter = false,
+                    direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
+                )
+                pathB.close()
+                pathB.op(rightPageRegion, Path.Op.INTERSECT)
+
+                pathC.reset()
+                pathC.moveTo(sineMaxPos1.x, sineMaxPos1.y)
+                pathC.lineTo(sineMaxPos2.x, sineMaxPos2.y)
+                pathC.addQuarterSineFromHalfPeriod(
+                    startX = cylinderAxisLineEndPos.x,
+                    startY = cylinderAxisLineEndPos.y,
+                    endX = sineStartPos2.x,
+                    endY = sineStartPos2.y,
+                    amplitude = cylinderRadius,
+                    angularFrequency = (PI / hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)).toFloat(),
+                    isFirstQuarter = false,
+                    direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
+                )
+                pathC.lineTo(cornerProjPos.x, cornerProjPos.y)
+                pathC.lineTo(sineStartPos1.x, sineStartPos1.y)
+                pathC.addQuarterSineFromHalfPeriod(
+                    startX = sineStartPos1.x,
+                    startY = sineStartPos1.y,
+                    endX = cylinderAxisLineStartPos.x,
+                    endY = cylinderAxisLineStartPos.y,
+                    amplitude = cylinderRadius,
+                    angularFrequency = (PI / hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)).toFloat(),
+                    direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
+                )
+                pathC.close()
+                pathC.op(allPageRegion, Path.Op.INTERSECT)
+            }
+            2 -> {
+                val cornerMode = getCornerMode()
+                val interval = hypot(cylinderAxisLineStartPos.x - sineStartPos1.x, cylinderAxisLineStartPos.y - sineStartPos1.y)
+                val useDirectly = interval < 5F
+                // 之所以额外添加这个判断，是因为当cylinderAxisLineStartPos和sineStartPos1非常接近时，
+                // 如果依旧按照正弦曲线来绘制，会导致渲染错误，出现屏幕闪烁的现象
+                if (useDirectly) {
+                    pathB.reset()
+                    pathB.moveTo(cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y)
+                    if (cornerMode == CornerMode.TopRightCorner) {
+                        pathB.lineTo(topRightPoint.x, topRightPoint.y)
+                        pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+                    } else if (cornerMode == CornerMode.BottomRightCorner) {
+                        pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+                        pathB.lineTo(topRightPoint.x, topRightPoint.y)
+                    }
+                    pathB.lineTo(sineP2.x, sineP2.y)
+                    pathB.close()
+                    pathB.op(rightPageRegion, Path.Op.INTERSECT)
+
+                    pathC.reset()
+                    pathC.moveTo(cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y)
+                    pathC.lineTo(sineP2.x, sineP2.y)
+                    pathC.lineTo(sineP1.x, sineP1.y)
+                    pathC.lineTo(cornerProjPos.x, cornerProjPos.y)
+                    pathC.lineTo(sineStartPos1.x, sineStartPos1.y)
+                    pathC.close()
+                    pathC.op(allPageRegion, Path.Op.INTERSECT)
+                } else {
+                    pathB.reset()
+                    pathB.moveTo(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+                    if (cornerMode == CornerMode.TopRightCorner) {
+                        pathB.lineTo(topRightPoint.x, topRightPoint.y)
+                        pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+                    } else if (cornerMode == CornerMode.BottomRightCorner) {
+                        pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
+                        pathB.lineTo(topRightPoint.x, topRightPoint.y)
+                    }
+                    pathB.lineTo(sineP2.x, sineP2.y)
+                    pathB.lineTo(sineMaxPos1.x, sineMaxPos1.y)
+                    pathB.addQuarterSineFromHalfPeriod(
+                        startX = sineStartPos1.x,
+                        startY = sineStartPos1.y,
+                        endX = cylinderAxisLineStartPos.x,
+                        endY = cylinderAxisLineStartPos.y,
+                        amplitude = cylinderRadius,
+                        angularFrequency = (PI / hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)).toFloat(),
+                        isFirstQuarter = false,
+                        direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
+                    )
+                    pathB.close()
+                    pathB.op(rightPageRegion, Path.Op.INTERSECT)
+
+                    pathC.reset()
+                    pathC.moveTo(sineMaxPos1.x, sineMaxPos1.y)
+                    pathC.lineTo(sineP2.x, sineP2.y)
+                    pathC.lineTo(sineP1.x, sineP1.y)
+                    pathC.lineTo(cornerProjPos.x, cornerProjPos.y)
+                    pathC.lineTo(sineStartPos1.x, sineStartPos1.y)
+                    pathC.addQuarterSineFromHalfPeriod(
+                        startX = sineStartPos1.x,
+                        startY = sineStartPos1.y,
+                        endX = cylinderAxisLineStartPos.x,
+                        endY = cylinderAxisLineStartPos.y,
+                        amplitude = cylinderRadius,
+                        angularFrequency = (PI / hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)).toFloat(),
+                        direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
+                    )
+                    pathC.close()
+                    pathC.op(allPageRegion, Path.Op.INTERSECT)
+                }
+            }
+            else -> throw IllegalStateException("computePaths: pointMode=$pointMode is not supported.")
         }
-        pathC.lineTo(cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y)
-        pathC.addQuarterSineFromHalfPeriod(
-            startX = cylinderAxisLineEndPos.x,
-            startY = cylinderAxisLineEndPos.y,
-            endX = sineStartPos2.x,
-            endY = sineStartPos2.y,
-            amplitude = cylinderRadius,
-            angularFrequency = (PI / hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)).toFloat(),
-            direction = if (mode == Mode.TopRightCorner) 1 else -1
-        )
-        pathC.lineTo(sineMaxPos1.x, sineMaxPos1.y)
-        pathC.addQuarterSineFromHalfPeriod(
-            startX = sineStartPos1.x,
-            startY = sineStartPos1.y,
-            endX = cylinderAxisLineStartPos.x,
-            endY = cylinderAxisLineStartPos.y,
-            amplitude = cylinderRadius,
-            angularFrequency = (PI / hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)).toFloat(),
-            isFirstQuarter = false,
-            direction = if (mode == Mode.TopRightCorner) 1 else -1
-        )
-        pathC.close()
-        pathC.op(allPageRegion, Path.Op.INTERSECT)
-
-        pathB.reset()
-        pathB.moveTo(sineMaxPos1.x, sineMaxPos1.y)
-        pathB.lineTo(sineMaxPos2.x, sineMaxPos2.y)
-        pathB.addQuarterSineFromHalfPeriod(
-            startX = cylinderAxisLineEndPos.x,
-            startY = cylinderAxisLineEndPos.y,
-            endX = sineStartPos2.x,
-            endY = sineStartPos2.y,
-            amplitude = cylinderRadius,
-            angularFrequency = (PI / hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)).toFloat(),
-            isFirstQuarter = false,
-            direction = if (mode == Mode.TopRightCorner) 1 else -1
-        )
-        pathB.lineTo(selectedCornerPos.x, selectedCornerPos.y)
-        pathB.lineTo(sineStartPos1.x, sineStartPos1.y)
-        pathB.addQuarterSineFromHalfPeriod(
-            startX = sineStartPos1.x,
-            startY = sineStartPos1.y,
-            endX = cylinderAxisLineStartPos.x,
-            endY = cylinderAxisLineStartPos.y,
-            amplitude = cylinderRadius,
-            angularFrequency = (PI / hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)).toFloat(),
-            direction = if (mode == Mode.TopRightCorner) 1 else -1
-        )
-        pathB.close()
-        pathB.op(allPageRegion, Path.Op.INTERSECT)
-
         pathA.reset()
         pathA.moveTo(topMiddlePoint.x, topMiddlePoint.y)
         pathA.lineTo(topRightPoint.x, topRightPoint.y)
@@ -565,6 +757,7 @@ class SimulationViewDoublePage(
         pathA.op(pathB, Path.Op.DIFFERENCE)
         pathA.op(pathC, Path.Op.DIFFERENCE)
     }
+
 
     /**
      * 在 Canvas 上绘制从 (x0,y0) 到 (x1,y1) 的半周期正弦曲线

@@ -1344,10 +1344,10 @@ class SimulationPageManagers private constructor() {
 
             if (cornerMode == CornerMode.Landscape) {
                 // 在水平滑动状态时，只需要确定四个点的坐标即可确定A、B、C三个区域
-                landscapeP1.y = 0F
-                landscapeP2.y = 0F
-                landscapeP3.y = pageContainer.height.toFloat()
-                landscapeP4.y = pageContainer.height.toFloat()
+                landscapeP1.y = topMiddlePoint.y
+                landscapeP2.y = topMiddlePoint.y
+                landscapeP3.y = bottomMiddlePoint.y
+                landscapeP4.y = bottomMiddlePoint.y
 
                 val allWidth = topRightPoint.x - cylinderAxisPos.x
                 assert(allWidth >= 0)
