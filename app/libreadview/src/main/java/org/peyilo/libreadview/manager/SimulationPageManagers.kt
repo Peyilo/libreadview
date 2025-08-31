@@ -1352,6 +1352,7 @@ class SimulationPageManagers private constructor() {
                 val allWidth = topRightPoint.x - cylinderAxisPos.x
                 assert(allWidth >= 0)
                 val landscapeWidth = computeLandscapeWidth(allWidth, cylinderRadius)
+                // TODO: 这里有个bug，用到了没有更新的cylinderEnglePos
                 landscapeP1.x = cylinderEnglePos.x - landscapeWidth
                 landscapeP2.x = cylinderEnglePos.x
                 landscapeP3.x = cylinderEnglePos.x - landscapeWidth
