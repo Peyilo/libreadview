@@ -195,7 +195,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when (layoutManager) {
             is CoverLayoutManager -> 0
             is SlideLayoutManager -> 1
-            is SimulationPageManagers.Style2 -> 2
+            is SimulationPageManagers.Test -> 2
             is ScrollLayoutManager -> 3
             is IBookSlideLayoutManager -> 4
             else -> throw IllegalStateException()

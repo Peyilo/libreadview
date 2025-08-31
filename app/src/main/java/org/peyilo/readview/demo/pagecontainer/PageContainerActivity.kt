@@ -41,7 +41,7 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer.initPageIndex(1)
 
         // Choose a page animation manager (see options below)
-        pageContainer.layoutManager = SimulationPageManagers.Style3()
+        pageContainer.layoutManager = SimulationPageManagers.Style2()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)

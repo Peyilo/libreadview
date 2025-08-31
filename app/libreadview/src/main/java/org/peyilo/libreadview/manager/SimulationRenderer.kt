@@ -1,18 +1,14 @@
-package org.peyilo.readview.ui
+package org.peyilo.libreadview.manager
 
-import android.annotation.SuppressLint
-import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
-import android.util.AttributeSet
-import android.util.Log
-import android.view.MotionEvent
-import android.view.View
 import android.widget.Scroller
-import androidx.core.graphics.toColorInt
+import androidx.core.graphics.withClip
 import org.peyilo.libreadview.utils.reflectPointAboutLine
 import kotlin.math.PI
 import kotlin.math.abs
@@ -23,19 +19,18 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-class SimulationViewDoublePage(
-    context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
-): View(context, attrs, defStyleAttr, defStyleRes) {
+class SimulationRenderer {
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int): this(context, attrs, defStyleAttr, 0)
-    constructor(context: Context, attrs: AttributeSet?): this(context, attrs, 0)
-    constructor(context: Context): this(context, null)
+    /**
+     * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
+     */
+    var enableDebugMode = false
 
-    init {
-        setBackgroundColor(Color.GRAY)
-    }
+    private var _topBitmap: Bitmap? = null
+    private var _bottomBitmap: Bitmap? = null
 
-    private var isFlipping = false
+    private val topBitmap: Bitmap get() = _topBitmap!!
+    private val bottomBitmap: Bitmap get() = _bottomBitmap!!
 
     private val topLeftPoint = PointF()
     private val topMiddlePoint = PointF()
@@ -48,35 +43,14 @@ class SimulationViewDoublePage(
     private val leftPageRigion = Path()
     private val allPageRegion = Path()
 
-    private val viewVerticalPadding = 200F
-    private val viewHorizontalPadding = 400F
     private val pageWidth get() =  topRightPoint.x - topMiddlePoint.x
     private val pageHeight get() = bottomRightPoint.y - topRightPoint.y
-
-    private val greenPaint = Paint().apply {
-        color = "#88FFA6".toColorInt()
-        style = Paint.Style.FILL
-    }
-    private val yellowPaint = Paint().apply {
-        color = "#FFF988".toColorInt()
-        style = Paint.Style.FILL
-    }
-    private val bluePaint = Paint().apply {
-        color = "#7DB5FF".toColorInt()
-        style = Paint.Style.FILL
-    }
-
-    private val purplePaint = Paint().apply {
-        color = "#D284FF".toColorInt()
-        style = Paint.Style.FILL
-    }
 
     private val touchPos = PointF()
     private val downPos = PointF()
 
     private val downAlignRightPos = PointF()        // downPos.y与rightPageRegion右侧对齐时的点
 
-    private var lastRadius = 0F
     private val cylinderRadius: Float get() {
         val bias = abs(cylinderAxisPos.x - touchPos.x)
         val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
@@ -88,10 +62,6 @@ class SimulationViewDoublePage(
             val minRaidus = scale.coerceIn(0F, 0.5F) * raidus
             val dis = (1 - hypot(cylinderAxisPos.x - touchPos.x, cylinderAxisPos.y - touchPos.y) / (0.6F * pageWidth)).coerceIn(0F, 1F)
             max(minRaidus, dis * raidus)
-        }
-        if (res != lastRadius) {
-            Log.d(TAG, "cylinderRadius: $res")
-            lastRadius = res
         }
         return res
     }
@@ -108,7 +78,7 @@ class SimulationViewDoublePage(
 
     private val cornerPos = PointF()
     private val cornerProjPos = PointF()
-    
+
     private val cylinderAxisPos = PointF()
     private val cylinderEnglePos = PointF()
     private val cylinderAxisProjPos = PointF()
@@ -133,20 +103,65 @@ class SimulationViewDoublePage(
     private val pathB = Path()
     private val pathC = Path()
 
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        super.onLayout(changed, left, top, right, bottom)
-        topLeftPoint.x = viewHorizontalPadding
-        topLeftPoint.y = viewVerticalPadding
-        topRightPoint.x = width.toFloat() - viewHorizontalPadding
-        topRightPoint.y = viewVerticalPadding
-        bottomLeftPoint.x = viewHorizontalPadding
-        bottomLeftPoint.y = height.toFloat() - viewVerticalPadding
-        bottomRightPoint.x = width.toFloat() - viewHorizontalPadding
-        bottomRightPoint.y = height.toFloat() - viewVerticalPadding
+    private val debugPosPaint by lazy {
+        Paint().apply {
+            textSize = 15F
+            color = Color.RED
+        }
+    }
+
+    private val debugLinePaint by lazy {
+        Paint().apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 1F
+            color = Color.BLACK
+        }
+    }
+
+    private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
+    private val regionCMatrix = Matrix()
+
+    /**
+     * C区域：当前页的背面区域
+     * 设置渲染仿真翻页扭曲部分区域的横向采样点数量：采样点越多，越精确，但是计算量也越高
+     */
+    var regionCMeshWidth = 40
+
+    /**
+     * C区域：当前页的背面区域
+     * 设置渲染仿真翻页扭曲部分区域的纵向采样点数量：采样点越多，越精确，但是计算量也越高
+     */
+    var regionCMeshHeight = 40
+    private val regionCMeshVertsCount = (regionCMeshWidth + 1) * (regionCMeshHeight + 1)
+    private val regionCMeshVerts = FloatArray(regionCMeshVertsCount * 2)
+
+    /**
+     * A区域：当前页的正面区域
+     * 设置渲染仿真翻页扭曲部分区域的横向采样点数量：采样点越多，越精确，但是计算量也越高
+     */
+    var regionAMeshWidth = 40
+
+    /**
+     * A区域：当前页的正面区域
+     * 设置渲染仿真翻页扭曲部分区域的纵向采样点数量：采样点越多，越精确，但是计算量也越高
+     */
+    var regionAMeshHeight = 40
+    private val regionAMeshVertsCount = (regionAMeshWidth + 1) * (regionAMeshHeight + 1)
+    private val regionAMeshVerts = FloatArray(regionAMeshVertsCount * 2)
+
+    fun setPageSize(width: Float, height: Float) {
+        topLeftPoint.x = -width
+        topLeftPoint.y = 0F
+        topRightPoint.x = width
+        topRightPoint.y = 0F
+        bottomLeftPoint.x = -width
+        bottomLeftPoint.y = height
+        bottomRightPoint.x = width
+        bottomRightPoint.y = height
         topMiddlePoint.x = (topRightPoint.x + topLeftPoint.x) / 2
-        topMiddlePoint.y = viewVerticalPadding
+        topMiddlePoint.y = topRightPoint.y
         bottomMiddlePoint.x = (bottomLeftPoint.x + bottomRightPoint.x) / 2
-        bottomMiddlePoint.y = height.toFloat() - viewVerticalPadding
+        bottomMiddlePoint.y = bottomRightPoint.y
         rightPageRegion.apply {
             reset()
             moveTo(topMiddlePoint.x, topMiddlePoint.y)
@@ -169,90 +184,14 @@ class SimulationViewDoublePage(
         }
     }
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        canvas.drawPath(leftPageRigion, greenPaint)
-        canvas.drawPath(rightPageRegion, yellowPaint)
-        if (isFlipping) {
-            val pointMode = computePoints()
-            computePaths(pointMode)
-            canvas.drawPath(pathC, purplePaint)
-            canvas.drawPath(pathB, bluePaint)
-            canvas.drawPath(pathA, yellowPaint)
-            debug(canvas)
-        }
+    fun initDownPosition(x: Float, y: Float) {
+        downPos.x = x
+        downPos.y = y
+        touchPos.x = downPos.x
+        touchPos.y = downPos.y
     }
 
-    companion object {
-        private const val TAG = "SimulationViewDoublePag"
-    }
-
-    private val scroller = Scroller(context)
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when(event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                // 关于为什么要取整，因为scroller只支持int，导致dx、dy必须是整数，从而使得动画结束后，还有微小的误差
-                // 所以通过取整，来避免误差积累
-                downPos.x = event.x.toInt().toFloat()
-                downPos.y = event.y.toInt().toFloat()
-                if (!scroller.isFinished) {
-                    scroller.forceFinished(true)
-                }
-            }
-            MotionEvent.ACTION_MOVE -> {
-                touchPos.x = event.x.toInt().toFloat()
-                touchPos.y = event.y.toInt().toFloat()
-                if (!isFlipping) {
-                    isFlipping = true
-                }
-                invalidate()
-            }
-            MotionEvent.ACTION_UP -> {
-                scroller.startScroll(
-                    touchPos.x.toInt(), touchPos.y.toInt(),
-                    - touchPos.x.toInt() + topLeftPoint.x.toInt(),
-                    - touchPos.y.toInt() + downPos.y.toInt(), 2000)
-                invalidate()
-            }
-        }
-        return true
-    }
-
-    override fun computeScroll() {
-        super.computeScroll()
-        if (scroller.computeScrollOffset()) {
-            touchPos.x = scroller.currX.toFloat()
-            touchPos.y = scroller.currY.toFloat()
-            invalidate()
-        }
-    }
-
-    private val debugPosPaint = Paint().apply {
-        textSize = 15F
-        color = Color.RED
-    }
-
-    private val debugLinePaint = Paint().apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 1F
-        color = Color.BLACK
-    }
-
-    private fun Canvas.drawPoint(text: String, x: Float, y: Float,) {
-        drawCircle(x, y, 6F, debugLinePaint)
-        val length = debugPosPaint.measureText(text)
-        var dy = 0F
-        if (y <= 0F) {
-            dy = debugPosPaint.textSize
-        } else if (y >= pageHeight) {
-            dy = -debugPosPaint.textSize
-        }
-        drawText(text, x - length / 2, y + dy, debugPosPaint)
-    }
-
-    enum class CornerMode {
+    private enum class CornerMode {
         TopRightCorner, BottomRightCorner, Landscape
     }
 
@@ -273,7 +212,7 @@ class SimulationViewDoublePage(
      * @param cy 点 C 的 Y
      * @return 垂足坐标 PointF
      */
-    fun perpendicularFoot(
+    private fun perpendicularFoot(
         ax: Float, ay: Float,
         bx: Float, by: Float,
         cx: Float, cy: Float,
@@ -299,18 +238,6 @@ class SimulationViewDoublePage(
 
         res.x = px
         res.y = py
-    }
-
-    private fun computeLandscapeWidth(allWidth: Float, cylinderRadius: Float): Float {
-        val cylinderHalfCircumference = (PI * cylinderRadius).toFloat()
-        if (allWidth > cylinderHalfCircumference) {     // 大于1/2圆周长时,有一部分是平铺的
-            return allWidth - cylinderHalfCircumference + cylinderRadius
-        } else if (allWidth >= 0.5 * cylinderHalfCircumference) {   // 介于1/4圆周长到1/2圆周长之间时
-            val theta = allWidth / cylinderRadius
-            return cylinderRadius * (1 - sin(theta))
-        } else {        // 小于1/4圆周长时
-            return 0F
-        }
     }
 
     /**
@@ -339,7 +266,7 @@ class SimulationViewDoublePage(
      * @param direction 取哪一个交点：+1 / -1，沿 AB 的单位法向量 ±n 的方向
      * @throws IllegalArgumentException 当几何条件不可能（如 L<=0 或 L>=|AB|，或数值误差导致无交点）
      */
-    fun rightTriangleC(
+    private fun rightTriangleC(
         A: PointF,
         B: PointF,
         L: Float,
@@ -624,68 +551,6 @@ class SimulationViewDoublePage(
         }
     }
 
-    private fun debug(canvas: Canvas) {
-        canvas.drawPoint("Down", downPos.x, downPos.y)
-        canvas.drawPoint("Touch", touchPos.x, touchPos.y)
-        canvas.drawLine(downPos.x, downPos.y, touchPos.x, touchPos.y, debugLinePaint)
-        canvas.drawPoint("Axis", cylinderAxisPos.x, cylinderAxisPos.y)
-        canvas.drawPoint("AxisStart", cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
-        canvas.drawPoint("AxisEnd", cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y)
-        canvas.drawLine(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
-            cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y, debugLinePaint)
-        canvas.drawPoint("Engle", cylinderEnglePos.x, cylinderEnglePos.y)
-        canvas.drawPoint("EngleStart", cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y)
-        canvas.drawPoint("EngleEnd", cylinderEngleLineEndPos.x, cylinderEngleLineEndPos.y)
-        canvas.drawLine(cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y,
-            cylinderEngleLineEndPos.x, cylinderEngleLineEndPos.y, debugLinePaint)
-        canvas.drawPoint("cylinderEngleProjPos", cylinderEngleProjPos.x, cylinderEngleProjPos.y)
-        canvas.drawPoint("Start", cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y)
-        canvas.drawPoint("End", cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y)
-        canvas.drawLine(cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
-            cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y, debugLinePaint)
-        canvas.drawPoint("", cylinderAxisProjPos.x, cylinderAxisProjPos.y)
-        canvas.drawPoint("Start", cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y)
-        canvas.drawPoint("End", cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y)
-        canvas.drawLine(cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y,
-            cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y, debugLinePaint)
-        canvas.drawPoint("Corner", cornerProjPos.x, cornerProjPos.y)
-        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y, debugLinePaint)
-        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y, debugLinePaint)
-        canvas.drawLine(sineStartPos1.x, sineStartPos1.y, cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y, debugLinePaint)
-        canvas.drawLine(sineStartPos2.x, sineStartPos2.y, cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y, debugLinePaint)
-        canvas.drawPoint("sineStartPos1", sineStartPos1.x, sineStartPos1.y)
-        canvas.drawPoint("sineStartPos2", sineStartPos2.x, sineStartPos2.y)
-        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, sineStartPos1.x, sineStartPos1.y, debugLinePaint)
-        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, sineStartPos2.x, sineStartPos2.y, debugLinePaint)
-        val deltaX1 = hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)
-        val deltaX2 = hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)
-        drawHalfSineCurve(
-            canvas, debugLinePaint,
-            sineStartPos1.x, sineStartPos1.y,
-            cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
-            cylinderRadius, deltaX1, direction = if (getCornerMode() == CornerMode.TopRightCorner) 1 else -1
-        )
-        drawHalfSineCurve(
-            canvas, debugLinePaint,
-            sineStartPos2.x, sineStartPos2.y,
-            cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y,
-            cylinderRadius, deltaX2, direction = if (getCornerMode() == CornerMode.TopRightCorner) -1 else 1
-        )
-        canvas.drawPoint("", sineMaxPos1.x, sineMaxPos1.y)
-        canvas.drawPoint("", sineMaxPos2.x, sineMaxPos2.y)
-
-        // 将坐标转换为整数后显示
-        canvas.drawPoint("P1(${landscapeP1.x.toInt()}, ${landscapeP1.y.toInt()})", landscapeP1.x, landscapeP1.y)
-        canvas.drawPoint("P2(${landscapeP2.x.toInt()}, ${landscapeP2.y.toInt()})", landscapeP2.x, landscapeP2.y)
-        canvas.drawPoint("P3(${landscapeP3.x.toInt()}, ${landscapeP3.y.toInt()})", landscapeP3.x, landscapeP3.y)
-        canvas.drawPoint("P4(${landscapeP4.x.toInt()}, ${landscapeP4.y.toInt()})", landscapeP4.x, landscapeP4.y)
-
-        canvas.drawPoint("downAlignRightPos", downAlignRightPos.x, downAlignRightPos.y)
-        canvas.drawLine(topMiddlePoint.x, topMiddlePoint.y, downAlignRightPos.x, downAlignRightPos.y, debugLinePaint)
-        canvas.drawLine(cylinderAxisPos.x, cylinderAxisPos.y, downAlignRightPos.x, downAlignRightPos.y, debugLinePaint)
-        canvas.drawLine(topMiddlePoint.x, topMiddlePoint.y, cylinderAxisPos.x, cylinderAxisPos.y, debugLinePaint)
-    }
-
     private fun computePaths(pointMode: Int) {
         when (pointMode) {
             0 -> {
@@ -849,60 +714,6 @@ class SimulationViewDoublePage(
         pathA.op(pathC, Path.Op.DIFFERENCE)
     }
 
-
-    /**
-     * 在 Canvas 上绘制从 (x0,y0) 到 (x1,y1) 的半周期正弦曲线
-     *
-     * @param canvas    画布
-     * @param paint     画笔
-     * @param x0,y0     起点
-     * @param x1,y1     终点
-     * @param R         振幅
-     * @param deltaX    横向跨度（通常设为起点和终点的距离）
-     * @param direction 正弦波在法向的方向：+1=正向，-1=反向
-     * @param samples   采样点数（越大越平滑）
-     */
-    fun drawHalfSineCurve(
-        canvas: Canvas,
-        paint: Paint,
-        x0: Float, y0: Float,
-        x1: Float, y1: Float,
-        R: Float,
-        deltaX: Float,
-        direction: Int = 1,
-        samples: Int = 64
-    ) {
-        val dx = x1 - x0
-        val dy = y1 - y0
-        val len = hypot(dx, dy)
-        if (len == 0f) return
-
-        // 单位向量
-        val ux = dx / len
-        val uy = dy / len
-        // 法向量
-        val nx = -uy
-        val ny = ux
-
-        var prevX = x0
-        var prevY = y0
-
-        for (i in 1..samples) {
-            val t = i.toFloat() / samples
-            val localX = deltaX * t
-            val localY = R * sin(Math.PI * t).toFloat() * direction
-
-            val gx = x0 + localX * ux + localY * nx
-            val gy = y0 + localX * uy + localY * ny
-
-            canvas.drawLine(prevX, prevY, gx, gy, paint)
-            canvas.drawPoint("", gx, gy)
-
-            prevX = gx
-            prevY = gy
-        }
-    }
-
     /**
      * 绘制 y = A * sin(w * x) 在 x ∈ [0, π/(2w)] 的 1/4 周期
      *
@@ -918,7 +729,7 @@ class SimulationViewDoublePage(
      * @param isFirstQuarter 取前1/4周期还是后1/4周期
      * @param direction 正弦波在法向的方向：+1=正向，-1=反向
      */
-    fun Path.addQuarterSineFromHalfPeriod(
+    private fun Path.addQuarterSineFromHalfPeriod(
         startX: Float,
         startY: Float,
         endX: Float,
@@ -959,7 +770,338 @@ class SimulationViewDoublePage(
         }
     }
 
+    fun updateTouchPosition(curX: Float, curY: Float) {
+        touchPos.x = curX
+        touchPos.y = curY
+        val pointMode = computePoints()
+        computePaths(pointMode)
+        computeRegionAMeshVerts()
+        computeRegionCMeshVerts(regionCMatrix)
+    }
+
+    fun render(canvas: Canvas) {
+        // draw region A
+        canvas.withClip(pathA) {
+            canvas.drawBitmapMesh(topBitmap, regionAMeshWidth, regionAMeshHeight,
+                regionAMeshVerts, 0, null, 0, null)
+        }
+
+        // draw region B
+        canvas.withClip(pathB) {
+            drawBitmap(bottomBitmap, 0F, 0F, null)
+        }
+
+        // draw region C
+        canvas.withClip(pathC) {
+            canvas.drawBitmapMesh(topBitmap, regionCMeshWidth, regionCMeshHeight,
+                regionCMeshVerts, 0, null, 0, null)
+        }
+
+        // draw shadow
+        drawShadow(canvas)
+
+
+        if(enableDebugMode) debug(canvas)
+    }
+
+    fun setPages(top: Bitmap, bottom: Bitmap) {
+        _topBitmap = top
+        _bottomBitmap = bottom
+    }
+
+    fun release() {
+        _topBitmap = null
+        _bottomBitmap = null
+    }
+
+    private fun debug(canvas: Canvas) {
+        canvas.drawPoint("Down", downPos.x, downPos.y)
+        canvas.drawPoint("Touch", touchPos.x, touchPos.y)
+        canvas.drawLine(downPos.x, downPos.y, touchPos.x, touchPos.y, debugLinePaint)
+        canvas.drawPoint("Axis", cylinderAxisPos.x, cylinderAxisPos.y)
+        canvas.drawPoint("AxisStart", cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+        canvas.drawPoint("AxisEnd", cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y)
+        canvas.drawLine(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
+            cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y, debugLinePaint)
+        canvas.drawPoint("Engle", cylinderEnglePos.x, cylinderEnglePos.y)
+        canvas.drawPoint("EngleStart", cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y)
+        canvas.drawPoint("EngleEnd", cylinderEngleLineEndPos.x, cylinderEngleLineEndPos.y)
+        canvas.drawLine(cylinderEngleLineStartPos.x, cylinderEngleLineStartPos.y,
+            cylinderEngleLineEndPos.x, cylinderEngleLineEndPos.y, debugLinePaint)
+        canvas.drawPoint("cylinderEngleProjPos", cylinderEngleProjPos.x, cylinderEngleProjPos.y)
+        canvas.drawPoint("Start", cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y)
+        canvas.drawPoint("End", cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y)
+        canvas.drawLine(cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
+            cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y, debugLinePaint)
+        canvas.drawPoint("", cylinderAxisProjPos.x, cylinderAxisProjPos.y)
+        canvas.drawPoint("Start", cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y)
+        canvas.drawPoint("End", cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y)
+        canvas.drawLine(cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y,
+            cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y, debugLinePaint)
+        canvas.drawPoint("Corner", cornerProjPos.x, cornerProjPos.y)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y, debugLinePaint)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, cylinderEngleLineProjEndPos.x, cylinderEngleLineProjEndPos.y, debugLinePaint)
+        canvas.drawLine(sineStartPos1.x, sineStartPos1.y, cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y, debugLinePaint)
+        canvas.drawLine(sineStartPos2.x, sineStartPos2.y, cylinderAxisLineProjEndPos.x, cylinderAxisLineProjEndPos.y, debugLinePaint)
+        canvas.drawPoint("sineStartPos1", sineStartPos1.x, sineStartPos1.y)
+        canvas.drawPoint("sineStartPos2", sineStartPos2.x, sineStartPos2.y)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, sineStartPos1.x, sineStartPos1.y, debugLinePaint)
+        canvas.drawLine(cornerProjPos.x, cornerProjPos.y, sineStartPos2.x, sineStartPos2.y, debugLinePaint)
+        val deltaX1 = hypot(sineStartPos1.x - cylinderAxisLineStartPos.x, sineStartPos1.y - cylinderAxisLineStartPos.y)
+        val deltaX2 = hypot(sineStartPos2.x - cylinderAxisLineEndPos.x, sineStartPos2.y - cylinderAxisLineEndPos.y)
+        drawHalfSineCurve(
+            canvas, debugLinePaint,
+            sineStartPos1.x, sineStartPos1.y,
+            cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y,
+            cylinderRadius, deltaX1, direction = if (getCornerMode() == CornerMode.TopRightCorner) 1 else -1
+        )
+        drawHalfSineCurve(
+            canvas, debugLinePaint,
+            sineStartPos2.x, sineStartPos2.y,
+            cylinderAxisLineEndPos.x, cylinderAxisLineEndPos.y,
+            cylinderRadius, deltaX2, direction = if (getCornerMode() == CornerMode.TopRightCorner) -1 else 1
+        )
+        canvas.drawPoint("", sineMaxPos1.x, sineMaxPos1.y)
+        canvas.drawPoint("", sineMaxPos2.x, sineMaxPos2.y)
+
+        // 将坐标转换为整数后显示
+        canvas.drawPoint("P1(${landscapeP1.x.toInt()}, ${landscapeP1.y.toInt()})", landscapeP1.x, landscapeP1.y)
+        canvas.drawPoint("P2(${landscapeP2.x.toInt()}, ${landscapeP2.y.toInt()})", landscapeP2.x, landscapeP2.y)
+        canvas.drawPoint("P3(${landscapeP3.x.toInt()}, ${landscapeP3.y.toInt()})", landscapeP3.x, landscapeP3.y)
+        canvas.drawPoint("P4(${landscapeP4.x.toInt()}, ${landscapeP4.y.toInt()})", landscapeP4.x, landscapeP4.y)
+
+        canvas.drawPoint("downAlignRightPos", downAlignRightPos.x, downAlignRightPos.y)
+        canvas.drawLine(topMiddlePoint.x, topMiddlePoint.y, downAlignRightPos.x, downAlignRightPos.y, debugLinePaint)
+        canvas.drawLine(cylinderAxisPos.x, cylinderAxisPos.y, downAlignRightPos.x, downAlignRightPos.y, debugLinePaint)
+        canvas.drawLine(topMiddlePoint.x, topMiddlePoint.y, cylinderAxisPos.x, cylinderAxisPos.y, debugLinePaint)
+    }
+
+    private fun Canvas.drawPoint(text: String, x: Float, y: Float,) {
+        drawCircle(x, y, 6F, debugLinePaint)
+        val length = debugPosPaint.measureText(text)
+        var dy = 0F
+        if (y <= 0F) {
+            dy = debugPosPaint.textSize
+        } else if (y >= pageHeight) {
+            dy = -debugPosPaint.textSize
+        }
+        drawText(text, x - length / 2, y + dy, debugPosPaint)
+    }
+
+    /**
+     * 在 Canvas 上绘制从 (x0,y0) 到 (x1,y1) 的半周期正弦曲线
+     *
+     * @param canvas    画布
+     * @param paint     画笔
+     * @param x0,y0     起点
+     * @param x1,y1     终点
+     * @param R         振幅
+     * @param deltaX    横向跨度（通常设为起点和终点的距离）
+     * @param direction 正弦波在法向的方向：+1=正向，-1=反向
+     * @param samples   采样点数（越大越平滑）
+     */
+    private fun drawHalfSineCurve(
+        canvas: Canvas,
+        paint: Paint,
+        x0: Float, y0: Float,
+        x1: Float, y1: Float,
+        R: Float,
+        deltaX: Float,
+        direction: Int = 1,
+        samples: Int = 64
+    ) {
+        val dx = x1 - x0
+        val dy = y1 - y0
+        val len = hypot(dx, dy)
+        if (len == 0f) return
+
+        // 单位向量
+        val ux = dx / len
+        val uy = dy / len
+        // 法向量
+        val nx = -uy
+        val ny = ux
+
+        var prevX = x0
+        var prevY = y0
+
+        for (i in 1..samples) {
+            val t = i.toFloat() / samples
+            val localX = deltaX * t
+            val localY = R * sin(Math.PI * t).toFloat() * direction
+
+            val gx = x0 + localX * ux + localY * nx
+            val gy = y0 + localX * uy + localY * ny
+
+            canvas.drawLine(prevX, prevY, gx, gy, paint)
+
+            prevX = gx
+            prevY = gy
+        }
+    }
+
+    /**
+     * 计算RegionA drawBitmapMesh需要的点坐标
+     */
+    private fun computeRegionAMeshVerts() {
+        var index = 0
+        for (y in 0..regionAMeshHeight) {
+            val fy = pageHeight * y / regionAMeshHeight
+            for (x in 0..regionAMeshWidth) {
+                val fx = pageWidth * x.toFloat() / regionAMeshWidth
+                regionAMeshVerts[index * 2] = fx
+                regionAMeshVerts[index * 2 + 1] = fy
+                index++
+            }
+        }
+
+        val dirX = downAlignRightPos.x - cylinderAxisPos.x
+        val dirY = downAlignRightPos.y - cylinderAxisPos.y
+        val len = hypot(dirX, dirY)
+        val ux = dirX / len                                  // 单位方向向量
+        val uy = dirY / len
+        val originX = cylinderAxisPos.x                      // cylinderAxisPos作为原点
+        val originY = cylinderAxisPos.y
+
+        for (i in regionAMeshVerts.indices step 2) {
+            val x = regionAMeshVerts[i]
+            val y = regionAMeshVerts[i + 1]
+
+            // 计算当前mesh vert相对于origin的坐标
+            val dx = x - originX
+            val dy = y - originY
+
+            // s 是沿翻页轴方向的投影（用于卷曲角度）
+            val s = dx * ux + dy * uy
+            // t 是垂直于翻页轴的投影（保留该方向用于回变换）
+            val t = -dx * uy + dy * ux
+
+            // 对于这部分区域，无需进行弯曲
+            if (s < 0F) continue
+
+            val theta = s / cylinderRadius
+            val curveX = if (theta < PI / 2) {
+                cylinderRadius * sin(theta)
+            } else {
+                // 由于sin的周期性，大于PI/2时，得到的值可能和小于PI/2的值相同，导致遮挡
+                // 因此，对于在半径radius以内的区域进行弯曲，对于大于radius的区域则不采用任何弯曲特效（即平铺）
+                // 并且保证映射之后的page是连续的
+                s - PI.toFloat() / 2 * cylinderRadius + cylinderRadius
+            }
+            // 将变换后的点再映射回屏幕坐标系
+            regionAMeshVerts[i] = originX + curveX * ux - t * uy
+            regionAMeshVerts[i + 1] = originY + curveX * uy + t * ux
+        }
+    }
+
+    /**
+     * 计算RegionC drawBitmapMesh需要的点坐标，并对点坐标应用matrix的线性变换
+     */
+    private fun computeRegionCMeshVerts(matrix: Matrix?) {
+        // 计算两个控制点之间的距离
+        // 以cylinderEngleProjPos、cylinderEngleLineProjStartPos的连线作为镜像轴
+        // 计算旋转矩阵
+        val dis = hypot(cylinderEngleProjPos.x - cylinderEngleLineProjStartPos.x,
+            cylinderEngleProjPos.y - cylinderEngleLineProjStartPos.y)
+        val sin = (cylinderEngleProjPos.x - cylinderEngleLineProjStartPos.x) / dis
+        val cos = (cylinderEngleProjPos.y - cylinderEngleLineProjStartPos.y) / dis
+        regionCMatrixArray[0] = -(1 - 2 * sin * sin)
+        regionCMatrixArray[1] = 2 * sin * cos
+        regionCMatrixArray[3] = 2 * sin * cos
+        regionCMatrixArray[4] = 1 - 2 * sin * sin
+        regionCMatrix.reset()
+        regionCMatrix.setValues(regionCMatrixArray)
+        // 将坐标原点平移到bezierControl1处
+        val dx = -cylinderEngleProjPos.x
+        val dy = -cylinderEngleProjPos.y
+        regionCMatrix.preTranslate(dx, dy)
+        regionCMatrix.postTranslate(-dx, -dy)
+
+        var index = 0
+        for (y in 0..regionCMeshHeight) {
+            val fy = pageHeight * y / regionCMeshHeight
+            for (x in 0..regionCMeshWidth) {
+                val fx = pageWidth * x.toFloat() / regionCMeshWidth
+                regionCMeshVerts[index * 2] = fx
+                regionCMeshVerts[index * 2 + 1] = fy
+                index++
+            }
+        }
+
+        val dirX = cylinderAxisPos.x - downAlignRightPos.x
+        val dirY = cylinderAxisPos.y - downAlignRightPos.y
+        val len = hypot(dirX, dirY)
+        val ux = dirX / len                                  // 单位方向向量
+        val uy = dirY / len
+        val originX = cylinderAxisProjPos.x                      // cylinderAxisProjPos作为原点
+        val originY = cylinderAxisProjPos.y
+
+        for (i in regionCMeshVerts.indices step 2) {
+            val x = regionCMeshVerts[i]
+            val y = regionCMeshVerts[i + 1]
+
+            // 计算当前mesh vert相对于origin的坐标
+            val dx = x - originX
+            val dy = y - originY
+
+            // s 是沿翻页轴方向的投影（用于卷曲角度）
+            val s = dx * ux + dy * uy
+            // t 是垂直于翻页轴的投影（保留该方向用于回变换）
+            val t = -dx * uy + dy * ux
+
+            // 对于这部分区域，无需进行弯曲
+            if (s < 0F) continue
+
+            // 得到的s和t构成了相对于一个新坐标系的坐标，该坐标系的其中一条轴由cornerVertex指向touchPoint，
+            // 另一条则是垂直于cornerVertex指向touchPoint的连线
+            // 将 s 映射到圆柱体表面
+            val theta = s / cylinderRadius
+            // 当cornerVertex为右上角的顶点时，映射并不正确，推测是因为meshVerts中多个点位置可能存在互相覆盖的可能
+            // theta < PI / 2区域是需要的区域，但是theta > PI / 2是不必要的区域，且有可能覆盖需要的区域
+            // 因此，需要避免被覆盖
+            // curveX表示的是沿着s方向的投影，由于采用的是圆柱仿真翻页模型，对于curveY直接不做任何更改，也就是直接使curveY=t
+            val curveX = if (theta < PI / 2) {
+                cylinderRadius * sin(theta)
+            } else {
+                // 由于sin的周期性，大于PI/2时，得到的值可能和小于PI/2的值相同，导致遮挡
+                // 因此，对于在半径radius以内的区域进行弯曲，对于大于radius的区域则不采用任何弯曲特效（即平铺）
+                // 并且保证映射之后的page是连续的
+                s - PI.toFloat() / 2 * cylinderRadius + cylinderRadius
+            }
+            // 将变换后的点再映射回屏幕坐标系
+            regionCMeshVerts[i] = originX + curveX * ux - t * uy
+            regionCMeshVerts[i + 1] = originY + curveX * uy + t * ux
+        }
+        // drawBitmapMesh没有matrix参数，因此需要主动调用matrix，应用矩阵变换转换坐标
+        val temp = FloatArray(2)
+        for (i in regionCMeshVerts.indices step 2) {
+            temp[0] = regionCMeshVerts[i]
+            temp[1] = regionCMeshVerts[i + 1]
+            matrix?.mapPoints(temp)
+            regionCMeshVerts[i] = temp[0]
+            regionCMeshVerts[i + 1] = temp[1]
+        }
+    }
+
+    /**
+     * 绘制阴影
+     */
+    private fun drawShadow(canvas: Canvas) {
+
+    }
+
+    fun flipToNextPage(scroller: Scroller, animDuration: Int) {
+        val dx = - touchPos.x.toInt() + topLeftPoint.x.toInt()
+        val dy = - touchPos.y.toInt() + downPos.y.toInt()
+        scroller.startScroll(touchPos.x.toInt(), touchPos.y.toInt(),
+            dx, dy, animDuration)
+    }
+
+    fun flipToPrevPage(scroller: Scroller, animDuration: Int) {
+        val dx = - touchPos.x.toInt() + topRightPoint.x.toInt()
+        val dy = - touchPos.y.toInt() + downPos.y.toInt()
+        scroller.startScroll(touchPos.x.toInt(), touchPos.y.toInt(),
+            dx, dy, animDuration)
+    }
 
 }
-
-
