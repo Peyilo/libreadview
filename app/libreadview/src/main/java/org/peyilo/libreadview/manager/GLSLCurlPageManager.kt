@@ -73,149 +73,153 @@ class GLSLCurlPageManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayo
                 bottomBitmap = pageBitmapCache.bottomBitmap!!,
                 mouseX = gesture.cur.x, mouseY = gesture.cur.y, mouseZ = gesture.down.x, mouseW = gesture.down.y
             )
-            canvas.drawPoint("Down", gesture.down.x, gesture.down.y)
-            canvas.drawPoint("Cur", gesture.cur.x, gesture.cur.y)
-            canvas.drawLine(gesture.down.x, gesture.down.y, gesture.cur.x, gesture.cur.y, debugLinePaint)
+            debug(canvas)
+        }
+    }
 
-            // process origin point
-            var mouseDirX = gesture.down.x - gesture.cur.x
-            var mouseDirY = gesture.down.y - gesture.cur.y
-            val len = hypot(mouseDirX, mouseDirY)
-            mouseDirX /= len
-            mouseDirY /= len
-            val originX = 0F
-            val originY = (gesture.cur.y - mouseDirY * gesture.cur.x / mouseDirX).coerceIn(0F, pageContainer.height.toFloat())
-            canvas.drawPoint("Origin", originX, originY)
-            canvas.drawLine(originX, originY, gesture.cur.x, gesture.cur.y, debugLinePaint)
+    private fun debug(canvas: Canvas) {
+        canvas.drawPoint("Down", gesture.down.x, gesture.down.y)
+        canvas.drawPoint("Cur", gesture.cur.x, gesture.cur.y)
+        canvas.drawLine(gesture.down.x, gesture.down.y, gesture.cur.x, gesture.cur.y, debugLinePaint)
 
-            // process end point
-            val endX = pageContainer.width.toFloat()
-            val endY = gesture.down.y + mouseDirY / mouseDirX * (endX - gesture.down.x)
-            canvas.drawPoint("End", endX, endY)
-            canvas.drawLine(endX, endY, gesture.down.x, gesture.down.y, debugLinePaint)
+        // process origin point
+        var mouseDirX = gesture.down.x - gesture.cur.x
+        var mouseDirY = gesture.down.y - gesture.cur.y
+        val len = hypot(mouseDirX, mouseDirY)
+        mouseDirX /= len
+        mouseDirY /= len
+        val originX = 0F
+        val originY = (gesture.cur.y - mouseDirY * gesture.cur.x / mouseDirX).coerceIn(0F, pageContainer.height.toFloat())
+        canvas.drawPoint("Origin", originX, originY)
+        canvas.drawLine(originX, originY, gesture.cur.x, gesture.cur.y, debugLinePaint)
 
-            // process axis point
-            val L1 = hypot(gesture.cur.x - originX, gesture.cur.y - originY)
-            val L2 = hypot(endX - gesture.down.x, endY - gesture.down.y)
-            val axisX = gesture.cur.x + mouseDirX * L2
-            val axisY = gesture.cur.y + mouseDirY * L2
-            canvas.drawPoint("Axis", axisX, axisY)
+        // process end point
+        val endX = pageContainer.width.toFloat()
+        val endY = gesture.down.y + mouseDirY / mouseDirX * (endX - gesture.down.x)
+        canvas.drawPoint("End", endX, endY)
+        canvas.drawLine(endX, endY, gesture.down.x, gesture.down.y, debugLinePaint)
 
-            // draw axis line
-            // 正交于mouseDir，(mouseDirY, -mouseDirX)
-            val axisLineStartX = axisX + mouseDirY / mouseDirX * axisY
-            val axisLineStartY = 0F
+        // process axis point
+        val L1 = hypot(gesture.cur.x - originX, gesture.cur.y - originY)
+        val L2 = hypot(endX - gesture.down.x, endY - gesture.down.y)
+        val axisX = gesture.cur.x + mouseDirX * L2
+        val axisY = gesture.cur.y + mouseDirY * L2
+        canvas.drawPoint("Axis", axisX, axisY)
 
-            val axisLineEndX = axisX - mouseDirY / mouseDirX * (pageContainer.height - axisY)
-            val axisLineEndY = pageContainer.height.toFloat()
-            val axisLine = screenLineIntersections.intersections(
-                axisLineStartX,
-                axisLineStartY,
-                axisLineEndX,
-                axisLineEndY
-            )
-            canvas.drawLine(axisLine.first.x, axisLine.first.y, axisLine.second.x, axisLine.second.y, debugLinePaint)
+        // draw axis line
+        // 正交于mouseDir，(mouseDirY, -mouseDirX)
+        val axisLineStartX = axisX + mouseDirY / mouseDirX * axisY
+        val axisLineStartY = 0F
 
-            // draw engle point
-            val radius = 0.05F * pageContainer.height
-            val engleX = axisX + mouseDirX * radius
-            val engleY = axisY + mouseDirY * radius
-            canvas.drawPoint("Engle", engleX, engleY)
+        val axisLineEndX = axisX - mouseDirY / mouseDirX * (pageContainer.height - axisY)
+        val axisLineEndY = pageContainer.height.toFloat()
+        val axisLine = screenLineIntersections.intersections(
+            axisLineStartX,
+            axisLineStartY,
+            axisLineEndX,
+            axisLineEndY
+        )
+        canvas.drawLine(axisLine.first.x, axisLine.first.y, axisLine.second.x, axisLine.second.y, debugLinePaint)
 
-            // draw engle line
-            val engleLineStartX = engleX + mouseDirY / mouseDirX * engleY
-            val engleLineStartY = 0F
-            val engleLineEndX =  engleX - mouseDirY / mouseDirX * (pageContainer.height - engleY)
-            val engleLineEndY = pageContainer.height.toFloat()
-            val engleLine = screenLineIntersections.intersections(
-                engleLineStartX,
-                engleLineStartY,
-                engleLineEndX,
-                engleLineEndY
-            )
-            canvas.drawLine(engleLine.first.x, engleLine.first.y, engleLine.second.x, engleLine.second.y, debugLinePaint)
+        // draw engle point
+        val radius = 0.05F * pageContainer.height
+        val engleX = axisX + mouseDirX * radius
+        val engleY = axisY + mouseDirY * radius
+        canvas.drawPoint("Engle", engleX, engleY)
 
-            val engleProjX = axisX + mouseDirX * radius * 0.5 * PI
-            val engleProjY = axisY + mouseDirY * radius * 0.5 * PI
-            val engleProjLineStartX = (engleProjX + mouseDirY / mouseDirX * engleProjY).toFloat()
-            val engleProjLineStartY = 0F
-            val engleProjLineEndX = ( engleProjX - mouseDirY / mouseDirX * (pageContainer.height - engleProjY)).toFloat()
-            val engleProjLineEndY = pageContainer.height.toFloat()
-            val engleProjLine = screenLineIntersections.intersections(
+        // draw engle line
+        val engleLineStartX = engleX + mouseDirY / mouseDirX * engleY
+        val engleLineStartY = 0F
+        val engleLineEndX =  engleX - mouseDirY / mouseDirX * (pageContainer.height - engleY)
+        val engleLineEndY = pageContainer.height.toFloat()
+        val engleLine = screenLineIntersections.intersections(
+            engleLineStartX,
+            engleLineStartY,
+            engleLineEndX,
+            engleLineEndY
+        )
+        canvas.drawLine(engleLine.first.x, engleLine.first.y, engleLine.second.x, engleLine.second.y, debugLinePaint)
+
+        val engleProjX = axisX + mouseDirX * radius * 0.5 * PI
+        val engleProjY = axisY + mouseDirY * radius * 0.5 * PI
+        val engleProjLineStartX = (engleProjX + mouseDirY / mouseDirX * engleProjY).toFloat()
+        val engleProjLineStartY = 0F
+        val engleProjLineEndX = ( engleProjX - mouseDirY / mouseDirX * (pageContainer.height - engleProjY)).toFloat()
+        val engleProjLineEndY = pageContainer.height.toFloat()
+        val engleProjLine = screenLineIntersections.intersections(
+            engleProjLineStartX,
+            engleProjLineStartY,
+            engleProjLineEndX,
+            engleProjLineEndY
+        )
+        canvas.drawLine(engleProjLine.first.x, engleProjLine.first.y, engleProjLine.second.x, engleProjLine.second.y, debugLinePaint)
+
+        val axisProjX = axisX + mouseDirX * radius * PI
+        val axisProjY = axisY + mouseDirY * radius * PI
+        val axisProjLineStartX =( axisProjX + mouseDirY / mouseDirX * axisProjY).toFloat()
+        val axisProjLineStartY = 0F
+        val axisProjLineEndX = (axisProjX - mouseDirY / mouseDirX * (pageContainer.height - axisProjY)).toFloat()
+        val axisProjLineEndY = pageContainer.height.toFloat()
+        val axisProjLine = screenLineIntersections.intersections(
+            axisProjLineStartX,
+            axisProjLineStartY,
+            axisProjLineEndX,
+            axisProjLineEndY
+        )
+        canvas.drawLine(axisProjLine.first.x, axisProjLine.first.y, axisProjLine.second.x, axisProjLine.second.y, debugLinePaint)
+
+        if (gesture.down.y != gesture.cur.y) {
+            val isTopRight = gesture.down.y < gesture.cur.y
+            val cornerPos = if (!isTopRight) {
+                // Corner pos: Bottom Right
+                PointF(pageContainer.width.toFloat(), pageContainer.height.toFloat())
+            } else {
+                // Corner pos: Top Right
+                PointF(pageContainer.width.toFloat(), 0F)
+            }
+            val reflectedCorner = reflectPointAboutLine(cornerPos.x, cornerPos.y,
+                engleProjLineStartX,
+                engleProjLineStartY,
+                engleProjLineEndX, engleProjLineEndY)
+            canvas.drawPoint("Corner", reflectedCorner.first, reflectedCorner.second)
+            val reflectedAxisProjStart = reflectPointAboutLine(
+                axisProjLine.first.x,
+                axisProjLine.first.y,
                 engleProjLineStartX,
                 engleProjLineStartY,
                 engleProjLineEndX,
                 engleProjLineEndY
             )
-            canvas.drawLine(engleProjLine.first.x, engleProjLine.first.y, engleProjLine.second.x, engleProjLine.second.y, debugLinePaint)
-
-            val axisProjX = axisX + mouseDirX * radius * PI
-            val axisProjY = axisY + mouseDirY * radius * PI
-            val axisProjLineStartX =( axisProjX + mouseDirY / mouseDirX * axisProjY).toFloat()
-            val axisProjLineStartY = 0F
-            val axisProjLineEndX = (axisProjX - mouseDirY / mouseDirX * (pageContainer.height - axisProjY)).toFloat()
-            val axisProjLineEndY = pageContainer.height.toFloat()
-            val axisProjLine = screenLineIntersections.intersections(
-                axisProjLineStartX,
-                axisProjLineStartY,
-                axisProjLineEndX,
-                axisProjLineEndY
+            val reflectedAxisProjEnd = reflectPointAboutLine(
+                axisProjLine.second.x,
+                axisProjLine.second.y,
+                engleProjLineStartX,
+                engleProjLineStartY,
+                engleProjLineEndX,
+                engleProjLineEndY
             )
-            canvas.drawLine(axisProjLine.first.x, axisProjLine.first.y, axisProjLine.second.x, axisProjLine.second.y, debugLinePaint)
+            canvas.drawPoint("ProjStart", reflectedAxisProjStart.first, reflectedAxisProjStart.second)
+            canvas.drawPoint("ProjEnd", reflectedAxisProjEnd.first, reflectedAxisProjEnd.second)
 
-            if (gesture.down.y != gesture.cur.y) {
-                val isTopRight = gesture.down.y < gesture.cur.y
-                val cornerPos = if (!isTopRight) {
-                    // Corner pos: Bottom Right
-                    PointF(pageContainer.width.toFloat(), pageContainer.height.toFloat())
-                } else {
-                    // Corner pos: Top Right
-                    PointF(pageContainer.width.toFloat(), 0F)
-                }
-                val reflectedCorner = reflectPointAboutLine(cornerPos.x, cornerPos.y,
-                    engleProjLineStartX,
-                    engleProjLineStartY,
-                    engleProjLineEndX, engleProjLineEndY)
-                canvas.drawPoint("Corner", reflectedCorner.first, reflectedCorner.second)
-                val reflectedAxisProjStart = reflectPointAboutLine(
-                    axisProjLine.first.x,
-                    axisProjLine.first.y,
-                    engleProjLineStartX,
-                    engleProjLineStartY,
-                    engleProjLineEndX,
-                    engleProjLineEndY
-                )
-                val reflectedAxisProjEnd = reflectPointAboutLine(
-                    axisProjLine.second.x,
-                    axisProjLine.second.y,
-                    engleProjLineStartX,
-                    engleProjLineStartY,
-                    engleProjLineEndX,
-                    engleProjLineEndY
-                )
-                canvas.drawPoint("ProjStart", reflectedAxisProjStart.first, reflectedAxisProjStart.second)
-                canvas.drawPoint("ProjEnd", reflectedAxisProjEnd.first, reflectedAxisProjEnd.second)
+            canvas.drawLine(reflectedAxisProjStart.first, reflectedAxisProjStart.second,
+                reflectedCorner.first, reflectedCorner.second, debugLinePaint)
+            canvas.drawLine(reflectedAxisProjEnd.first, reflectedAxisProjEnd.second,
+                reflectedCorner.first, reflectedCorner.second, debugLinePaint)
 
-                canvas.drawLine(reflectedAxisProjStart.first, reflectedAxisProjStart.second,
-                    reflectedCorner.first, reflectedCorner.second, debugLinePaint)
-                canvas.drawLine(reflectedAxisProjEnd.first, reflectedAxisProjEnd.second,
-                    reflectedCorner.first, reflectedCorner.second, debugLinePaint)
-
-                val deltaX1 = hypot(axisLine.first.x - reflectedAxisProjStart.first, axisLine.first.y - reflectedAxisProjStart.second)
-                drawHalfSineCurve(
-                    canvas, debugLinePaint,
-                    axisLine.first.x, axisLine.first.y,
-                    reflectedAxisProjStart.first, reflectedAxisProjStart.second,
-                    radius, deltaX1, direction = -1
-                )
-                val deltaX2 = hypot(axisLine.second.x - reflectedAxisProjEnd.first, axisLine.second.y - reflectedAxisProjEnd.second)
-                drawHalfSineCurve(
-                    canvas, debugLinePaint,
-                    axisLine.second.x, axisLine.second.y,
-                    reflectedAxisProjEnd.first, reflectedAxisProjEnd.second,
-                    radius, deltaX2, direction = 1
-                )
-            }
+            val deltaX1 = hypot(axisLine.first.x - reflectedAxisProjStart.first, axisLine.first.y - reflectedAxisProjStart.second)
+            drawHalfSineCurve(
+                canvas, debugLinePaint,
+                axisLine.first.x, axisLine.first.y,
+                reflectedAxisProjStart.first, reflectedAxisProjStart.second,
+                radius, deltaX1, direction = -1
+            )
+            val deltaX2 = hypot(axisLine.second.x - reflectedAxisProjEnd.first, axisLine.second.y - reflectedAxisProjEnd.second)
+            drawHalfSineCurve(
+                canvas, debugLinePaint,
+                axisLine.second.x, axisLine.second.y,
+                reflectedAxisProjEnd.first, reflectedAxisProjEnd.second,
+                radius, deltaX2, direction = 1
+            )
         }
     }
 

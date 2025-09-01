@@ -1,7 +1,6 @@
 package org.peyilo.libreadview.manager
 
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
-import org.peyilo.libreadview.manager.CurlPageManager
 import org.peyilo.libreadview.manager.render.CurlRenderer
 import org.peyilo.libreadview.manager.render.IOSStyleCurlRenderer
 
