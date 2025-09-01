@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.manager
+package org.peyilo.libreadview.manager.render
 
 import android.content.Context
 import android.graphics.Bitmap

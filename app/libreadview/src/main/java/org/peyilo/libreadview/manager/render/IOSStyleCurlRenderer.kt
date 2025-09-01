@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.manager
+package org.peyilo.libreadview.manager.render
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -9,8 +9,8 @@ import android.graphics.Path
 import android.graphics.PointF
 import android.widget.Scroller
 import androidx.core.graphics.withClip
-import org.peyilo.libreadview.utils.LogHelper
-import org.peyilo.libreadview.utils.reflectPointAboutLine
+import org.peyilo.libreadview.util.LogHelper
+import org.peyilo.libreadview.manager.util.reflectPointAboutLine
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
@@ -20,10 +20,10 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-class CurlRenderer {
+class IOSStyleCurlRenderer: CurlRenderer {
 
     companion object {
-        private const val TAG = "CurlRenderer"
+        private const val TAG = "IOSStyleCurlRenderer"
     }
 
     /**
@@ -137,7 +137,7 @@ class CurlRenderer {
     private val regionCMeshVerts = FloatArray(meshVertsCount * 2)
     private val regionAMeshVerts = FloatArray(meshVertsCount * 2)
 
-    fun setPageSize(width: Float, height: Float) {
+    override fun setPageSize(width: Float, height: Float) {
         topLeftPoint.x = -width
         topLeftPoint.y = 0F
         topRightPoint.x = width
@@ -172,7 +172,7 @@ class CurlRenderer {
         }
     }
 
-    fun initDownPosition(x: Float, y: Float) {
+    override fun initControllPosition(x: Float, y: Float) {
         downPos.x = x
         downPos.y = y
         touchPos.x = downPos.x
@@ -777,17 +777,17 @@ class CurlRenderer {
      * computeRegionAMeshVerts: 3967us
      * computeRegionCMeshVerts: 1282us
      */
-    fun updateTouchPosition(curX: Float, curY: Float) {
+    override fun updateTouchPosition(curX: Float, curY: Float) {
         touchPos.x = curX
         touchPos.y = curY
         val pointMode = computePoints()
         computePaths(pointMode)
         // TODO: 关于verts的计算，可以考虑使用c编写的native方法代替
         computeRegionAMeshVerts()
-        computeRegionCMeshVerts(regionCMatrix)
+        computeRegionCMeshVerts()
     }
 
-    fun render(canvas: Canvas) {
+    override fun render(canvas: Canvas) {
         // draw region A
         canvas.withClip(pathA) {
             canvas.drawBitmapMesh(topBitmap, meshWidth, meshHeight,
@@ -811,12 +811,12 @@ class CurlRenderer {
         if(enableDebugMode) debug(canvas)
     }
 
-    fun setPages(top: Bitmap, bottom: Bitmap) {
+    override fun setPages(top: Bitmap, bottom: Bitmap) {
         _topBitmap = top
         _bottomBitmap = bottom
     }
 
-    fun release() {
+    override fun release() {
         _topBitmap = null
         _bottomBitmap = null
     }
@@ -1004,7 +1004,7 @@ class CurlRenderer {
     /**
      * 计算RegionC drawBitmapMesh需要的点坐标，并对点坐标应用matrix的线性变换
      */
-    private fun computeRegionCMeshVerts(matrix: Matrix?) {
+    private fun computeRegionCMeshVerts() {
         // 计算两个控制点之间的距离
         // 以cylinderEngleProjPos、cylinderEngleLineProjStartPos的连线作为镜像轴
         // 计算旋转矩阵
@@ -1084,7 +1084,7 @@ class CurlRenderer {
         for (i in regionCMeshVerts.indices step 2) {
             temp[0] = regionCMeshVerts[i]
             temp[1] = regionCMeshVerts[i + 1]
-            matrix?.mapPoints(temp)
+            regionCMatrix.mapPoints(temp)
             regionCMeshVerts[i] = temp[0]
             regionCMeshVerts[i + 1] = temp[1]
         }
@@ -1097,14 +1097,14 @@ class CurlRenderer {
         canvas.drawPath(pathC, backShadowPaint)         // 给背面区域PathC添加一个很淡的阴影
     }
 
-    fun flipToNextPage(scroller: Scroller, animDuration: Int) {
+    override fun flipToNextPage(scroller: Scroller, animDuration: Int) {
         val dx = - touchPos.x.toInt() + topLeftPoint.x.toInt()
         val dy = - touchPos.y.toInt() + downPos.y.toInt()
         scroller.startScroll(touchPos.x.toInt(), touchPos.y.toInt(),
             dx, dy, animDuration)
     }
 
-    fun flipToPrevPage(scroller: Scroller, animDuration: Int) {
+    override fun flipToPrevPage(scroller: Scroller, animDuration: Int) {
         val dx = - touchPos.x.toInt() + topRightPoint.x.toInt()
         val dy = - touchPos.y.toInt() + downPos.y.toInt()
         scroller.startScroll(touchPos.x.toInt(), touchPos.y.toInt(),

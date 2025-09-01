@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.pagination
+package org.peyilo.libreadview.util
 
 /**
  * 记录每个章节的page数量,从而在给定pageIndex时快速定位到对应的章节; 或者在给定章节时快速定位到对应的page

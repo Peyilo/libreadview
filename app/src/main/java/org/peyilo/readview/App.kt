@@ -2,7 +2,7 @@ package org.peyilo.readview
 
 import android.app.Application
 import android.content.Context
-import org.peyilo.libreadview.utils.LogHelper
+import org.peyilo.libreadview.util.LogHelper
 
 class App: Application() {
 

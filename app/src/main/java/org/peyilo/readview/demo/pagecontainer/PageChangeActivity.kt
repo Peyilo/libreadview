@@ -12,7 +12,7 @@ import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.SimpleCurlPageManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.R
 import org.peyilo.readview.databinding.ActivityPageChangeBinding
@@ -123,8 +123,8 @@ class PageChangeActivity : AppCompatActivity() {
                 if (pageContainer.layoutManager is SlideLayoutManager) return@SettingsFragment
                 pageContainer.layoutManager = SlideLayoutManager()
             }, {
-                if (pageContainer.layoutManager is SimulationPageManagers.Style1) return@SettingsFragment
-                pageContainer.layoutManager = SimulationPageManagers.Style1()
+                if (pageContainer.layoutManager is SimpleCurlPageManager) return@SettingsFragment
+                pageContainer.layoutManager = SimpleCurlPageManager()
             }, {
                 if (pageContainer.layoutManager is ScrollLayoutManager) return@SettingsFragment
                 pageContainer.layoutManager = ScrollLayoutManager()

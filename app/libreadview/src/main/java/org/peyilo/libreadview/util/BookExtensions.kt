@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.utils
+package org.peyilo.libreadview.util
 
 import org.peyilo.libreadview.data.Book
 import java.io.File

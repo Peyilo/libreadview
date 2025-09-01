@@ -9,7 +9,7 @@ import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import org.peyilo.libreadview.utils.LogHelper
+import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.R
 
 class ControlPanelFragment(

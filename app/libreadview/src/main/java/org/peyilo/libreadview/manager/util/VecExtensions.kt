@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.utils
+package org.peyilo.libreadview.manager.util
 
 import android.graphics.PointF
 import androidx.core.graphics.minus

@@ -1,6 +1,7 @@
-package org.peyilo.libreadview.utils
+package org.peyilo.libreadview.manager.util
 
 import android.graphics.PointF
+import kotlin.math.abs
 
 class ScreenLineIntersections(
     private val width: Float,
@@ -17,25 +18,25 @@ class ScreenLineIntersections(
         val hits = ArrayList<PointF>(2)
 
         // 与 x=0
-        if (kotlin.math.abs(dx) > eps) {
+        if (abs(dx) > eps) {
             val t = (0f - x1) / dx
             val y = y1 + t * dy
             if (y in 0f..height) hits.add(PointF(0f, y))
         }
         // 与 x=width
-        if (kotlin.math.abs(dx) > eps) {
+        if (abs(dx) > eps) {
             val t = (width - x1) / dx
             val y = y1 + t * dy
             if (y in 0f..height) hits.add(PointF(width, y))
         }
         // 与 y=0
-        if (kotlin.math.abs(dy) > eps) {
+        if (abs(dy) > eps) {
             val t = (0f - y1) / dy
             val x = x1 + t * dx
             if (x in 0f..width) hits.add(PointF(x, 0f))
         }
         // 与 y=height
-        if (kotlin.math.abs(dy) > eps) {
+        if (abs(dy) > eps) {
             val t = (height - y1) / dy
             val x = x1 + t * dx
             if (x in 0f..width) hits.add(PointF(x, height))

@@ -23,7 +23,7 @@ import org.peyilo.libreadview.simple.page.ChapLoadPage
 import org.peyilo.libreadview.simple.page.ContentMetrics
 import org.peyilo.libreadview.simple.page.MessagePage
 import org.peyilo.libreadview.simple.page.ReadPage
-import org.peyilo.libreadview.utils.LogHelper
+import org.peyilo.libreadview.util.LogHelper
 import java.io.File
 import kotlin.math.max
 

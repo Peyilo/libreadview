@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.utils
+package org.peyilo.libreadview.manager.util
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.view.View
 import androidx.core.graphics.createBitmap
+import org.peyilo.libreadview.util.LogHelper
 
 private const val TAG = "ViewExtensions"
 

@@ -10,7 +10,7 @@ import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.RequiresApi
-import org.peyilo.libreadview.utils.LogHelper
+import org.peyilo.libreadview.util.LogHelper
 
 @RequiresApi(Build.VERSION_CODES.M)
 class StaticLayoutView(context: Context?, attrs: AttributeSet?): View(context, attrs) {

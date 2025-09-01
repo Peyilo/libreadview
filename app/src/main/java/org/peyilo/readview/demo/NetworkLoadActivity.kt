@@ -14,7 +14,7 @@ import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SimulationPageManagers
+import org.peyilo.libreadview.manager.SimpleCurlPageManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.qidian.QidianChapLoadPage
@@ -144,8 +144,8 @@ class NetworkLoadActivity : AppCompatActivity() {
                 if (readview.layoutManager is SlideLayoutManager) return@SettingsFragment
                 readview.layoutManager = SlideLayoutManager()
             }, {
-                if (readview.layoutManager is SimulationPageManagers.Style1) return@SettingsFragment
-                readview.layoutManager = SimulationPageManagers.Style1()
+                if (readview.layoutManager is SimpleCurlPageManager) return@SettingsFragment
+                readview.layoutManager = SimpleCurlPageManager()
             }, {
                 if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
                 readview.layoutManager = ScrollLayoutManager()

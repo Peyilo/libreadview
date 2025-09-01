@@ -1,4 +1,4 @@
-package org.peyilo.libreadview.utils
+package org.peyilo.libreadview.util
 
 import android.util.Log
 import org.json.JSONArray

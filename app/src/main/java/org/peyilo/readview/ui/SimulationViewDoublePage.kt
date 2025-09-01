@@ -13,7 +13,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.Scroller
 import androidx.core.graphics.toColorInt
-import org.peyilo.libreadview.utils.reflectPointAboutLine
+import org.peyilo.libreadview.manager.util.reflectPointAboutLine
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor

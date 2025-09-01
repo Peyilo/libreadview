@@ -14,7 +14,7 @@ import android.view.ViewConfiguration
 import android.view.ViewGroup
 import androidx.annotation.IntRange
 import androidx.core.view.isNotEmpty
-import org.peyilo.libreadview.utils.LogHelper
+import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.max
 import kotlin.math.min
 
