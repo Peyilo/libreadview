@@ -51,7 +51,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
         super.forceNotInLayoutOrScroll()
         // 先恢复到初始位置
         pageContainer.apply {
-            for (i in 0 until childCount) {
+            for (i in 0 until getPageChildCount()) {
                 val child = getPageChildAt(i)
                 child.translationY = getTranslateY(i)
             }

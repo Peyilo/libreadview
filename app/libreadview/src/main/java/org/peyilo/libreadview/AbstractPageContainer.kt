@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Observable
 import android.graphics.Canvas
 import android.graphics.PointF
+import android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
@@ -57,6 +58,11 @@ abstract class AbstractPageContainer(
             value.setPageContainer(this)
             resetPagePosition()
             value.initPagePosition(false)
+            val renderer = value.createRenderer()
+            renderer?.let {
+                glView.setRenderer(it)
+                glView.renderMode = RENDERMODE_CONTINUOUSLY
+            }
         }
         get() = _layoutManager
             ?: throw IllegalStateException("LayoutManager is not initialized. Did you forget to set it?")
@@ -113,7 +119,10 @@ abstract class AbstractPageContainer(
      * glView占据了index=0的位置，始终位于最底层，从而使得其他子view的remove/add不会影响到glView
      * 此外，还通过重写getChildDrawingOrder()，使得glView始终位于最底层但是最后一个被绘制(从而保证其显示在最上层)
      */
-    private val glView = PageGLSurfaceView(context)
+    private val glView = PageGLSurfaceView(context).apply {
+        setEGLContextClientVersion(2)               // OpenGL ES 2.0
+    }
+
     private val pageViewStart = 1                       //  pageView的起始index，为1
     private val maxPageChildCount = 3                       // 最多3个pageView
 
@@ -389,6 +398,28 @@ abstract class AbstractPageContainer(
         protected fun prevCarouselLayout() {
             pageContainer.prevCarouselLayout()
         }
+
+        /**
+         * 启用GLView进行渲染
+         */
+        protected fun enbleGLView() {
+            pageContainer.glView.visibility = VISIBLE
+        }
+
+        /**
+         * 关闭GLView的渲染
+         */
+        protected fun disableGLView() {
+            pageContainer.glView.visibility = INVISIBLE
+        }
+
+        /**
+         * 创建一个PageGLSurfaceView.PageRenderer对象，用于在GLView中进行渲染，PageRenderer中包含实际的渲染代码；
+         * 如果返回null，表示不进行任何渲染
+         */
+        open fun createRenderer(): PageGLSurfaceView.PageRenderer? = null
+
+        protected val glView get() = pageContainer.glView
     }
 
     /**

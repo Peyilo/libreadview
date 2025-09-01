@@ -41,7 +41,7 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer.initPageIndex(2)
 
         // Choose a page animation manager (see options below)
-        pageContainer.layoutManager = CoverLayoutManager()
+        pageContainer.layoutManager = IBookSlideLayoutManager()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)

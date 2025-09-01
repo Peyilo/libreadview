@@ -19,7 +19,7 @@ import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import java.nio.ShortBuffer
 
-class GLRenderer(context: Context) {
+class GlslPbufferRenderer(context: Context) {
 
     // --------- EGL / GL 状态 ----------
     private var eglDisplay: EGLDisplay? = null
