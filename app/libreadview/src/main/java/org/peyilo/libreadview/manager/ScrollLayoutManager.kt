@@ -52,7 +52,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
         // 先恢复到初始位置
         pageContainer.apply {
             for (i in 0 until childCount) {
-                val child = getChildAt(i)
+                val child = getPageChildAt(i)
                 child.translationY = getTranslateY(i)
             }
         }
@@ -254,8 +254,6 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
 
     override fun onAddPage(view: View, position: Int) {
         view.translationY = getTranslateY(position)
-        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
-                "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationY}")
     }
 
     override fun onDestroy() {

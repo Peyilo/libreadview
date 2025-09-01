@@ -2,6 +2,7 @@ package org.peyilo.libreadview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
 import android.graphics.PointF
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
@@ -16,6 +17,10 @@ class PageGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
     private val downPos = PointF()
     private val touchPos = PointF()
+
+    init {
+        setBackgroundColor(Color.WHITE)
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {

@@ -85,8 +85,8 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      */
     protected fun getTopTranslationY(): Float {
         var topTranslationY = 0F
-        for (i in 0 until pageContainer.childCount) {
-            val page = pageContainer.getChildAt(i)
+        for (i in 0 until pageContainer.getPageChildCount()) {
+            val page = pageContainer.getPageChildAt(i)
             if (page.translationY < topTranslationY) {
                 topTranslationY = page.translationY
             }
@@ -103,8 +103,8 @@ abstract class NoFlipOnReleaseLayoutManager: DirectionalLayoutManager() {
      */
     protected fun getBottomTranslationY(): Float {
         var bottomTranslationY = 0F
-        for (i in 0 until pageContainer.childCount) {
-            val page = pageContainer.getChildAt(i)
+        for (i in 0 until pageContainer.getPageChildCount()) {
+            val page = pageContainer.getPageChildAt(i)
             if (page.translationY > bottomTranslationY) {
                 bottomTranslationY = page.translationY
             }

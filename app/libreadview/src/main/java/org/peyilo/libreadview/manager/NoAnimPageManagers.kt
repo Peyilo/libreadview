@@ -2,7 +2,6 @@ package org.peyilo.libreadview.manager
 
 import android.view.View
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
-import org.peyilo.libreadview.util.LogHelper
 
 /**
  * 无动画翻页实现
@@ -61,8 +60,6 @@ class NoAnimPageManagers private constructor() {
 
         override fun onAddPage(view: View, position: Int) {
             view.translationX = getTranslateX(position)
-            LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
-                    "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
         }
 
     }
@@ -115,8 +112,6 @@ class NoAnimPageManagers private constructor() {
 
         override fun onAddPage(view: View, position: Int) {
             view.translationY = getTranslateY(position)
-            LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
-                    "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationY}")
         }
     }
 }

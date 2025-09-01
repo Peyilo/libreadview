@@ -247,9 +247,6 @@ class GLSLCurlPageManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayo
 
     override fun onAddPage(view: View, position: Int) {
         view.translationX = getTranslateX(position)
-        LogHelper.d(
-            TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
-                    "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
     }
 
     companion object {

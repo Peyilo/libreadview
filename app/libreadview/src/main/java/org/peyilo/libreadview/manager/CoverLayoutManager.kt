@@ -2,7 +2,6 @@ package org.peyilo.libreadview.manager
 
 import android.view.View
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
-import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.max
 import kotlin.math.min
 
@@ -116,8 +115,6 @@ class CoverLayoutManager: CoverShadowLayoutManager(), AnimatedLayoutManager {
 
     override fun onAddPage(view: View, position: Int) {
         view.translationX = getTranslateX(position)
-        LogHelper.d(TAG, "onAddPage: childCount = ${pageContainer.childCount}, " +
-                "containerPageCount = ${pageContainer.getContainerPageCount()}, $position -> ${view.translationX}")
     }
 
     override fun onDestroy() {

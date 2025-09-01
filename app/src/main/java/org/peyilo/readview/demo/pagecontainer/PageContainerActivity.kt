@@ -10,7 +10,6 @@ import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.IOSStyleCurlPageManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimpleCurlPageManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
@@ -39,10 +38,10 @@ class PageContainerActivity : AppCompatActivity() {
         }
 
         // Set the initial page index
-        pageContainer.initPageIndex(1)
+        pageContainer.initPageIndex(2)
 
         // Choose a page animation manager (see options below)
-        pageContainer.layoutManager = IOSStyleCurlPageManager()
+        pageContainer.layoutManager = CoverLayoutManager()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)
