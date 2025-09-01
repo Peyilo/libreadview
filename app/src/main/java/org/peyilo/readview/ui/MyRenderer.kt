@@ -12,7 +12,6 @@ import java.nio.ByteOrder
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-
 class MyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var program: Int = 0
     private var textureId0: Int = 0

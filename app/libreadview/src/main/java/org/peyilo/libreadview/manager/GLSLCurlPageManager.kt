@@ -8,13 +8,13 @@ import android.view.View
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.manager.render.GLRenderer
 import org.peyilo.libreadview.manager.util.PageBitmapCache
-import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.libreadview.manager.util.ScreenLineIntersections
+import org.peyilo.libreadview.manager.util.drawHalfSineCurve
 import org.peyilo.libreadview.manager.util.reflectPointAboutLine
 import org.peyilo.libreadview.manager.util.screenshot
+import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.PI
 import kotlin.math.hypot
-import kotlin.math.sin
 
 class GLSLCurlPageManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
@@ -220,58 +220,6 @@ class GLSLCurlPageManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayo
                 reflectedAxisProjEnd.first, reflectedAxisProjEnd.second,
                 radius, deltaX2, direction = 1
             )
-        }
-    }
-
-    /**
-     * 在 Canvas 上绘制从 (x0,y0) 到 (x1,y1) 的半周期正弦曲线
-     *
-     * @param canvas    画布
-     * @param paint     画笔
-     * @param x0,y0     起点
-     * @param x1,y1     终点
-     * @param R         振幅
-     * @param deltaX    横向跨度（通常设为起点和终点的距离）
-     * @param direction 正弦波在法向的方向：+1=正向，-1=反向
-     * @param samples   采样点数（越大越平滑）
-     */
-    fun drawHalfSineCurve(
-        canvas: Canvas,
-        paint: Paint,
-        x0: Float, y0: Float,
-        x1: Float, y1: Float,
-        R: Float,
-        deltaX: Float,
-        direction: Int = 1,
-        samples: Int = 64
-    ) {
-        val dx = x1 - x0
-        val dy = y1 - y0
-        val len = hypot(dx, dy)
-        if (len == 0f) return
-
-        // 单位向量
-        val ux = dx / len
-        val uy = dy / len
-        // 法向量
-        val nx = -uy
-        val ny = ux
-
-        var prevX = x0
-        var prevY = y0
-
-        for (i in 1..samples) {
-            val t = i.toFloat() / samples
-            val localX = deltaX * t
-            val localY = R * sin(Math.PI * t).toFloat() * direction
-
-            val gx = x0 + localX * ux + localY * nx
-            val gy = y0 + localX * uy + localY * ny
-
-            canvas.drawLine(prevX, prevY, gx, gy, paint)
-
-            prevX = gx
-            prevY = gy
         }
     }
 

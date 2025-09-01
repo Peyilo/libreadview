@@ -28,6 +28,7 @@ abstract class AbstractPageContainer(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
 ): ViewGroup(context, attrs, defStyleAttr, defStyleRes), PageNavigator {
 
+
     /**
      * 区分点击和滑动的界限，默认为24
      */

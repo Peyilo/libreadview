@@ -12,6 +12,7 @@ import android.opengl.GLES20
 import android.opengl.GLUtils
 import android.os.SystemClock
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withTranslation
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -154,12 +155,11 @@ class GLRenderer(context: Context) {
         val bmp = ensureScratchBitmap(w, h)
         bmp.setPixels(buf.array(), 0, w, 0, 0, w, h)
 
-        canvas.save()
-        // 垂直翻转：围绕画布中轴翻转后再平移
-        canvas.translate(0f, h.toFloat())
-        canvas.scale(1f, -1f)
-        canvas.drawBitmap(bmp, 0f, 0f, null)
-        canvas.restore()
+        canvas.withTranslation(0f, h.toFloat()) {
+            // 垂直翻转：围绕画布中轴翻转后再平移
+            scale(1f, -1f)
+            drawBitmap(bmp, 0f, 0f, null)
+        }
     }
 
     // ---------------- 内部：初始化 & 复用 ----------------

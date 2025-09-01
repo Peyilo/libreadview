@@ -15,6 +15,8 @@ import androidx.core.graphics.plus
 import androidx.core.graphics.times
 import androidx.core.graphics.withClip
 import org.peyilo.libreadview.manager.util.Vec
+import org.peyilo.libreadview.manager.util.computeCrossPoint
+import org.peyilo.libreadview.manager.util.computeMiddlePoint
 import org.peyilo.libreadview.manager.util.copy
 import org.peyilo.libreadview.manager.util.rakeRadio
 import kotlin.math.PI
@@ -234,27 +236,6 @@ class SimpleCurlRenderer: CurlRenderer {
         computeMiddlePoint(bezierStart2, bezierEnd2, m2)
         computeMiddlePoint(m1, bezierControl1, bezierVertex1)      // bezierVertex1为m1、bezierControl1连线的中点
         computeMiddlePoint(m2, bezierControl2, bezierVertex2)      // bezierVertex2为m2、bezierControl2连线的中点
-    }
-
-    /**
-     * 求解直线P1P2和直线P3P4的交点坐标，并将交点坐标保存到result中
-     */
-    private fun computeCrossPoint(p1: PointF, p2: PointF, p3: PointF, p4: PointF, result: PointF) {
-        // 二元函数通式： y=ax+b
-        val a1 = (p2.y - p1.y) / (p2.x - p1.x)
-        val b1 = (p1.x * p2.y - p2.x * p1.y) / (p1.x - p2.x)
-        val a2 = (p4.y - p3.y) / (p4.x - p3.x)
-        val b2 = (p3.x * p4.y - p4.x * p3.y) / (p3.x - p4.x)
-        result.x = (b2 - b1) / (a1 - a2)
-        result.y = a1 * result.x + b1
-    }
-
-    /**
-     * 计算P1P2的中点坐标，并保存到result中
-     */
-    private fun computeMiddlePoint(p1: PointF, p2: PointF, result: PointF) {
-        result.x = (p1.x + p2.x) / 2
-        result.y = (p1.y + p2.y) / 2
     }
 
     private fun computePaths() {
