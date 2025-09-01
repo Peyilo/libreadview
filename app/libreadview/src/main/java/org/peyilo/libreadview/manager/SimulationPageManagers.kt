@@ -22,6 +22,7 @@ import org.peyilo.libreadview.utils.copy
 import org.peyilo.libreadview.utils.rakeRadio
 import org.peyilo.libreadview.utils.reflectPointAboutLine
 import org.peyilo.libreadview.utils.screenshot
+import org.peyilo.libreadview.utils.screenshotInto
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -67,6 +68,7 @@ class SimulationPageManagers private constructor() {
             bottomBitmap?.recycle()
             topBitmap = null
             bottomBitmap = null
+            LogHelper.d(TAG, "clearBitmap")
         }
     }
 
@@ -1154,17 +1156,33 @@ class SimulationPageManagers private constructor() {
         private var animDuration = 600
 
         private val pageBitmap = PageBitmap()
-        private val renderer = SimulationRenderer()
+        private val renderer = CurlRenderer()
 
         override fun prepareAnim(initDire: PageDirection) {
             when (initDire) {
                 PageDirection.NEXT -> {
-                    pageBitmap.topBitmap = pageContainer.getCurPage()!!.screenshot()
-                    pageBitmap.bottomBitmap = pageContainer.getNextPage()!!.screenshot()
+                    if (pageBitmap.topBitmap != null) {
+                        pageContainer.getCurPage()!!.screenshotInto(pageBitmap.topBitmap!!)
+                    } else {
+                        pageBitmap.topBitmap = pageContainer.getCurPage()!!.screenshot()
+                    }
+                    if (pageBitmap.bottomBitmap != null) {
+                        pageContainer.getNextPage()!!.screenshotInto(pageBitmap.bottomBitmap!!)
+                    } else {
+                        pageBitmap.bottomBitmap = pageContainer.getNextPage()!!.screenshot()
+                    }
                 }
                 PageDirection.PREV -> {
-                    pageBitmap.topBitmap = pageContainer.getPrevPage()!!.screenshot()
-                    pageBitmap.bottomBitmap = pageContainer.getCurPage()!!.screenshot()
+                    if (pageBitmap.topBitmap != null) {
+                        pageContainer.getPrevPage()!!.screenshotInto(pageBitmap.topBitmap!!)
+                    } else {
+                        pageBitmap.topBitmap = pageContainer.getPrevPage()!!.screenshot()
+                    }
+                    if (pageBitmap.bottomBitmap != null) {
+                        pageContainer.getCurPage()!!.screenshotInto(pageBitmap.bottomBitmap!!)
+                    } else {
+                        pageBitmap.bottomBitmap = pageContainer.getCurPage()!!.screenshot()
+                    }
                 }
                 else -> throw IllegalStateException()
             }
@@ -1213,7 +1231,6 @@ class SimulationPageManagers private constructor() {
             isAnimRuning = false
             scroller.forceFinished(true)
             renderer.release()
-            pageBitmap.clearBitmap()
         }
 
         override fun onNextCarouselLayout() {
@@ -1248,7 +1265,6 @@ class SimulationPageManagers private constructor() {
                     scroller.forceFinished(true)
                     isAnimRuning = false
                     renderer.release()
-                    pageBitmap.clearBitmap()
                 }
             }
         }
@@ -1281,5 +1297,9 @@ class SimulationPageManagers private constructor() {
             this.animDuration = animDuration
         }
 
+        override fun onDestroy() {
+            super.onDestroy()
+            pageBitmap.clearBitmap()
+        }
     }
 }

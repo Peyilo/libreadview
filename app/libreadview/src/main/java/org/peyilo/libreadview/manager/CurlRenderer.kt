@@ -9,6 +9,7 @@ import android.graphics.Path
 import android.graphics.PointF
 import android.widget.Scroller
 import androidx.core.graphics.withClip
+import org.peyilo.libreadview.utils.LogHelper
 import org.peyilo.libreadview.utils.reflectPointAboutLine
 import kotlin.math.PI
 import kotlin.math.abs
@@ -19,7 +20,11 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-class SimulationRenderer {
+class CurlRenderer {
+
+    companion object {
+        private const val TAG = "CurlRenderer"
+    }
 
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
@@ -31,6 +36,10 @@ class SimulationRenderer {
 
     private val topBitmap: Bitmap get() = _topBitmap!!
     private val bottomBitmap: Bitmap get() = _bottomBitmap!!
+
+    private val backShadowPaint = Paint().apply {
+        color = Color.argb(10, 0, 0, 0) // 半透明黑（也可以用灰）
+    }
 
     private val topLeftPoint = PointF()
     private val topMiddlePoint = PointF()
@@ -121,33 +130,12 @@ class SimulationRenderer {
     private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
     private val regionCMatrix = Matrix()
 
-    /**
-     * C区域：当前页的背面区域
-     * 设置渲染仿真翻页扭曲部分区域的横向采样点数量：采样点越多，越精确，但是计算量也越高
-     */
-    var regionCMeshWidth = 40
+    var meshWidth = 30
+    var meshHeight = 50
 
-    /**
-     * C区域：当前页的背面区域
-     * 设置渲染仿真翻页扭曲部分区域的纵向采样点数量：采样点越多，越精确，但是计算量也越高
-     */
-    var regionCMeshHeight = 40
-    private val regionCMeshVertsCount = (regionCMeshWidth + 1) * (regionCMeshHeight + 1)
-    private val regionCMeshVerts = FloatArray(regionCMeshVertsCount * 2)
-
-    /**
-     * A区域：当前页的正面区域
-     * 设置渲染仿真翻页扭曲部分区域的横向采样点数量：采样点越多，越精确，但是计算量也越高
-     */
-    var regionAMeshWidth = 40
-
-    /**
-     * A区域：当前页的正面区域
-     * 设置渲染仿真翻页扭曲部分区域的纵向采样点数量：采样点越多，越精确，但是计算量也越高
-     */
-    var regionAMeshHeight = 40
-    private val regionAMeshVertsCount = (regionAMeshWidth + 1) * (regionAMeshHeight + 1)
-    private val regionAMeshVerts = FloatArray(regionAMeshVertsCount * 2)
+    private val meshVertsCount = (meshWidth + 1) * (meshHeight + 1)
+    private val regionCMeshVerts = FloatArray(meshVertsCount * 2)
+    private val regionAMeshVerts = FloatArray(meshVertsCount * 2)
 
     fun setPageSize(width: Float, height: Float) {
         topLeftPoint.x = -width
@@ -367,68 +355,69 @@ class SimulationRenderer {
         }
 
         // 限制页面左侧不能翻起来, 模拟真实书籍的装订
-        if (cylinderAxisLineStartPos.x < topMiddlePoint.x) {
-            if (cornerMode == CornerMode.TopRightCorner) {
-                perpendicularFoot(topMiddlePoint.x, topMiddlePoint.y,
-                    touchPos.x, touchPos.y,
-                    downAlignRightPos.x, downAlignRightPos.y,
-                    cylinderAxisPos
-                )
-                val minRadius = pageHeight * 0.1F
-                val minL = (PI * minRadius).toFloat()
-                val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
-                if (L < minL || cylinderAxisPos.x > downAlignRightPos.x) {
-                    rightTriangleC(topMiddlePoint, downAlignRightPos, minL, 1, cylinderAxisPos)
-                    mouseDirX = downAlignRightPos.x - cylinderAxisPos.x
-                    mouseDirY = downAlignRightPos.y - cylinderAxisPos.y
-                    mouseLength = hypot(mouseDirX, mouseDirY)
-                    mouseDirX /= mouseLength
-                    mouseDirY /= mouseLength
-                }
+//        if (cylinderAxisLineStartPos.x < topMiddlePoint.x) {
+//            if (cornerMode == CornerMode.TopRightCorner) {
+//                perpendicularFoot(topMiddlePoint.x, topMiddlePoint.y,
+//                    touchPos.x, touchPos.y,
+//                    downAlignRightPos.x, downAlignRightPos.y,
+//                    cylinderAxisPos
+//                )
+//                val minRadius = pageHeight * 0.1F
+//                val minL = (PI * minRadius).toFloat()
+//                val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
+//                if (L < minL || cylinderAxisPos.x > downAlignRightPos.x) {
+//                    rightTriangleC(topMiddlePoint, downAlignRightPos, minL, 1, cylinderAxisPos)
+//                    mouseDirX = downAlignRightPos.x - cylinderAxisPos.x
+//                    mouseDirY = downAlignRightPos.y - cylinderAxisPos.y
+//                    mouseLength = hypot(mouseDirX, mouseDirY)
+//                    mouseDirX /= mouseLength
+//                    mouseDirY /= mouseLength
+//                }
+//
+//                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
+//                cylinderAxisLineStartPos.y = topMiddlePoint.y
+//
+//                cylinderAxisLineEndPos.x = topRightPoint.x
+//                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+//            } else if (cornerMode == CornerMode.BottomRightCorner) {
+//                perpendicularFoot(bottomMiddlePoint.x, bottomMiddlePoint.y,
+//                    touchPos.x, touchPos.y,
+//                    downAlignRightPos.x, downAlignRightPos.y,
+//                    cylinderAxisPos
+//                )
+//                val minRadius = pageHeight * 0.1F
+//                val minL = (PI * minRadius).toFloat()
+//                val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
+//                if (L < minL || cylinderAxisPos.x > downAlignRightPos.x) {
+//                    rightTriangleC(bottomMiddlePoint, downAlignRightPos, minL, -1, cylinderAxisPos)
+//                    mouseDirX = downAlignRightPos.x - cylinderAxisPos.x
+//                    mouseDirY = downAlignRightPos.y - cylinderAxisPos.y
+//                    mouseLength = hypot(mouseDirX, mouseDirY)
+//                    mouseDirX /= mouseLength
+//                    mouseDirY /= mouseLength
+//                }
+//
+//                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
+//                cylinderAxisLineStartPos.y = bottomMiddlePoint.y
+//
+//                cylinderAxisLineEndPos.x = topRightPoint.x
+//                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+//            } else {
+//                cylinderAxisPos.x = topMiddlePoint.x
+//                cylinderAxisPos.y = touchPos.y
+//
+//                cylinderAxisLineStartPos.x = cylinderAxisPos.x
+//                cylinderAxisLineStartPos.y = topMiddlePoint.y
+//                cylinderAxisLineEndPos.x = cylinderAxisPos.x
+//                cylinderAxisLineEndPos.y = bottomMiddlePoint.y
+//
+//                landscapeP1.x = cylinderAxisPos.x - (pageWidth - (cylinderRadius * PI).toFloat())
+//                landscapeP2.x = cylinderAxisPos.x + cylinderRadius
+//                landscapeP3.x = landscapeP1.x
+//                landscapeP4.x = landscapeP2.x
+//            }
+//        }
 
-                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
-                cylinderAxisLineStartPos.y = topMiddlePoint.y
-
-                cylinderAxisLineEndPos.x = topRightPoint.x
-                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-            } else if (cornerMode == CornerMode.BottomRightCorner) {
-                perpendicularFoot(bottomMiddlePoint.x, bottomMiddlePoint.y,
-                    touchPos.x, touchPos.y,
-                    downAlignRightPos.x, downAlignRightPos.y,
-                    cylinderAxisPos
-                )
-                val minRadius = pageHeight * 0.1F
-                val minL = (PI * minRadius).toFloat()
-                val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
-                if (L < minL || cylinderAxisPos.x > downAlignRightPos.x) {
-                    rightTriangleC(bottomMiddlePoint, downAlignRightPos, minL, -1, cylinderAxisPos)
-                    mouseDirX = downAlignRightPos.x - cylinderAxisPos.x
-                    mouseDirY = downAlignRightPos.y - cylinderAxisPos.y
-                    mouseLength = hypot(mouseDirX, mouseDirY)
-                    mouseDirX /= mouseLength
-                    mouseDirY /= mouseLength
-                }
-
-                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
-                cylinderAxisLineStartPos.y = bottomMiddlePoint.y
-
-                cylinderAxisLineEndPos.x = topRightPoint.x
-                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-            } else {
-                cylinderAxisPos.x = topMiddlePoint.x
-                cylinderAxisPos.y = touchPos.y
-
-                cylinderAxisLineStartPos.x = cylinderAxisPos.x
-                cylinderAxisLineStartPos.y = topMiddlePoint.y
-                cylinderAxisLineEndPos.x = cylinderAxisPos.x
-                cylinderAxisLineEndPos.y = bottomMiddlePoint.y
-
-                landscapeP1.x = cylinderAxisPos.x - (pageWidth - (cylinderRadius * PI).toFloat())
-                landscapeP2.x = cylinderAxisPos.x + cylinderRadius
-                landscapeP3.x = landscapeP1.x
-                landscapeP4.x = landscapeP2.x
-            }
-        }
         if (isLandscape) return 0
 
         // process engle point
@@ -551,6 +540,10 @@ class SimulationRenderer {
         }
     }
 
+    /**
+     * 注意，当pathC计算完毕以后，不要进行pathC.op(allPageRegion, Path.Op.INTERSECT)操作，用pathC.op(rightPageRegion, Path.Op.INTERSECT)代替，
+     * 前者会造成严重的性能问题：随着调用次数增加，执行时间大幅度增加
+     */
     private fun computePaths(pointMode: Int) {
         when (pointMode) {
             0 -> {
@@ -568,7 +561,7 @@ class SimulationRenderer {
                 pathC.lineTo(landscapeP4.x, landscapeP4.y)
                 pathC.lineTo(landscapeP3.x, landscapeP3.y)
                 pathC.close()
-                pathC.op(allPageRegion, Path.Op.INTERSECT)
+                pathC.op(rightPageRegion, Path.Op.INTERSECT)
             }
             1 -> {
                 val cornerMode = getCornerMode()
@@ -628,7 +621,7 @@ class SimulationRenderer {
                     direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
                 )
                 pathC.close()
-                pathC.op(allPageRegion, Path.Op.INTERSECT)
+                pathC.op(rightPageRegion, Path.Op.INTERSECT)
             }
             2 -> {
                 val cornerMode = getCornerMode()
@@ -657,7 +650,7 @@ class SimulationRenderer {
                     pathC.lineTo(cornerProjPos.x, cornerProjPos.y)
                     pathC.lineTo(sineStartPos1.x, sineStartPos1.y)
                     pathC.close()
-                    pathC.op(allPageRegion, Path.Op.INTERSECT)
+                    pathC.op(rightPageRegion, Path.Op.INTERSECT)
                 } else {
                     pathB.reset()
                     pathB.moveTo(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
@@ -699,7 +692,7 @@ class SimulationRenderer {
                         direction = if (cornerMode == CornerMode.TopRightCorner) 1 else -1
                     )
                     pathC.close()
-                    pathC.op(allPageRegion, Path.Op.INTERSECT)
+                    pathC.op(rightPageRegion, Path.Op.INTERSECT)
                 }
             }
             else -> throw IllegalStateException("computePaths: pointMode=$pointMode is not supported.")
@@ -770,11 +763,26 @@ class SimulationRenderer {
         }
     }
 
+    private fun computeTime(msg: String, block: () -> Unit) {
+        val start = System.nanoTime()
+        block()
+        val end = System.nanoTime()
+        LogHelper.d(TAG, "$msg: ${(end - start) / 1000}us")
+    }
+
+    /**
+     * 性能分析：
+     * computePoints: 93us
+     * computePaths: 200us
+     * computeRegionAMeshVerts: 3967us
+     * computeRegionCMeshVerts: 1282us
+     */
     fun updateTouchPosition(curX: Float, curY: Float) {
         touchPos.x = curX
         touchPos.y = curY
         val pointMode = computePoints()
         computePaths(pointMode)
+        // TODO: 关于verts的计算，可以考虑使用c编写的native方法代替
         computeRegionAMeshVerts()
         computeRegionCMeshVerts(regionCMatrix)
     }
@@ -782,7 +790,7 @@ class SimulationRenderer {
     fun render(canvas: Canvas) {
         // draw region A
         canvas.withClip(pathA) {
-            canvas.drawBitmapMesh(topBitmap, regionAMeshWidth, regionAMeshHeight,
+            canvas.drawBitmapMesh(topBitmap, meshWidth, meshHeight,
                 regionAMeshVerts, 0, null, 0, null)
         }
 
@@ -793,13 +801,12 @@ class SimulationRenderer {
 
         // draw region C
         canvas.withClip(pathC) {
-            canvas.drawBitmapMesh(topBitmap, regionCMeshWidth, regionCMeshHeight,
+            canvas.drawBitmapMesh(topBitmap, meshWidth, meshHeight,
                 regionCMeshVerts, 0, null, 0, null)
         }
 
         // draw shadow
         drawShadow(canvas)
-
 
         if(enableDebugMode) debug(canvas)
     }
@@ -945,10 +952,10 @@ class SimulationRenderer {
      */
     private fun computeRegionAMeshVerts() {
         var index = 0
-        for (y in 0..regionAMeshHeight) {
-            val fy = pageHeight * y / regionAMeshHeight
-            for (x in 0..regionAMeshWidth) {
-                val fx = pageWidth * x.toFloat() / regionAMeshWidth
+        for (y in 0..meshHeight) {
+            val fy = pageHeight * y / meshHeight
+            for (x in 0..meshWidth) {
+                val fx = pageWidth * x.toFloat() / meshWidth
                 regionAMeshVerts[index * 2] = fx
                 regionAMeshVerts[index * 2 + 1] = fy
                 index++
@@ -1018,10 +1025,10 @@ class SimulationRenderer {
         regionCMatrix.postTranslate(-dx, -dy)
 
         var index = 0
-        for (y in 0..regionCMeshHeight) {
-            val fy = pageHeight * y / regionCMeshHeight
-            for (x in 0..regionCMeshWidth) {
-                val fx = pageWidth * x.toFloat() / regionCMeshWidth
+        for (y in 0..meshHeight) {
+            val fy = pageHeight * y / meshHeight
+            for (x in 0..meshWidth) {
+                val fx = pageWidth * x.toFloat() / meshWidth
                 regionCMeshVerts[index * 2] = fx
                 regionCMeshVerts[index * 2 + 1] = fy
                 index++
@@ -1087,7 +1094,7 @@ class SimulationRenderer {
      * 绘制阴影
      */
     private fun drawShadow(canvas: Canvas) {
-
+        canvas.drawPath(pathC, backShadowPaint)         // 给背面区域PathC添加一个很淡的阴影
     }
 
     fun flipToNextPage(scroller: Scroller, animDuration: Int) {

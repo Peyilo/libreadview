@@ -5,12 +5,12 @@ import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import org.peyilo.libreadview.manager.SimulationRenderer
+import org.peyilo.libreadview.manager.CurlRenderer
 
 
 class SimulationViewIOS(context: Context, attrs: AttributeSet?): View(context, attrs) {
 
-    private val renderer = SimulationRenderer()
+    private val renderer = CurlRenderer()
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)

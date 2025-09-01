@@ -204,6 +204,7 @@ class ReadViewActivity : AppCompatActivity() {
 - 背景设置API
 - 标题、正文字体大小、字体、颜色相关API
 - 各种间距相关API
+- 网络小说加载的步骤：初始化目录、加载指定章节内容、解析章节内容（章节内容可能包含文字和图片）、
 
 ## License
 
