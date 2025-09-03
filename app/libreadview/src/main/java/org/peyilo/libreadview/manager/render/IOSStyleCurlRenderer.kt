@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.widget.Scroller
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withClip
 import org.peyilo.libreadview.manager.util.addQuarterSineFromHalfPeriod
 import org.peyilo.libreadview.manager.util.computeCrossPoint
@@ -16,9 +17,12 @@ import org.peyilo.libreadview.manager.util.reflectPointAboutLine
 import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 class IOSStyleCurlRenderer: CurlRenderer {
 
@@ -715,7 +719,7 @@ class IOSStyleCurlRenderer: CurlRenderer {
         canvas.drawLine(topMiddlePoint.x, topMiddlePoint.y, cylinderAxisPos.x, cylinderAxisPos.y, debugLinePaint)
     }
 
-    private fun Canvas.drawPoint(text: String, x: Float, y: Float,) {
+    private fun Canvas.drawPoint(text: String, x: Float, y: Float) {
         drawCircle(x, y, 6F, debugLinePaint)
         val length = debugPosPaint.measureText(text)
         var dy = 0F
@@ -882,8 +886,70 @@ class IOSStyleCurlRenderer: CurlRenderer {
         canvas.drawPath(pathC, backShadowPaint)         // 给背面区域PathC添加一个很淡的阴影
     }
 
-    private fun drawShadowB(canvas: Canvas) {
+    private var shadowB: Bitmap? = null
+    val matrixShadowB = Matrix()
 
+    private fun drawShadowB(canvas: Canvas) {
+        // TODO: 生成的bitmap实在太大了，导致绘制阴影时非常卡顿
+        // 需要想办法优化
+        computeTime("drawShadowB") {
+            if (shadowB == null) {
+                shadowB = makeShadowBitmap(canvas.width, canvas.height)
+            }
+            if (shadowB!!.width != canvas.width || shadowB!!.height != canvas.height) {
+                shadowB!!.recycle()
+                shadowB = makeShadowBitmap(canvas.width, canvas.height)
+            }
+            val dx = cylinderAxisPos.x - cylinderAxisLineStartPos.x
+            val dy = cylinderAxisPos.y - cylinderAxisLineStartPos.y
+
+            // 计算角度（让 Bitmap 的高度方向对齐 AB）
+            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() - 90f
+
+            if (getCornerMode() == CornerMode.BottomRightCorner) {
+                // TopRightCorner和BottomRightCorner的阴影方向相反
+                angle += 180F
+                // TODO
+            }
+
+            matrixShadowB.apply {
+                reset()
+                postRotate(angle)
+                postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+            }
+
+            canvas.withClip(pathB) {
+                canvas.drawBitmap(shadowB!!, matrixShadowB, null)
+            }
+        }
+    }
+
+    fun makeShadowBitmap(
+        width: Int,
+        height: Int,
+        kOfx: (Float) -> Float = { x ->
+            // 默认阴影渐变：pow(clamp(x, 0., 1.) * 1.5, .2);
+            (x.coerceIn(0F, 1F) * 1.5).pow(0.2).toFloat()
+        }
+    ): Bitmap {
+        val bWidth = width * 2
+        val wHeight = sqrt((4 * width * width + height * height).toDouble()).toInt()
+        val bmp = createBitmap(bWidth, wHeight)
+        val pixels = IntArray(bWidth * wHeight)
+        for (x in 0 until bWidth) {
+            // 归一化位置 t ∈ [0,1]
+            val k = kOfx(x / height.toFloat()).coerceIn(0f, 1f)
+            val alpha = ((1f - k) * 255f).toInt().coerceIn(0, 255)
+
+            val color = (alpha shl 24) or 0x000000
+            // 整列都一样的 alpha
+            for (y in 0 until wHeight) {
+                pixels[y * bWidth + x] = color
+            }
+        }
+
+        bmp.setPixels(pixels, 0, bWidth, 0, 0, bWidth, wHeight)
+        return bmp
     }
 
     override fun flipToNextPage(scroller: Scroller, animDuration: Int) {
