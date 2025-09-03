@@ -13,7 +13,6 @@ import org.peyilo.libreadview.util.LogHelper
 
 /**
  * 对于通过GLSL实现的翻页动画，可以使用这个PageGLSurfaceView来承载。
- * AbstractPageContainer启用GLSL支持后，PageGLSurfaceView将会被创建并添加到AbstractPageContainer中。
  */
 class PageGLSurfaceView(context: Context) : GLSurfaceView(context) {
 

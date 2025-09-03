@@ -29,7 +29,7 @@ class IOSStyleCurlRenderer: CurlRenderer {
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
      */
-    var enableDebugMode = false
+    var enableDebugMode = true
 
     private var _topBitmap: Bitmap? = null
     private var _bottomBitmap: Bitmap? = null
@@ -874,7 +874,16 @@ class IOSStyleCurlRenderer: CurlRenderer {
      * 绘制阴影
      */
     private fun drawShadow(canvas: Canvas) {
+        drawShadowB(canvas)
+        drawShadowC(canvas)
+    }
+
+    private fun drawShadowC(canvas: Canvas) {
         canvas.drawPath(pathC, backShadowPaint)         // 给背面区域PathC添加一个很淡的阴影
+    }
+
+    private fun drawShadowB(canvas: Canvas) {
+
     }
 
     override fun flipToNextPage(scroller: Scroller, animDuration: Int) {

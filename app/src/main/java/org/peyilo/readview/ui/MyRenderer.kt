@@ -25,8 +25,8 @@ class MyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private var startTime = System.currentTimeMillis()
 
-    var mouseX = 0f
-    var mouseY = 0f
+    var mouseX = 1f
+    var mouseY = 1f
     var mouseZ = 0f
     var mouseW = 0f
 
