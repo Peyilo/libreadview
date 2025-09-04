@@ -82,7 +82,7 @@ class SimpleReadView(
             LogHelper.e(TAG, "initToc: ${e.stackTrace}")
             false
         }
-        mCallback?.onInitToc(res)
+        mCallback?.onInitTocResult(res)
         return res
     }
 
@@ -392,7 +392,7 @@ class SimpleReadView(
         /**
          * 当目录完成初始化，就会调用这个函数
          */
-        fun onInitToc(success: Boolean) = Unit
+        fun onInitTocResult(success: Boolean) = Unit
 
     }
 

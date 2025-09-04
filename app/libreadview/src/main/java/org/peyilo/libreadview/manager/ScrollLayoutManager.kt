@@ -246,7 +246,6 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
 
     override fun onAddPage(view: View, position: Int) {
         view.translationY = getTranslateY(position) + (pageContainer.getCurPage()?.translationY ?: 0F)
-        LogHelper.d(TAG, "onAddPage: position is $position, translationY is ${view.translationY}")
     }
 
     override fun onDestroy() {

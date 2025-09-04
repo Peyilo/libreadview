@@ -226,7 +226,8 @@ abstract class AbstractReadView(
      */
     protected fun getChapPageRange(@IntRange(from = 1) chapIndex: Int): RangeData {
         if (mChapPageIndexer == null) {
-            throw IllegalStateException("mChapPageIndexer is not be initialized")
+            throw IllegalStateException("mChapPageIndexer is not be initialized." +
+                    "It may be due to an error caused by the directory not completing initialization")
         }
         val intRange = mChapPageIndexer!!.getChapPageRange(chapIndex)
         return RangeData().apply {
@@ -241,7 +242,8 @@ abstract class AbstractReadView(
      */
     protected fun findChapByPosition(@IntRange(from = 0) position: Int): Pair<Int, Int> {
         if (mChapPageIndexer == null) {
-            throw IllegalStateException("mChapPageIndexer is not be initialized")
+            throw IllegalStateException("mChapPageIndexer is not be initialized. " +
+                    "It may be due to an error caused by the directory not completing initialization")
         }
         return mChapPageIndexer!!.findChapForPage(position + 1)
     }
@@ -251,7 +253,8 @@ abstract class AbstractReadView(
      */
     protected fun updateChapPageCount(chapIndex: Int, chapPageCount: Int) {
         if (mChapPageIndexer == null) {
-            throw IllegalStateException("mChapPageIndexer is not be initialized")
+            throw IllegalStateException("mChapPageIndexer is not be initialized. " +
+                    "It may be due to an error caused by the directory not completing initialization")
         }
         mChapPageIndexer!!.updateChapPageCount(chapIndex, chapPageCount)
     }
@@ -261,7 +264,8 @@ abstract class AbstractReadView(
      */
     protected fun getChapPageCount(chapIndex: Int): Int {
         if (mChapPageIndexer == null) {
-            throw IllegalStateException("mChapPageIndexer is not be initialized")
+            throw IllegalStateException("mChapPageIndexer is not be initialized. " +
+                    "It may be due to an error caused by the directory not completing initialization")
         }
         return mChapPageIndexer!!.getChapPageCount(chapIndex)
     }

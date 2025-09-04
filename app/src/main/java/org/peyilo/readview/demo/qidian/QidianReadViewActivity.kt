@@ -77,7 +77,7 @@ class QidianReadViewActivity : AppCompatActivity() {
             pageIndex = 1,
         )
         readview.setCallback(object : SimpleReadView.Callback {
-            override fun onInitToc(success: Boolean) {
+            override fun onInitTocResult(success: Boolean) {
                 if (!success) return
                 for (i in 1..readview.getChapCount()) {
                     val chapTitle = readview.getChapTitle(i)
