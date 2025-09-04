@@ -65,7 +65,7 @@ class QidianReadViewActivity : AppCompatActivity() {
 
     private fun initPageIndex(selectedFile: File) {
         // Set the page turning mode
-        readview.layoutManager = SimpleCurlPageManager()
+        readview.layoutManager = IBookCurlPageManager()
         readview.openBook(
             SimpleNativeLoader(
                 selectedFile, encoding = getEncodeing(selectedFile)

@@ -8,9 +8,7 @@ import org.peyilo.libreadview.manager.render.SimpleCurlRenderer
 
 class SimpleCurlPageManager: CurlPageManager() {
 
-    override val curlRenderer: CurlRenderer = SimpleCurlRenderer().apply {
-        enableDebugMode = true
-    }
+    override val curlRenderer: CurlRenderer = SimpleCurlRenderer()
 
     private var animMode = AnimMode.Landscape
 

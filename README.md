@@ -198,12 +198,16 @@ class ReadViewActivity : AppCompatActivity() {
 
 ### TODO
 
+- 修bug：SimpleCurl的阴影绘制bug、翻页模式刚切换为ScrollLayoutManager时的滚动bug、IBookCurl的装订线实现
+- 关于滚动翻页：由于LayoutManager处理的AbstractPageContainer的Child view，也就是一个与AbstractPageContainer大小相同的Page，这会使得整个Page（包括页眉、页脚）都在滚动，考虑一下怎么解决
+
 - 长按选择文字功能
 - 段评功能：支持章节标题、段落、图片的段评按钮功能。段评按钮绘制方式分为两种，一种是直接绘制一个图标，另一种是作为一个view。另外，段评按钮的位置也分为多种：紧接在段落最后一个字的后面；或者，在x轴方向紧贴在页面的右侧，在y轴方向和段落的最后一行对齐。
 - 过度绘制优化
 - 背景设置API
 - 标题、正文字体大小、字体、颜色相关API
 - 各种间距相关API
+- 支持加载epub并显示
 - 网络小说加载的步骤：初始化目录、加载指定章节内容、解析章节内容（章节内容可能包含文字和图片）、
 
 ## License

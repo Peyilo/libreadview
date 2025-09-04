@@ -451,6 +451,14 @@ class SimpleCurlRenderer: CurlRenderer {
         val v1 = bezierVertex1 - m1
         val v2 = Vec.Companion.normalize(v1.copy())           // v1的单位向量
         val v3 = v1 + v2 * width
+        val bezierStart2 = bezierStart2.copy().apply {
+            if (userCopy) {
+                val sign = if (cornerVertex.y == 0F) -1 else 1
+                val w0 = width          // 不加这一段代码，阴影会少画一节
+                x = x + w0 * v2.y * sign
+                y = y - w0 * v2.x * sign
+            }
+        }
         val v4 = bezierStart1 + v3
         val v5 = bezierStart2 + v3
         shadowB.reset()
@@ -502,7 +510,7 @@ class SimpleCurlRenderer: CurlRenderer {
 
     private fun drawPathAShadow(canvas: Canvas) {
         val v1 = Vec.Companion.normalize(touchPoint - bezierControl1)
-        val v2 = Vec.Companion.normalize(touchPoint - bezierControl2)
+        val v2 = Vec.Companion.normalize(if (userCopy) (touchPoint - bezierControl2Copy) else (touchPoint - bezierControl2))
 
         val v3 =  v2 * shadowAWidth
         val v4 = bezierControl1 + v3

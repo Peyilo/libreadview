@@ -304,7 +304,7 @@ data class Book(
     }
 
     /**
-     * 再Book对象实例化以后，如果book中添加了新的chap、volume或者直接往volume引用中添加了新的chap，都应该调用这个函数，标记数据已经脏了，
+     * 在Book对象实例化以后，如果book中添加了新的chap、volume或者直接往volume引用中添加了新的chap，都应该调用这个函数，标记数据已经脏了，
      * 从而需要重新计算内部数据表示，从而保证book.chapCount、book.getChap(chapIndex)获取到的数据是正确的。
      * 如果Book对象实例化以后，book内部数据没有任何改变，无需调用这个函数。
      */
