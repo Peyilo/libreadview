@@ -8,44 +8,44 @@ import org.peyilo.libreadview.manager.render.SimpleCurlRenderer
 
 class SimpleCurlPageManager: CurlPageManager() {
 
-    override val curlRenderer: CurlRenderer = SimpleCurlRenderer()
+    override val curlRenderer: CurlRenderer = SimpleCurlRenderer().apply {
+        enableDebugMode = true
+    }
 
-    private var animMode = AnimMode.None
+    private var animMode = AnimMode.Landscape
 
     private val cornerVertex = PointF()               // 页脚顶点
 
     private enum class AnimMode {
-        TopRightCorner, BottomRightCorner, NextLandscape, PrevLandscape, None
+        TopRightCorner, BottomRightCorner, Landscape
     }
 
     override fun decideInitDire(dx: Float, dy: Float): PageDirection {
         val initDire = super.decideInitDire(dx, dy)
         animMode = when (initDire) {
             PageDirection.NEXT -> {     // 向下一页翻页时，根据本轮手势的DOWN坐标决定翻页动画的三种不同模式：右上角翻页、右下角翻页、横向翻页
-                if (gesture.down.y < containerHeight * 0.4) {               // 右上角翻页
+                if (gesture.down.y < containerHeight * 0.33) {               // 右上角翻页
                     AnimMode.TopRightCorner
-                } else if (gesture.down.y > containerHeight * 0.8) {    // 右下角翻页
+                } else if (gesture.down.y > containerHeight * 0.66) {        // 右下角翻页
                     AnimMode.BottomRightCorner
-                } else {   // 横向翻页
-                    AnimMode.NextLandscape
+                } else {                                                     // 横向翻页
+                    AnimMode.Landscape
                 }
             }
             PageDirection.PREV -> {     // 向上一页翻页时，只有横向翻页一种模式
-                AnimMode.PrevLandscape
+                AnimMode.Landscape
             }
-            else -> AnimMode.None
+            PageDirection.NONE -> return initDire
         }
-        if (animMode != AnimMode.None) {
-            // 横向翻页通过touchPoint实现，因此也要设置cornerVertex
-            if (gesture.down.y < containerHeight / 2) {
-                cornerVertex.x = containerWidth.toFloat()
-                cornerVertex.y = 0F
-                curlRenderer.initControllPosition(containerWidth.toFloat(), 0F)
-            } else {
-                cornerVertex.x = containerWidth.toFloat()
-                cornerVertex.y = containerHeight.toFloat()
-                curlRenderer.initControllPosition(containerWidth.toFloat(),  containerHeight.toFloat())
-            }
+        // 横向翻页通过touchPoint实现，因此也要设置cornerVertex
+        if (gesture.down.y < containerHeight / 2) {
+            cornerVertex.x = containerWidth.toFloat()
+            cornerVertex.y = 0F
+            curlRenderer.initControllPosition(containerWidth.toFloat(), 0F)
+        } else {
+            cornerVertex.x = containerWidth.toFloat()
+            cornerVertex.y = containerHeight.toFloat()
+            curlRenderer.initControllPosition(containerWidth.toFloat(),  containerHeight.toFloat())
         }
         return initDire
     }
@@ -55,16 +55,15 @@ class SimpleCurlPageManager: CurlPageManager() {
      */
     private fun setTouchPoint(x: Float, y: Float) {
         val tx = x
-        var ty = 0F
-        when (animMode) {
+        val ty: Float = when (animMode) {
             AnimMode.TopRightCorner, AnimMode.BottomRightCorner -> {
                 // 限制touchPoint.y不出界
-                ty = y.coerceIn(0F, containerHeight.toFloat())
+                y.coerceIn(0F, containerHeight.toFloat())
             }
-            AnimMode.NextLandscape, AnimMode.PrevLandscape -> {
-                ty = cornerVertex.y
+
+            AnimMode.Landscape -> {
+                cornerVertex.y
             }
-            else -> Unit
         }
         curlRenderer.updateTouchPosition(tx, ty)
     }

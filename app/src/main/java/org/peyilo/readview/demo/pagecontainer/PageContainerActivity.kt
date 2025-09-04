@@ -9,6 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.CoverLayoutManager
+import org.peyilo.libreadview.manager.GLSLCurlPageManager
+import org.peyilo.libreadview.manager.IBookCurlPageManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SimpleCurlPageManager
@@ -41,7 +43,7 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer.initPageIndex(2)
 
         // Choose a page animation manager (see options below)
-        pageContainer.layoutManager = IBookSlideLayoutManager()
+        pageContainer.layoutManager = IBookCurlPageManager()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)

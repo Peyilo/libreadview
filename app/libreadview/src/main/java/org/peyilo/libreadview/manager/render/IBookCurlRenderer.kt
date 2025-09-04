@@ -29,10 +29,10 @@ import kotlin.math.sin
  * TODO：处理装订线
  * TODO: 当page被拖动时，page翻页动画不应该直接跳转到当前位置，而应该有过渡动画，待实现
  */
-class IOSStyleCurlRenderer: CurlRenderer {
+class IBookCurlRenderer: CurlRenderer {
 
     companion object {
-        private const val TAG = "IOSStyleCurlRenderer"
+        private const val TAG = "IBookCurlRenderer"
     }
 
     /**
@@ -831,6 +831,7 @@ class IOSStyleCurlRenderer: CurlRenderer {
      * 绘制阴影
      */
     private fun drawShadow(canvas: Canvas) {
+        drawShadowA(canvas)
         drawShadowB(canvas)
         drawShadowC(canvas)
     }
@@ -858,6 +859,10 @@ class IOSStyleCurlRenderer: CurlRenderer {
                     cylinderAxisLineStartPos.y, shadowCrossPos)
             }
         }
+    }
+
+    private fun drawShadowA(canvas: Canvas) {
+        // TODO
     }
 
     private fun drawShadowC(canvas: Canvas) {

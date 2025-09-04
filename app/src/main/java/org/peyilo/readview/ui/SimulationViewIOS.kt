@@ -5,12 +5,12 @@ import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import org.peyilo.libreadview.manager.render.IOSStyleCurlRenderer
+import org.peyilo.libreadview.manager.render.IBookCurlRenderer
 
 
 class SimulationViewIOS(context: Context, attrs: AttributeSet?): View(context, attrs) {
 
-    private val renderer = IOSStyleCurlRenderer()
+    private val renderer = IBookCurlRenderer()
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)

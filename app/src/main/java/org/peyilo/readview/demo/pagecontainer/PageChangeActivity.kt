@@ -9,11 +9,7 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
-import org.peyilo.libreadview.manager.CoverLayoutManager
-import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SimpleCurlPageManager
-import org.peyilo.libreadview.manager.SlideLayoutManager
+import org.peyilo.libreadview.manager.LayoutManagerFactory
 import org.peyilo.readview.R
 import org.peyilo.readview.databinding.ActivityPageChangeBinding
 import org.peyilo.readview.fragment.SettingsFragment
@@ -48,7 +44,7 @@ class PageChangeActivity : AppCompatActivity() {
         }
 
         pageContainer.initPageIndex(1)
-        pageContainer.layoutManager = CoverLayoutManager()
+        pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.IBOOK_SLIDE)
         pageContainer.adapter = ColorAdapter(colors)
 
 
@@ -117,20 +113,25 @@ class PageChangeActivity : AppCompatActivity() {
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
             SettingsFragment({
-                if (pageContainer.layoutManager is CoverLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = CoverLayoutManager()
+                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
+                    == LayoutManagerFactory.COVER) return@SettingsFragment
+                pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.COVER)
             }, {
-                if (pageContainer.layoutManager is SlideLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = SlideLayoutManager()
+                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
+                    == LayoutManagerFactory.SLIDE) return@SettingsFragment
+                pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.SLIDE)
             }, {
-                if (pageContainer.layoutManager is SimpleCurlPageManager) return@SettingsFragment
-                pageContainer.layoutManager = SimpleCurlPageManager()
+                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
+                    == LayoutManagerFactory.CURL) return@SettingsFragment
+                pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.CURL)
             }, {
-                if (pageContainer.layoutManager is ScrollLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = ScrollLayoutManager()
+                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
+                    == LayoutManagerFactory.SCROLL) return@SettingsFragment
+                pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.SCROLL)
             }, {
-                if (pageContainer.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = IBookSlideLayoutManager()
+                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
+                    == LayoutManagerFactory.IBOOK_SLIDE) return@SettingsFragment
+                pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.IBOOK_SLIDE)
             }).show(fm, tag)
         }
     }

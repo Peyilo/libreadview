@@ -9,11 +9,11 @@ import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.IOSStyleCurlPageManager
+import org.peyilo.libreadview.manager.IBookCurlPageManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
+import org.peyilo.libreadview.manager.SimpleCurlPageManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.simple.SimpleReadView
-import org.peyilo.readview.AppPreferences
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.fragment.ChapListFragment
@@ -64,7 +64,8 @@ class QidianReadViewActivity : AppCompatActivity() {
     }
 
     private fun initPageIndex(selectedFile: File) {
-        readview.layoutManager = getLayoutManager(AppPreferences.getFlipMode())      // Set the page turning mode
+        // Set the page turning mode
+        readview.layoutManager = SimpleCurlPageManager()
         readview.openBook(
             SimpleNativeLoader(
                 selectedFile, encoding = getEncodeing(selectedFile)
@@ -72,8 +73,8 @@ class QidianReadViewActivity : AppCompatActivity() {
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节
                 // addTitleRegex("第\\d+章 .*")
             },
-            chapIndex = if (isDemo) AppPreferences.getChapIndex() else 1,
-            pageIndex = if (isDemo) AppPreferences.getChapPageIndex() else 1,
+            chapIndex = 1,
+            pageIndex = 1,
         )
         readview.setCallback(object : SimpleReadView.Callback {
             override fun onInitToc(success: Boolean) {
@@ -170,23 +171,18 @@ class QidianReadViewActivity : AppCompatActivity() {
             SettingsFragment({
                 if (readview.layoutManager is CoverLayoutManager) return@SettingsFragment
                 readview.layoutManager = CoverLayoutManager()
-                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is SlideLayoutManager) return@SettingsFragment
                 readview.layoutManager = SlideLayoutManager()
-                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
-                if (readview.layoutManager is IOSStyleCurlPageManager) return@SettingsFragment
-                readview.layoutManager = IOSStyleCurlPageManager()
-                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
+                if (readview.layoutManager is IBookCurlPageManager) return@SettingsFragment
+                readview.layoutManager = IBookCurlPageManager()
             }, {
                 if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
                 readview.layoutManager = ScrollLayoutManager()
-                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }, {
                 if (readview.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
                 readview.layoutManager = IBookSlideLayoutManager()
-                AppPreferences.setFlipMode(getFlipMode(readview.layoutManager))
             }).show(fm, tag)
         }
     }
@@ -195,7 +191,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when (layoutManager) {
             is CoverLayoutManager -> 0
             is SlideLayoutManager -> 1
-            is IOSStyleCurlPageManager -> 2
+            is IBookCurlPageManager -> 2
             is ScrollLayoutManager -> 3
             is IBookSlideLayoutManager -> 4
             else -> throw IllegalStateException()
@@ -206,18 +202,10 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when(flipModel) {
             0 -> CoverLayoutManager()
             1 -> SlideLayoutManager()
-            2 -> IOSStyleCurlPageManager()
+            2 -> IBookCurlPageManager()
             3 -> ScrollLayoutManager()
             4 -> IBookSlideLayoutManager()
             else -> throw IllegalStateException()
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        if (isDemo) {
-            AppPreferences.setChapIndex(readview.getCurChapIndex())
-            AppPreferences.setChapPageIndex(readview.getCurChapPageIndex())
         }
     }
 }

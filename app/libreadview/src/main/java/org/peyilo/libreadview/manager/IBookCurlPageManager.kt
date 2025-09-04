@@ -2,11 +2,11 @@ package org.peyilo.libreadview.manager
 
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.manager.render.CurlRenderer
-import org.peyilo.libreadview.manager.render.IOSStyleCurlRenderer
+import org.peyilo.libreadview.manager.render.IBookCurlRenderer
 
-class IOSStyleCurlPageManager: CurlPageManager() {
+class IBookCurlPageManager: CurlPageManager() {
 
-    override val curlRenderer: CurlRenderer = IOSStyleCurlRenderer()
+    override val curlRenderer: CurlRenderer = IBookCurlRenderer()
 
     override fun prepareAnim(initDire: PageDirection) {
         super.prepareAnim(initDire)
