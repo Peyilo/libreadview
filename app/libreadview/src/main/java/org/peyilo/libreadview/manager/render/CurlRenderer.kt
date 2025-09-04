@@ -22,4 +22,6 @@ interface CurlRenderer {
 
     fun flipToPrevPage(scroller: Scroller, animDuration: Int)
 
+    fun destory() = Unit
+
 }

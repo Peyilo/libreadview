@@ -24,6 +24,11 @@ import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
 
+/**
+ * 仿iOS风格的curl翻页
+ * TODO：处理装订线
+ * TODO: 当page被拖动时，page翻页动画不应该直接跳转到当前位置，而应该有过渡动画，待实现
+ */
 class IOSStyleCurlRenderer: CurlRenderer {
 
     companion object {
@@ -245,7 +250,7 @@ class IOSStyleCurlRenderer: CurlRenderer {
             cylinderAxisLineEndPos.x = topRightPoint.x
             cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
         } else {
-            cylinderAxisLineStartPos.x = cylinderAxisPos.x
+            cylinderAxisLineStartPos.x = cylinderAxisPos.x      // landscape状态下，cylinderAxisLineStartPos在top位置
             cylinderAxisLineStartPos.y = topMiddlePoint.y
             cylinderAxisLineEndPos.x = cylinderAxisPos.x
             cylinderAxisLineEndPos.y = bottomMiddlePoint.y
@@ -831,13 +836,27 @@ class IOSStyleCurlRenderer: CurlRenderer {
     }
 
     private fun computeShadowPoints() {
+        val cornerMode = getCornerMode()
+        if (cornerMode == CornerMode.Landscape) {
+            shadowCrossPos.x = cylinderAxisLineEndPos.x
+            shadowCrossPos.y = cylinderAxisLineEndPos.y
+            return
+        }
         val res = computeCrossPoint(cylinderAxisPos, cylinderAxisLineStartPos,
             topRightPoint, bottomRightPoint, shadowCrossPos
         )
-        if (!res || shadowCrossPos.y < topRightPoint.y) {
-            perpendicularFoot(topRightPoint.x, topRightPoint.y, cylinderAxisPos.x,
-                cylinderAxisPos.y, cylinderAxisLineStartPos.x,
-                cylinderAxisLineStartPos.y, shadowCrossPos)
+        if (cornerMode == CornerMode.TopRightCorner) {
+            if (!res || shadowCrossPos.y > bottomRightPoint.y) {
+                perpendicularFoot(bottomRightPoint.x, bottomRightPoint.y, cylinderAxisPos.x,
+                    cylinderAxisPos.y, cylinderAxisLineStartPos.x,
+                    cylinderAxisLineStartPos.y, shadowCrossPos)
+            }
+        } else {
+            if (!res || shadowCrossPos.y < topRightPoint.y) {
+                perpendicularFoot(topRightPoint.x, topRightPoint.y, cylinderAxisPos.x,
+                    cylinderAxisPos.y, cylinderAxisLineStartPos.x,
+                    cylinderAxisLineStartPos.y, shadowCrossPos)
+            }
         }
     }
 
@@ -859,26 +878,33 @@ class IOSStyleCurlRenderer: CurlRenderer {
 
         val wWidth = cylinderRadius / shadowCurl!!.width
         val cornerMode = getCornerMode()
-        if (cornerMode == CornerMode.BottomRightCorner) {
-            // TopRightCorner和BottomRightCorner的阴影方向相反
-            angle += 180F
-            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
-                shadowCrossPos.y - cylinderAxisLineStartPos.y)
-
-            matrixShadow.apply {
-                reset()
-                postScale(wWidth, wHeight)
-                postRotate(angle)
-                postTranslate(shadowCrossPos.x, shadowCrossPos.y)
+        val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
+            shadowCrossPos.y - cylinderAxisLineStartPos.y)
+        when (cornerMode) {
+            CornerMode.BottomRightCorner -> {
+                // TopRightCorner和BottomRightCorner的阴影方向相反
+                angle += 180F
+                matrixShadow.apply {
+                    reset()
+                    postScale(wWidth, wHeight)
+                    postRotate(angle)
+                    postTranslate(shadowCrossPos.x, shadowCrossPos.y)
+                }
             }
-        } else {
-            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
-                shadowCrossPos.y - cylinderAxisLineStartPos.y)
-            matrixShadow.apply {
-                reset()
-                postScale(wWidth, wHeight)
-                postRotate(angle)
-                postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+            CornerMode.TopRightCorner -> {
+                matrixShadow.apply {
+                    reset()
+                    postScale(wWidth, wHeight)
+                    postRotate(angle)
+                    postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+                }
+            }
+            else -> {
+                matrixShadow.apply {
+                    reset()
+                    postScale(wWidth, wHeight)
+                    postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+                }
             }
         }
         canvas.withClip(pathAC) {
@@ -899,26 +925,33 @@ class IOSStyleCurlRenderer: CurlRenderer {
 
         val wWidth = 1F * canvas.width / shadowB!!.width
         val cornerMode = getCornerMode()
-        if (cornerMode == CornerMode.BottomRightCorner) {
-            // TopRightCorner和BottomRightCorner的阴影方向相反
-            angle += 180F
-            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
-                shadowCrossPos.y - cylinderAxisLineStartPos.y)
-
-            matrixShadow.apply {
-                reset()
-                postScale(wWidth, wHeight)
-                postRotate(angle)
-                postTranslate(shadowCrossPos.x, shadowCrossPos.y)
+        val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
+            shadowCrossPos.y - cylinderAxisLineStartPos.y)
+        when (cornerMode) {
+            CornerMode.BottomRightCorner -> {
+                // TopRightCorner和BottomRightCorner的阴影方向相反
+                angle += 180F
+                matrixShadow.apply {
+                    reset()
+                    postScale(wWidth, wHeight)
+                    postRotate(angle)
+                    postTranslate(shadowCrossPos.x, shadowCrossPos.y)
+                }
             }
-        } else {
-            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
-                shadowCrossPos.y - cylinderAxisLineStartPos.y)
-            matrixShadow.apply {
-                reset()
-                postScale(wWidth, wHeight)
-                postRotate(angle)
-                postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+            CornerMode.TopRightCorner -> {
+                matrixShadow.apply {
+                    reset()
+                    postScale(wWidth, wHeight)
+                    postRotate(angle)
+                    postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+                }
+            }
+            else -> {
+                matrixShadow.apply {
+                    reset()
+                    postScale(wWidth, wHeight)
+                    postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
+                }
             }
         }
 
@@ -927,7 +960,7 @@ class IOSStyleCurlRenderer: CurlRenderer {
         }
     }
 
-    fun makeShadowLut(
+    private fun makeShadowLut(
         width: Int = 256,
         kOfT: (Float) -> Float = { t ->
             t.coerceIn(0f, 1f).toDouble().pow(0.2).toFloat()
@@ -962,4 +995,12 @@ class IOSStyleCurlRenderer: CurlRenderer {
             dx, dy, animDuration)
     }
 
+    override fun destory() {
+        super.destory()
+        release()
+        shadowCurl?.recycle()
+        shadowB?.recycle()
+        shadowCurl = null
+        shadowB = null
+    }
 }

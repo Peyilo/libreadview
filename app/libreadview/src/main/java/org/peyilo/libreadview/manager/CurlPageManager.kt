@@ -139,5 +139,6 @@ abstract class CurlPageManager: FlipOnReleaseLayoutManager.Horizontal(), Animate
     override fun onDestroy() {
         super.onDestroy()
         pageBitmapCache.clearBitmap()
+        curlRenderer.destory()
     }
 }
