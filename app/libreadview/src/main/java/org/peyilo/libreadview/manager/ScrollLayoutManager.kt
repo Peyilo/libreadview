@@ -161,18 +161,10 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
             if (curPage!!.translationY < - pageContainer.height / 2) {
                 nextCarouselLayout()      // 该函数执行以后，page顺序就发生了改变
                 refreshPages()
-                if (pageContainer.getContainerPageCount() >= 3) {
-                    pageContainer.apply {
-                        getNextPage()?.translationY = curPage!!.translationY + pageContainer.height
-                    }
-                }
                 LogHelper.d(TAG, "onDragging: nextCarouselLayout")
             } else if (curPage!!.translationY > pageContainer.height / 2) {
                 prevCarouselLayout()
                 refreshPages()
-                pageContainer.apply {
-                    getPrevPage()?.translationY = curPage!!.translationY - pageContainer.height
-                }
                 LogHelper.d(TAG, "onDragging: prevCarouselLayout")
             }
         }
@@ -253,7 +245,8 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
     }
 
     override fun onAddPage(view: View, position: Int) {
-        view.translationY = getTranslateY(position)
+        view.translationY = getTranslateY(position) + (pageContainer.getCurPage()?.translationY ?: 0F)
+        LogHelper.d(TAG, "onAddPage: position is $position, translationY is ${view.translationY}")
     }
 
     override fun onDestroy() {

@@ -56,12 +56,13 @@ abstract class AbstractPageContainer(
             _layoutManager = value        // 清除pageManager中包含的PageContainer引用
             value.setPageContainer(this)
             resetPagePosition()
-            value.initPagePosition(false)
             val renderer = value.createRenderer()
             renderer?.let {
                 glView.setRenderer(it)
                 glView.renderMode = RENDERMODE_CONTINUOUSLY
             }
+            value.requestReInitPagePosition()
+            requestLayout()
         }
         get() = _layoutManager
             ?: throw IllegalStateException("LayoutManager is not initialized. Did you forget to set it?")
@@ -119,11 +120,11 @@ abstract class AbstractPageContainer(
      * 此外，还通过重写getChildDrawingOrder()，使得glView始终位于最底层但是最后一个被绘制(从而保证其显示在最上层)
      */
     private val glView = PageGLSurfaceView(context).apply {
-        setEGLContextClientVersion(2)               // OpenGL ES 2.0
+        setEGLContextClientVersion(2)                   // OpenGL ES 2.0
     }
 
     private val pageViewStart = 1                       //  pageView的起始index，为1
-    private val maxPageChildCount = 3                       // 最多3个pageView
+    private val maxPageChildCount = 3                   // 最多3个pageView
 
     init {
         isChildrenDrawingOrderEnabled = true            // 启用子View绘制顺序控制
@@ -331,7 +332,7 @@ abstract class AbstractPageContainer(
             onDestroy()
         }
 
-        protected fun requestReInitPagePosition() {
+        fun requestReInitPagePosition() {
             needInitPagePosition = true
         }
 
@@ -343,8 +344,8 @@ abstract class AbstractPageContainer(
         /**
          * 初始化Page的位置，调用该函数会将needInitPagePosition置为false，并回调onInitPagePosition()
          */
-        fun initPagePosition(changeState: Boolean = true) {
-            if (changeState) needInitPagePosition = false
+        fun initPagePosition() {
+            needInitPagePosition = false
             onInitPagePosition()
         }
 

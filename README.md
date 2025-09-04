@@ -198,7 +198,7 @@ class ReadViewActivity : AppCompatActivity() {
 
 ### TODO
 
-- 修bug：SimpleCurl的阴影绘制bug、翻页模式刚切换为ScrollLayoutManager时的滚动bug、IBookCurl的装订线实现
+- IBookCurl的装订线实现
 - 关于滚动翻页：由于LayoutManager处理的AbstractPageContainer的Child view，也就是一个与AbstractPageContainer大小相同的Page，这会使得整个Page（包括页眉、页脚）都在滚动，考虑一下怎么解决
 
 - 长按选择文字功能
