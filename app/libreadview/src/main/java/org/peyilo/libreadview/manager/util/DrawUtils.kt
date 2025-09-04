@@ -168,15 +168,26 @@ fun rightTriangleC(
 /**
  * 求解直线P1P2和直线P3P4的交点坐标，并将交点坐标保存到result中
  */
-fun computeCrossPoint(p1: PointF, p2: PointF, p3: PointF, p4: PointF, result: PointF) {
-    // 二元函数通式： y=ax+b
-    val a1 = (p2.y - p1.y) / (p2.x - p1.x)
-    val b1 = (p1.x * p2.y - p2.x * p1.y) / (p1.x - p2.x)
-    val a2 = (p4.y - p3.y) / (p4.x - p3.x)
-    val b2 = (p3.x * p4.y - p4.x * p3.y) / (p3.x - p4.x)
-    result.x = (b2 - b1) / (a1 - a2)
-    result.y = a1 * result.x + b1
+fun computeCrossPoint(p1: PointF, p2: PointF, p3: PointF, p4: PointF, result: PointF): Boolean {
+    val a1 = p2.y - p1.y
+    val b1 = p1.x - p2.x
+    val c1 = a1 * p1.x + b1 * p1.y
+
+    val a2 = p4.y - p3.y
+    val b2 = p3.x - p4.x
+    val c2 = a2 * p3.x + b2 * p3.y
+
+    val det = a1 * b2 - a2 * b1
+    if (det == 0f) {
+        // 平行或重合，没交点
+        return false
+    }
+
+    result.x = (b2 * c1 - b1 * c2) / det
+    result.y = (a1 * c2 - a2 * c1) / det
+    return true
 }
+
 
 /**
  * 计算P1P2的中点坐标，并保存到result中

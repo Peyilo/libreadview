@@ -37,7 +37,7 @@ class NetworkLoadActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportActionBar?.hide()
-        readview.layoutManager = IBookSlideLayoutManager()      // Set the page turning mode
+        readview.layoutManager = SimpleCurlPageManager()      // Set the page turning mode
 
         // 网络加载: https://www.yuyouku.com/book/185030
         readview.openBook(

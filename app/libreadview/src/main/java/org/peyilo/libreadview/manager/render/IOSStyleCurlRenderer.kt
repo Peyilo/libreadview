@@ -13,6 +13,7 @@ import androidx.core.graphics.withClip
 import org.peyilo.libreadview.manager.util.addQuarterSineFromHalfPeriod
 import org.peyilo.libreadview.manager.util.computeCrossPoint
 import org.peyilo.libreadview.manager.util.drawHalfSineCurve
+import org.peyilo.libreadview.manager.util.perpendicularFoot
 import org.peyilo.libreadview.manager.util.reflectPointAboutLine
 import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.PI
@@ -22,7 +23,6 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 class IOSStyleCurlRenderer: CurlRenderer {
 
@@ -33,17 +33,13 @@ class IOSStyleCurlRenderer: CurlRenderer {
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
      */
-    var enableDebugMode = true
+    var enableDebugMode = false
 
     private var _topBitmap: Bitmap? = null
     private var _bottomBitmap: Bitmap? = null
 
     private val topBitmap: Bitmap get() = _topBitmap!!
     private val bottomBitmap: Bitmap get() = _bottomBitmap!!
-
-    private val backShadowPaint = Paint().apply {
-        color = Color.argb(10, 0, 0, 0) // 半透明黑（也可以用灰）
-    }
 
     private val topLeftPoint = PointF()
     private val topMiddlePoint = PointF()
@@ -63,6 +59,15 @@ class IOSStyleCurlRenderer: CurlRenderer {
     private val downPos = PointF()
 
     private val downAlignRightPos = PointF()        // downPos.y与rightPageRegion右侧对齐时的点
+
+    private var shadowB: Bitmap? = null
+
+    private var shadowCurl: Bitmap? = null
+
+    val matrixShadow = Matrix()
+
+    private val shadowCrossPos = PointF()
+
 
     private val cylinderRadius: Float get() {
         val bias = abs(cylinderAxisPos.x - touchPos.x)
@@ -115,6 +120,8 @@ class IOSStyleCurlRenderer: CurlRenderer {
     private val pathA = Path()
     private val pathB = Path()
     private val pathC = Path()
+
+    private val pathAC = Path()
 
     private val debugPosPaint by lazy {
         Paint().apply {
@@ -243,70 +250,7 @@ class IOSStyleCurlRenderer: CurlRenderer {
             cylinderAxisLineEndPos.x = cylinderAxisPos.x
             cylinderAxisLineEndPos.y = bottomMiddlePoint.y
         }
-
-        // 限制页面左侧不能翻起来, 模拟真实书籍的装订
-//        if (cylinderAxisLineStartPos.x < topMiddlePoint.x) {
-//            if (cornerMode == CornerMode.TopRightCorner) {
-//                perpendicularFoot(topMiddlePoint.x, topMiddlePoint.y,
-//                    touchPos.x, touchPos.y,
-//                    downAlignRightPos.x, downAlignRightPos.y,
-//                    cylinderAxisPos
-//                )
-//                val minRadius = pageHeight * 0.1F
-//                val minL = (PI * minRadius).toFloat()
-//                val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
-//                if (L < minL || cylinderAxisPos.x > downAlignRightPos.x) {
-//                    rightTriangleC(topMiddlePoint, downAlignRightPos, minL, 1, cylinderAxisPos)
-//                    mouseDirX = downAlignRightPos.x - cylinderAxisPos.x
-//                    mouseDirY = downAlignRightPos.y - cylinderAxisPos.y
-//                    mouseLength = hypot(mouseDirX, mouseDirY)
-//                    mouseDirX /= mouseLength
-//                    mouseDirY /= mouseLength
-//                }
-//
-//                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
-//                cylinderAxisLineStartPos.y = topMiddlePoint.y
-//
-//                cylinderAxisLineEndPos.x = topRightPoint.x
-//                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-//            } else if (cornerMode == CornerMode.BottomRightCorner) {
-//                perpendicularFoot(bottomMiddlePoint.x, bottomMiddlePoint.y,
-//                    touchPos.x, touchPos.y,
-//                    downAlignRightPos.x, downAlignRightPos.y,
-//                    cylinderAxisPos
-//                )
-//                val minRadius = pageHeight * 0.1F
-//                val minL = (PI * minRadius).toFloat()
-//                val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
-//                if (L < minL || cylinderAxisPos.x > downAlignRightPos.x) {
-//                    rightTriangleC(bottomMiddlePoint, downAlignRightPos, minL, -1, cylinderAxisPos)
-//                    mouseDirX = downAlignRightPos.x - cylinderAxisPos.x
-//                    mouseDirY = downAlignRightPos.y - cylinderAxisPos.y
-//                    mouseLength = hypot(mouseDirX, mouseDirY)
-//                    mouseDirX /= mouseLength
-//                    mouseDirY /= mouseLength
-//                }
-//
-//                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
-//                cylinderAxisLineStartPos.y = bottomMiddlePoint.y
-//
-//                cylinderAxisLineEndPos.x = topRightPoint.x
-//                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-//            } else {
-//                cylinderAxisPos.x = topMiddlePoint.x
-//                cylinderAxisPos.y = touchPos.y
-//
-//                cylinderAxisLineStartPos.x = cylinderAxisPos.x
-//                cylinderAxisLineStartPos.y = topMiddlePoint.y
-//                cylinderAxisLineEndPos.x = cylinderAxisPos.x
-//                cylinderAxisLineEndPos.y = bottomMiddlePoint.y
-//
-//                landscapeP1.x = cylinderAxisPos.x - (pageWidth - (cylinderRadius * PI).toFloat())
-//                landscapeP2.x = cylinderAxisPos.x + cylinderRadius
-//                landscapeP3.x = landscapeP1.x
-//                landscapeP4.x = landscapeP2.x
-//            }
-//        }
+        computeShadowPoints()
 
         if (isLandscape) return 0
 
@@ -595,15 +539,19 @@ class IOSStyleCurlRenderer: CurlRenderer {
         pathA.close()
         pathA.op(pathB, Path.Op.DIFFERENCE)
         pathA.op(pathC, Path.Op.DIFFERENCE)
+
+        pathAC.apply {
+            reset()
+            addPath(pathA)
+            addPath(pathC)
+        }
     }
-
-
 
     private fun computeTime(msg: String, block: () -> Unit) {
         val start = System.nanoTime()
         block()
         val end = System.nanoTime()
-        LogHelper.d(IOSStyleCurlRenderer.Companion.TAG, "$msg: ${(end - start) / 1000}us")
+        LogHelper.d(TAG, "$msg: ${(end - start) / 1000}us")
     }
 
     /**
@@ -882,73 +830,121 @@ class IOSStyleCurlRenderer: CurlRenderer {
         drawShadowC(canvas)
     }
 
-    private fun drawShadowC(canvas: Canvas) {
-        canvas.drawPath(pathC, backShadowPaint)         // 给背面区域PathC添加一个很淡的阴影
+    private fun computeShadowPoints() {
+        val res = computeCrossPoint(cylinderAxisPos, cylinderAxisLineStartPos,
+            topRightPoint, bottomRightPoint, shadowCrossPos
+        )
+        if (!res || shadowCrossPos.y < topRightPoint.y) {
+            perpendicularFoot(topRightPoint.x, topRightPoint.y, cylinderAxisPos.x,
+                cylinderAxisPos.y, cylinderAxisLineStartPos.x,
+                cylinderAxisLineStartPos.y, shadowCrossPos)
+        }
     }
 
-    private var shadowB: Bitmap? = null
-    val matrixShadowB = Matrix()
+    private fun drawShadowC(canvas: Canvas) {
+        if (cylinderRadius == 0F) {
+            return
+        }
+        if (shadowCurl == null) {
+            shadowCurl = makeShadowLut(kOfT = { t ->
+                (1 - t).coerceIn(0f, 1f).toDouble().pow(0.2).toFloat()
+            }, color = 0x808080)
+        }
 
-    private fun drawShadowB(canvas: Canvas) {
-        // TODO: 生成的bitmap实在太大了，导致绘制阴影时非常卡顿
-        // 需要想办法优化
-        computeTime("drawShadowB") {
-            if (shadowB == null) {
-                shadowB = makeShadowBitmap(canvas.width, canvas.height)
-            }
-            if (shadowB!!.width != canvas.width || shadowB!!.height != canvas.height) {
-                shadowB!!.recycle()
-                shadowB = makeShadowBitmap(canvas.width, canvas.height)
-            }
-            val dx = cylinderAxisPos.x - cylinderAxisLineStartPos.x
-            val dy = cylinderAxisPos.y - cylinderAxisLineStartPos.y
+        val dx = cylinderAxisPos.x - cylinderAxisLineStartPos.x
+        val dy = cylinderAxisPos.y - cylinderAxisLineStartPos.y
 
-            // 计算角度（让 Bitmap 的高度方向对齐 AB）
-            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() - 90f
+        // 计算角度（让 Bitmap 的高度方向对齐 AB）
+        var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() - 90f
 
-            if (getCornerMode() == CornerMode.BottomRightCorner) {
-                // TopRightCorner和BottomRightCorner的阴影方向相反
-                angle += 180F
-                // TODO
-            }
+        val wWidth = cylinderRadius / shadowCurl!!.width
+        val cornerMode = getCornerMode()
+        if (cornerMode == CornerMode.BottomRightCorner) {
+            // TopRightCorner和BottomRightCorner的阴影方向相反
+            angle += 180F
+            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
+                shadowCrossPos.y - cylinderAxisLineStartPos.y)
 
-            matrixShadowB.apply {
+            matrixShadow.apply {
                 reset()
+                postScale(wWidth, wHeight)
+                postRotate(angle)
+                postTranslate(shadowCrossPos.x, shadowCrossPos.y)
+            }
+        } else {
+            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
+                shadowCrossPos.y - cylinderAxisLineStartPos.y)
+            matrixShadow.apply {
+                reset()
+                postScale(wWidth, wHeight)
                 postRotate(angle)
                 postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
             }
-
-            canvas.withClip(pathB) {
-                canvas.drawBitmap(shadowB!!, matrixShadowB, null)
-            }
+        }
+        canvas.withClip(pathAC) {
+            canvas.drawBitmap(shadowCurl!!, matrixShadow, null)
         }
     }
 
-    fun makeShadowBitmap(
-        width: Int,
-        height: Int,
-        kOfx: (Float) -> Float = { x ->
-            // 默认阴影渐变：pow(clamp(x, 0., 1.) * 1.5, .2);
-            (x.coerceIn(0F, 1F) * 1.5).pow(0.2).toFloat()
+    private fun drawShadowB(canvas: Canvas) {
+        // 需要想办法优化
+        if (shadowB == null) {
+            shadowB = makeShadowLut()
         }
-    ): Bitmap {
-        val bWidth = width * 2
-        val wHeight = sqrt((4 * width * width + height * height).toDouble()).toInt()
-        val bmp = createBitmap(bWidth, wHeight)
-        val pixels = IntArray(bWidth * wHeight)
-        for (x in 0 until bWidth) {
-            // 归一化位置 t ∈ [0,1]
-            val k = kOfx(x / height.toFloat()).coerceIn(0f, 1f)
-            val alpha = ((1f - k) * 255f).toInt().coerceIn(0, 255)
+        val dx = cylinderAxisPos.x - cylinderAxisLineStartPos.x
+        val dy = cylinderAxisPos.y - cylinderAxisLineStartPos.y
 
-            val color = (alpha shl 24) or 0x000000
-            // 整列都一样的 alpha
-            for (y in 0 until wHeight) {
-                pixels[y * bWidth + x] = color
+        // 计算角度（让 Bitmap 的高度方向对齐 AB）
+        var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() - 90f
+
+        val wWidth = 1F * canvas.width / shadowB!!.width
+        val cornerMode = getCornerMode()
+        if (cornerMode == CornerMode.BottomRightCorner) {
+            // TopRightCorner和BottomRightCorner的阴影方向相反
+            angle += 180F
+            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
+                shadowCrossPos.y - cylinderAxisLineStartPos.y)
+
+            matrixShadow.apply {
+                reset()
+                postScale(wWidth, wHeight)
+                postRotate(angle)
+                postTranslate(shadowCrossPos.x, shadowCrossPos.y)
+            }
+        } else {
+            val wHeight = hypot(shadowCrossPos.x - cylinderAxisLineStartPos.x,
+                shadowCrossPos.y - cylinderAxisLineStartPos.y)
+            matrixShadow.apply {
+                reset()
+                postScale(wWidth, wHeight)
+                postRotate(angle)
+                postTranslate(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
             }
         }
 
-        bmp.setPixels(pixels, 0, bWidth, 0, 0, bWidth, wHeight)
+        canvas.withClip(pathB) {
+            canvas.drawBitmap(shadowB!!, matrixShadow, null)
+        }
+    }
+
+    fun makeShadowLut(
+        width: Int = 256,
+        kOfT: (Float) -> Float = { t ->
+            t.coerceIn(0f, 1f).toDouble().pow(0.2).toFloat()
+        },
+        color: Int = 0x000000
+    ): Bitmap {
+        val bmp = createBitmap(width, 1)
+        val pixels = IntArray(width)
+
+        for (x in 0 until width) {
+            val t = x / (width - 1f) // 归一化到 [0,1]
+            val k = kOfT(t).coerceIn(0f, 1f)
+            val alpha = ((1f - k) * 255f).toInt().coerceIn(0, 255)
+            pixels[x] = (alpha shl 24) or color // 黑色 + alpha
+        }
+
+        bmp.setPixels(pixels, 0, width, 0, 0, width, 1)
         return bmp
     }
 
