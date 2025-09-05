@@ -16,7 +16,6 @@ import org.peyilo.libreadview.manager.util.buildPath
 import org.peyilo.libreadview.manager.util.computeCrossPoint
 import org.peyilo.libreadview.manager.util.perpendicularFoot
 import org.peyilo.libreadview.manager.util.reflectPointAboutLine
-import org.peyilo.libreadview.manager.util.splitPathByLine
 import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.PI
 import kotlin.math.abs
@@ -35,16 +34,12 @@ class IBookCurlRenderer: CurlRenderer {
 
     companion object {
         private const val TAG = "IBookCurlRenderer"
-
-        init {
-            System.loadLibrary("libreadview") // libreadview.so
-        }
     }
 
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
      */
-    var enableDebugMode = false
+    var enableDebugMode = true
 
     private var _topBitmap: Bitmap? = null
     private var _bottomBitmap: Bitmap? = null
@@ -75,14 +70,14 @@ class IBookCurlRenderer: CurlRenderer {
 
     private var shadowCurl: Bitmap? = null
 
-    val matrixShadow = Matrix()
+    private val matrixShadow = Matrix()
 
     private val shadowCrossPos = PointF()
 
     private val cylinderRadius: Float get() {
         val bias = abs(cylinderAxisPos.x - touchPos.x)
-        val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
-        val raidus = (L / PI).toFloat()
+        val len = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)
+        val raidus = (len / PI).toFloat()
         val res = if (bias == 0F) {
             raidus
         } else {
@@ -132,6 +127,8 @@ class IBookCurlRenderer: CurlRenderer {
             color = Color.BLACK
         }
     }
+
+    private val paintBack = makeBackPagePaint()
 
     private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
     private val regionCMatrix = Matrix()
@@ -210,14 +207,14 @@ class IBookCurlRenderer: CurlRenderer {
 
     private fun computePoints() {
         val cornerMode = getCornerMode()
-        downAlignRightPos.x = topRightPoint.x
+        downAlignRightPos.x = topRightPoint.x + 20F
         downAlignRightPos.y = downPos.y
 
         // process origin point
         // TODO: downAlignRightPos和touchPos可能会完全重合, 导致计算出现错误
         var mouseDirX = downAlignRightPos.x - touchPos.x
         var mouseDirY = downAlignRightPos.y - touchPos.y
-        var mouseLength = hypot(mouseDirX, mouseDirY)
+        val mouseLength = hypot(mouseDirX, mouseDirY)
         mouseDirX /= mouseLength
         mouseDirY /= mouseLength
 
@@ -227,23 +224,27 @@ class IBookCurlRenderer: CurlRenderer {
 
         // process axis line
         // 正交于mouseDir，(mouseDirY, -mouseDirX)
-        if (cornerMode == CornerMode.TopRightCorner) {
-            cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
-            cylinderAxisLineStartPos.y = topMiddlePoint.y
+        when (cornerMode) {
+            CornerMode.TopRightCorner -> {
+                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - topMiddlePoint.y)
+                cylinderAxisLineStartPos.y = topMiddlePoint.y
 
-            cylinderAxisLineEndPos.x = topRightPoint.x
-            cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-        } else if (cornerMode == CornerMode.BottomRightCorner) {
-            cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
-            cylinderAxisLineStartPos.y = bottomMiddlePoint.y
+                cylinderAxisLineEndPos.x = topRightPoint.x
+                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+            }
+            CornerMode.BottomRightCorner -> {
+                cylinderAxisLineStartPos.x = cylinderAxisPos.x + mouseDirY / mouseDirX * (cylinderAxisPos.y - bottomMiddlePoint.y)
+                cylinderAxisLineStartPos.y = bottomMiddlePoint.y
 
-            cylinderAxisLineEndPos.x = topRightPoint.x
-            cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
-        } else {
-            cylinderAxisLineStartPos.x = cylinderAxisPos.x      // landscape状态下，cylinderAxisLineStartPos在top位置
-            cylinderAxisLineStartPos.y = topMiddlePoint.y
-            cylinderAxisLineEndPos.x = cylinderAxisPos.x
-            cylinderAxisLineEndPos.y = bottomMiddlePoint.y
+                cylinderAxisLineEndPos.x = topRightPoint.x
+                cylinderAxisLineEndPos.y = cylinderAxisPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineEndPos.x - cylinderAxisPos.x)
+            }
+            else -> {
+                cylinderAxisLineStartPos.x = cylinderAxisPos.x      // landscape状态下，cylinderAxisLineStartPos在top位置
+                cylinderAxisLineStartPos.y = topMiddlePoint.y
+                cylinderAxisLineEndPos.x = cylinderAxisPos.x
+                cylinderAxisLineEndPos.y = bottomMiddlePoint.y
+            }
         }
         computeShadowPoints()
 
@@ -259,72 +260,76 @@ class IBookCurlRenderer: CurlRenderer {
         cylinderAxisProjPos.x = (cylinderAxisPos.x + mouseDirX * cylinderRadius * PI).toFloat()
         cylinderAxisProjPos.y = (cylinderAxisPos.y + mouseDirY * cylinderRadius * PI).toFloat()
 
-        if (cornerMode == CornerMode.TopRightCorner) {
-            // process corner point
-            cornerPos.x = topRightPoint.x
-            cornerPos.y = topRightPoint.y
+        when (cornerMode) {
+            CornerMode.TopRightCorner -> {
+                // process corner point
+                cornerPos.x = topRightPoint.x
+                cornerPos.y = topRightPoint.y
 
-            // process engle line
-            cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - topMiddlePoint.y)
-            cylinderEngleLineStartPos.y = topMiddlePoint.y
-            cylinderEngleLineEndPos.x =  topRightPoint.x
-            cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
+                // process engle line
+                cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - topMiddlePoint.y)
+                cylinderEngleLineStartPos.y = topMiddlePoint.y
+                cylinderEngleLineEndPos.x =  topRightPoint.x
+                cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
 
-            // process engle project line
-            cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - topMiddlePoint.y)
-            cylinderEngleLineProjStartPos.y = topMiddlePoint.y
-            cylinderEngleLineProjEndPos.x =  topRightPoint.x
-            cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
+                // process engle project line
+                cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - topMiddlePoint.y)
+                cylinderEngleLineProjStartPos.y = topMiddlePoint.y
+                cylinderEngleLineProjEndPos.x =  topRightPoint.x
+                cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
 
-            // process axis project line
-            cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - topMiddlePoint.y)
-            cylinderAxisLineProjStartPos.y = topMiddlePoint.y
-            cylinderAxisLineProjEndPos.x =  topRightPoint.x
-            cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
-        } else if (cornerMode == CornerMode.BottomRightCorner) {
-            // process corner point
-            cornerPos.x = bottomRightPoint.x
-            cornerPos.y = bottomRightPoint.y
+                // process axis project line
+                cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - topMiddlePoint.y)
+                cylinderAxisLineProjStartPos.y = topMiddlePoint.y
+                cylinderAxisLineProjEndPos.x =  topRightPoint.x
+                cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
+            }
+            CornerMode.BottomRightCorner -> {
+                // process corner point
+                cornerPos.x = bottomRightPoint.x
+                cornerPos.y = bottomRightPoint.y
 
-            // process engle line
-            cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - bottomMiddlePoint.y)
-            cylinderEngleLineStartPos.y = bottomMiddlePoint.y
-            cylinderEngleLineEndPos.x =  topRightPoint.x
-            cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
+                // process engle line
+                cylinderEngleLineStartPos.x = cylinderEnglePos.x + mouseDirY / mouseDirX * (cylinderEnglePos.y - bottomMiddlePoint.y)
+                cylinderEngleLineStartPos.y = bottomMiddlePoint.y
+                cylinderEngleLineEndPos.x =  topRightPoint.x
+                cylinderEngleLineEndPos.y = cylinderEnglePos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineEndPos.x - cylinderEnglePos.x)
 
-            // process engle project line
-            cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - bottomMiddlePoint.y)
-            cylinderEngleLineProjStartPos.y = bottomMiddlePoint.y
-            cylinderEngleLineProjEndPos.x =  topRightPoint.x
-            cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
+                // process engle project line
+                cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x + mouseDirY / mouseDirX * (cylinderEngleProjPos.y - bottomMiddlePoint.y)
+                cylinderEngleLineProjStartPos.y = bottomMiddlePoint.y
+                cylinderEngleLineProjEndPos.x =  topRightPoint.x
+                cylinderEngleLineProjEndPos.y = cylinderEngleProjPos.y + (-mouseDirX) / mouseDirY * (cylinderEngleLineProjEndPos.x - cylinderEngleProjPos.x)
 
-            // process axis project line
-            cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - bottomMiddlePoint.y)
-            cylinderAxisLineProjStartPos.y = bottomMiddlePoint.y
-            cylinderAxisLineProjEndPos.x =  topRightPoint.x
-            cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
-        } else {
-            // process corner point
-            cornerPos.x = topRightPoint.x
-            cornerPos.y = topRightPoint.y
+                // process axis project line
+                cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x + mouseDirY / mouseDirX * (cylinderAxisProjPos.y - bottomMiddlePoint.y)
+                cylinderAxisLineProjStartPos.y = bottomMiddlePoint.y
+                cylinderAxisLineProjEndPos.x =  topRightPoint.x
+                cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
+            }
+            else -> {
+                // process corner point
+                cornerPos.x = topRightPoint.x
+                cornerPos.y = topRightPoint.y
 
-            // process engle line
-            cylinderEngleLineStartPos.x = cylinderEnglePos.x
-            cylinderEngleLineStartPos.y = topMiddlePoint.y
-            cylinderEngleLineEndPos.x =  cylinderEnglePos.x
-            cylinderEngleLineEndPos.y = bottomMiddlePoint.y
+                // process engle line
+                cylinderEngleLineStartPos.x = cylinderEnglePos.x
+                cylinderEngleLineStartPos.y = topMiddlePoint.y
+                cylinderEngleLineEndPos.x =  cylinderEnglePos.x
+                cylinderEngleLineEndPos.y = bottomMiddlePoint.y
 
-            // process engle project line
-            cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x
-            cylinderEngleLineProjStartPos.y = topMiddlePoint.y
-            cylinderEngleLineProjEndPos.x =   cylinderEngleProjPos.x
-            cylinderEngleLineProjEndPos.y = bottomMiddlePoint.y
+                // process engle project line
+                cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x
+                cylinderEngleLineProjStartPos.y = topMiddlePoint.y
+                cylinderEngleLineProjEndPos.x =   cylinderEngleProjPos.x
+                cylinderEngleLineProjEndPos.y = bottomMiddlePoint.y
 
-            // process axis project line
-            cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x
-            cylinderAxisLineProjStartPos.y = topMiddlePoint.y
-            cylinderAxisLineProjEndPos.x =  cylinderAxisProjPos.x
-            cylinderAxisLineProjEndPos.y = bottomMiddlePoint.y
+                // process axis project line
+                cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x
+                cylinderAxisLineProjStartPos.y = topMiddlePoint.y
+                cylinderAxisLineProjEndPos.x =  cylinderAxisProjPos.x
+                cylinderAxisLineProjEndPos.y = bottomMiddlePoint.y
+            }
         }
 
         // 处理镜像对称点: 关于cylinderEngleProjLine的镜像
@@ -337,32 +342,29 @@ class IBookCurlRenderer: CurlRenderer {
     }
 
     private fun computePaths() {
+        // TODO: 优化性能
         buildBackPagePath()
         buildFrontPagePath()
-        val needReverse = getCornerMode() == CornerMode.BottomRightCorner
+        pathAC.reset()
+        pathAC.addPath(meshFrontPagePath)
 
-        computeTime("computePaths.splitPathByLine") {
-            meshFrontPagePath.splitPathByLine(cylinderEnglePos,
-                cylinderEngleLineStartPos, result = pathA, reverse = needReverse)
-            meshBackPagePath.splitPathByLine(cylinderEnglePos,
-                cylinderEngleLineStartPos, result = pathC, reverse = needReverse)
-        }
-        pathB.reset()
-        pathB.moveTo(topMiddlePoint.x, topMiddlePoint.y)
-        pathB.lineTo(topRightPoint.x, topRightPoint.y)
-        pathB.lineTo(bottomRightPoint.x, bottomRightPoint.y)
-        pathB.lineTo(bottomMiddlePoint.x, bottomMiddlePoint.y)
-        pathB.close()
+        // compute pathC
+        pathC.reset()
+        pathC.addPath(meshBackPagePath)
 
-        computeTime("computePaths.pathB.op") {
-            pathB.op(pathA, Path.Op.DIFFERENCE)
-            pathB.op(pathC, Path.Op.DIFFERENCE)
+        // compute pathA
+        computeTime("computePaths.PathA") {
+            pathA.reset()
+            pathA.addPath(meshFrontPagePath)
+            // 这一步非常耗时
+//            pathA.op(pathC, Path.Op.DIFFERENCE)
         }
 
-        pathAC.apply {
-            reset()
-            addPath(pathA)
-            addPath(pathC)
+        // compute pathB
+        computeTime("computePaths.pathB") {
+            pathB.reset()
+            pathB.addPath(rightPageRegion)
+            pathB.op(pathAC, Path.Op.DIFFERENCE)
         }
     }
 
@@ -375,20 +377,26 @@ class IBookCurlRenderer: CurlRenderer {
 
     /**
      * 性能分析：
-     * computePoints: 93us
-     * computePaths: 200us
-     * computeRegionAMeshVerts: 3967us
-     * computeRegionCMeshVerts: 1282us
+     * computePoints: 27us
+     * computeRegionAMeshVerts: 143us
+     * computeRegionCMeshVerts: 173us
+     * computePaths: 13353us
      */
     override fun updateTouchPosition(curX: Float, curY: Float) {
         touchPos.x = curX
         touchPos.y = curY
-        computePoints()
-        // TODO: 关于verts的计算，可以考虑使用c编写的native方法代替
-        computeRegionAMeshVerts()
-        computeRegionCMeshVerts()
-        computePaths()
-
+        computeTime("updateTouchPosition.computePoints") {
+            computePoints()
+        }
+        computeTime("updateTouchPosition.computeRegionAMeshVerts") {
+            computeRegionAMeshVerts()
+        }
+        computeTime("updateTouchPosition.computeRegionCMeshVerts") {
+            computeRegionCMeshVerts()
+        }
+        computeTime("updateTouchPosition.computePaths") {
+            computePaths()
+        }
     }
 
     // 通过ColorMatrixColorFilter实现纸张背面区域的颜色变浅效果
@@ -411,30 +419,34 @@ class IBookCurlRenderer: CurlRenderer {
         }
     }
 
-    val paintBack = makeBackPagePaint()
 
     override fun render(canvas: Canvas) {
-        // draw region A
-        canvas.withClip(pathA) {
-            canvas.drawBitmapMesh(topBitmap, meshWidth, meshHeight,
-                regionAMeshVerts, 0, null, 0, null)
+        computeTime("render") {
+            // draw region B
+            canvas.withClip(pathB) {
+                drawBitmap(bottomBitmap, 0F, 0F, null)
+                drawBottomPageShadow(canvas)
+            }
+
+            // draw region A
+            canvas.withClip(pathA) {
+                drawBitmapMesh(topBitmap, meshWidth, meshHeight,
+                    regionAMeshVerts, 0, null, 0, null)
+            }
+
+            // draw region C
+            canvas.withClip(pathC) {
+                drawBitmapMesh(topBitmap, meshWidth, meshHeight,
+                    regionCMeshVerts, 0, null, 0, paintBack)
+
+            }
+
+            // draw shadow
+            drawShadowA(canvas)
+            drawCylinderShadow(canvas)
+
+            if(enableDebugMode) debug(canvas)
         }
-
-        // draw region B
-        canvas.withClip(pathB) {
-            drawBitmap(bottomBitmap, 0F, 0F, null)
-        }
-
-        // draw region C
-        canvas.withClip(pathC) {
-            canvas.drawBitmapMesh(topBitmap, meshWidth, meshHeight,
-                regionCMeshVerts, 0, null, 0, paintBack)
-        }
-
-        // draw shadow
-        drawShadow(canvas)
-
-        if(enableDebugMode) debug(canvas)
     }
 
     override fun setPages(top: Bitmap, bottom: Bitmap) {
@@ -448,6 +460,9 @@ class IBookCurlRenderer: CurlRenderer {
     }
 
     private fun debug(canvas: Canvas) {
+        canvas.drawPath(meshFrontPagePath, debugLinePaint)
+        canvas.drawPath(meshBackPagePath, debugLinePaint)
+
         canvas.drawPoint("Down", downPos.x, downPos.y)
         canvas.drawPoint("Touch", touchPos.x, touchPos.y)
         canvas.drawLine(downPos.x, downPos.y, touchPos.x, touchPos.y, debugLinePaint)
@@ -510,9 +525,7 @@ class IBookCurlRenderer: CurlRenderer {
      * 计算RegionA drawBitmapMesh需要的点坐标
      */
     private fun computeRegionAMeshVerts() {
-       computeTime("initMeshVerts") {
-           initMeshVerts(regionAMeshVerts)
-       }
+        initMeshVerts(regionAMeshVerts)
 
         val dirX = downAlignRightPos.x - cylinderAxisPos.x
         val dirY = downAlignRightPos.y - cylinderAxisPos.y
@@ -545,7 +558,7 @@ class IBookCurlRenderer: CurlRenderer {
                 // 由于sin的周期性，大于PI/2时，得到的值可能和小于PI/2的值相同，导致遮挡
                 // 因此，对于在半径radius以内的区域进行弯曲，对于大于radius的区域则不采用任何弯曲特效（即平铺）
                 // 并且保证映射之后的page是连续的
-                s - PI.toFloat() / 2 * cylinderRadius + cylinderRadius
+                cylinderRadius
             }
             // 将变换后的点再映射回屏幕坐标系
             regionAMeshVerts[i] = originX + curveX * ux - t * uy
@@ -576,16 +589,7 @@ class IBookCurlRenderer: CurlRenderer {
         regionCMatrix.preTranslate(dx, dy)
         regionCMatrix.postTranslate(-dx, -dy)
 
-        var index = 0
-        for (y in 0..meshHeight) {
-            val fy = pageHeight * y / meshHeight
-            for (x in 0..meshWidth) {
-                val fx = pageWidth * x.toFloat() / meshWidth
-                regionCMeshVerts[index * 2] = fx
-                regionCMeshVerts[index * 2 + 1] = fy
-                index++
-            }
-        }
+        initMeshVerts(regionCMeshVerts)
 
         val dirX = cylinderAxisPos.x - downAlignRightPos.x
         val dirY = cylinderAxisPos.y - downAlignRightPos.y
@@ -624,22 +628,14 @@ class IBookCurlRenderer: CurlRenderer {
             } else {
                 // 由于sin的周期性，大于PI/2时，得到的值可能和小于PI/2的值相同，导致遮挡
                 // 因此，对于在半径radius以内的区域进行弯曲，对于大于radius的区域则不采用任何弯曲特效（即平铺）
-                // 并且保证映射之后的page是连续的
-                s - PI.toFloat() / 2 * cylinderRadius + cylinderRadius
+                cylinderRadius
             }
             // 将变换后的点再映射回屏幕坐标系
             regionCMeshVerts[i] = originX + curveX * ux - t * uy
             regionCMeshVerts[i + 1] = originY + curveX * uy + t * ux
         }
         // drawBitmapMesh没有matrix参数，因此需要主动调用matrix，应用矩阵变换转换坐标
-        val temp = FloatArray(2)
-        for (i in regionCMeshVerts.indices step 2) {
-            temp[0] = regionCMeshVerts[i]
-            temp[1] = regionCMeshVerts[i + 1]
-            regionCMatrix.mapPoints(temp)
-            regionCMeshVerts[i] = temp[0]
-            regionCMeshVerts[i + 1] = temp[1]
-        }
+        regionCMatrix.mapPoints(regionCMeshVerts)
     }
 
     private fun buildFrontPagePath() {
@@ -686,23 +682,6 @@ class IBookCurlRenderer: CurlRenderer {
         meshBackPagePath.buildPath(engleC1, engleC2, engleC3, engleC4)
     }
 
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK         // 边框颜色
-        style = Paint.Style.STROKE  // 只绘制边
-        strokeWidth = 4f            // 边的粗细
-    }
-
-    /**
-     * 绘制阴影
-     */
-    private fun drawShadow(canvas: Canvas) {
-        drawShadowA(canvas)
-        drawShadowB(canvas)
-        drawShadowC(canvas)
-        canvas.drawPath(pathA, paint)
-        canvas.drawPath(pathC, paint)
-    }
-
     private fun computeShadowPoints() {
         val cornerMode = getCornerMode()
         if (cornerMode == CornerMode.Landscape) {
@@ -732,7 +711,7 @@ class IBookCurlRenderer: CurlRenderer {
         // TODO
     }
 
-    private fun drawShadowC(canvas: Canvas) {
+    private fun drawCylinderShadow(canvas: Canvas) {
         if (cylinderRadius == 0F) {
             return
         }
@@ -784,7 +763,7 @@ class IBookCurlRenderer: CurlRenderer {
         }
     }
 
-    private fun drawShadowB(canvas: Canvas) {
+    private fun drawBottomPageShadow(canvas: Canvas) {
         // 需要想办法优化
         if (shadowB == null) {
             shadowB = makeShadowLut()
@@ -826,10 +805,7 @@ class IBookCurlRenderer: CurlRenderer {
                 }
             }
         }
-
-        canvas.withClip(pathB) {
-            canvas.drawBitmap(shadowB!!, matrixShadow, null)
-        }
+        canvas.drawBitmap(shadowB!!, matrixShadow, null)
     }
 
     private fun makeShadowLut(
