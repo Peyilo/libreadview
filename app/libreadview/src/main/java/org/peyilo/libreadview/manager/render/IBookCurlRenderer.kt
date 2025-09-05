@@ -3,10 +3,14 @@ package org.peyilo.libreadview.manager.render
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.LightingColorFilter
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
+import android.util.Log
 import android.widget.Scroller
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withClip
@@ -20,6 +24,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.hypot
+import kotlin.math.log
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
@@ -33,6 +38,11 @@ class IBookCurlRenderer: CurlRenderer {
 
     companion object {
         private const val TAG = "IBookCurlRenderer"
+
+        private const val POINT_MODE_LANDSCAPE = 0
+        private const val POINT_MODE_DOUBLE_SINE = 1
+        private const val POINT_MODE_SINGLE_SINE = 2
+
     }
 
     /**
@@ -211,6 +221,7 @@ class IBookCurlRenderer: CurlRenderer {
         downAlignRightPos.y = downPos.y
 
         // process origin point
+        // TODO: downAlignRightPos和touchPos可能会完全重合, 导致计算出现错误
         var mouseDirX = downAlignRightPos.x - touchPos.x
         var mouseDirY = downAlignRightPos.y - touchPos.y
         var mouseLength = hypot(mouseDirX, mouseDirY)
@@ -256,8 +267,6 @@ class IBookCurlRenderer: CurlRenderer {
             cylinderAxisLineEndPos.y = bottomMiddlePoint.y
         }
         computeShadowPoints()
-
-        if (isLandscape) return 0
 
         // process engle point
         cylinderEnglePos.x = cylinderAxisPos.x + mouseDirX * cylinderRadius
@@ -315,6 +324,28 @@ class IBookCurlRenderer: CurlRenderer {
             cylinderAxisLineProjStartPos.y = bottomMiddlePoint.y
             cylinderAxisLineProjEndPos.x =  topRightPoint.x
             cylinderAxisLineProjEndPos.y = cylinderAxisProjPos.y + (-mouseDirX) / mouseDirY * (cylinderAxisLineProjEndPos.x - cylinderAxisProjPos.x)
+        } else {
+            // process corner point
+            cornerPos.x = topRightPoint.x
+            cornerPos.y = topRightPoint.y
+
+            // process engle line
+            cylinderEngleLineStartPos.x = cylinderEnglePos.x
+            cylinderEngleLineStartPos.y = topMiddlePoint.y
+            cylinderEngleLineEndPos.x =  cylinderEnglePos.x
+            cylinderEngleLineEndPos.y = bottomMiddlePoint.y
+
+            // process engle project line
+            cylinderEngleLineProjStartPos.x = cylinderEngleProjPos.x
+            cylinderEngleLineProjStartPos.y = topMiddlePoint.y
+            cylinderEngleLineProjEndPos.x =   cylinderEngleProjPos.x
+            cylinderEngleLineProjEndPos.y = bottomMiddlePoint.y
+
+            // process axis project line
+            cylinderAxisLineProjStartPos.x = cylinderAxisProjPos.x
+            cylinderAxisLineProjStartPos.y = topMiddlePoint.y
+            cylinderAxisLineProjEndPos.x =  cylinderAxisProjPos.x
+            cylinderAxisLineProjEndPos.y = bottomMiddlePoint.y
         }
 
         // 处理镜像对称点: 关于cylinderEngleProjLine的镜像
@@ -324,6 +355,9 @@ class IBookCurlRenderer: CurlRenderer {
             cornerProjPos.x = first
             cornerProjPos.y = second
         }
+
+        if (isLandscape) return POINT_MODE_LANDSCAPE
+
         reflectPointAboutLine(cylinderAxisLineProjStartPos.x, cylinderAxisLineProjStartPos.y,
             cylinderEngleLineProjStartPos.x, cylinderEngleLineProjStartPos.y,
             cylinderEngleProjPos.x, cylinderEngleProjPos.y).apply {
@@ -373,9 +407,9 @@ class IBookCurlRenderer: CurlRenderer {
                 computeCrossPoint(topLeftPoint, topRightPoint,
                     cylinderEngleLineStartPos, PointF(x, topMiddlePoint.y), sineP2)
             }
-            return 2
+            return POINT_MODE_SINGLE_SINE
         } else {
-            return 1
+            return POINT_MODE_DOUBLE_SINE
         }
     }
 
@@ -385,7 +419,7 @@ class IBookCurlRenderer: CurlRenderer {
      */
     private fun computePaths(pointMode: Int) {
         when (pointMode) {
-            0 -> {
+            POINT_MODE_LANDSCAPE -> {
                 pathB.reset()
                 pathB.moveTo(landscapeP2.x, landscapeP2.y)
                 pathB.lineTo(topRightPoint.x, topRightPoint.y)
@@ -402,7 +436,7 @@ class IBookCurlRenderer: CurlRenderer {
                 pathC.close()
                 pathC.op(rightPageRegion, Path.Op.INTERSECT)
             }
-            1 -> {
+            POINT_MODE_DOUBLE_SINE -> {
                 val cornerMode = getCornerMode()
                 pathB.reset()
                 pathB.moveTo(cylinderAxisLineStartPos.x, cylinderAxisLineStartPos.y)
@@ -462,7 +496,7 @@ class IBookCurlRenderer: CurlRenderer {
                 pathC.close()
                 pathC.op(rightPageRegion, Path.Op.INTERSECT)
             }
-            2 -> {
+            POINT_MODE_SINGLE_SINE -> {
                 val cornerMode = getCornerMode()
                 val interval = hypot(cylinderAxisLineStartPos.x - sineStartPos1.x, cylinderAxisLineStartPos.y - sineStartPos1.y)
                 val useDirectly = interval < 5F
@@ -576,6 +610,28 @@ class IBookCurlRenderer: CurlRenderer {
         computeRegionCMeshVerts()
     }
 
+    // 通过ColorMatrixColorFilter实现纸张背面区域的颜色变浅效果
+    private fun makeBackPagePaint(): Paint {
+        // 矩阵思路：
+        // 如果是白色的背景黑色的字体，那么背面就是依旧保持白色背景，但是黑色的字体要变成浅黑色
+        // 1. 保持亮色（白色）接近不变
+        // 2. 黑色被抬高，变成灰色
+        val cm = ColorMatrix().apply {
+            // 把对比度调低，亮部保持，暗部抬高
+            set(floatArrayOf(
+                0.5f, 0f,   0f,   0f, 128f,   // R
+                0f,   0.5f, 0f,   0f, 128f,   // G
+                0f,   0f,   0.5f, 0f, 128f,   // B
+                0f,   0f,   0f,   1f, 0f      // A
+            ))
+        }
+        return Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            colorFilter = ColorMatrixColorFilter(cm)
+        }
+    }
+
+    val paintBack = makeBackPagePaint()
+
     override fun render(canvas: Canvas) {
         // draw region A
         canvas.withClip(pathA) {
@@ -591,7 +647,7 @@ class IBookCurlRenderer: CurlRenderer {
         // draw region C
         canvas.withClip(pathC) {
             canvas.drawBitmapMesh(topBitmap, meshWidth, meshHeight,
-                regionCMeshVerts, 0, null, 0, null)
+                regionCMeshVerts, 0, null, 0, paintBack)
         }
 
         // draw shadow

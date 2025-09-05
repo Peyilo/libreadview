@@ -1,6 +1,4 @@
-package org.peyilo.libreadview.data.novel
-
-import org.peyilo.libreadview.data.AdditionalData
+package org.peyilo.libreadview.data
 
 /**
  * 从from到to的左闭右开区间
