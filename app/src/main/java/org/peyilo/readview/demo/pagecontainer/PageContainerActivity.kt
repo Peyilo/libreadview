@@ -9,11 +9,10 @@ import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.CoverLayoutManager
-import org.peyilo.libreadview.manager.GLSLCurlPageManager
-import org.peyilo.libreadview.manager.IBookCurlPageManager
+import org.peyilo.libreadview.manager.IBookCurlLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SimpleCurlPageManager
+import org.peyilo.libreadview.manager.SimpleCurlLayoutManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.databinding.ActivityPageContainerBinding
 import org.peyilo.readview.fragment.SettingsFragment
@@ -43,7 +42,7 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer.initPageIndex(2)
 
         // Choose a page animation manager (see options below)
-        pageContainer.layoutManager = IBookCurlPageManager()
+        pageContainer.layoutManager = IBookCurlLayoutManager()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)
@@ -96,8 +95,8 @@ class PageContainerActivity : AppCompatActivity() {
                 if (pageContainer.layoutManager is SlideLayoutManager) return@SettingsFragment
                 pageContainer.layoutManager = SlideLayoutManager()
             }, {
-                if (pageContainer.layoutManager is SimpleCurlPageManager) return@SettingsFragment
-                pageContainer.layoutManager = SimpleCurlPageManager()
+                if (pageContainer.layoutManager is SimpleCurlLayoutManager) return@SettingsFragment
+                pageContainer.layoutManager = SimpleCurlLayoutManager()
             }, {
                 if (pageContainer.layoutManager is ScrollLayoutManager) return@SettingsFragment
                 pageContainer.layoutManager = ScrollLayoutManager()

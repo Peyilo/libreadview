@@ -6,10 +6,10 @@ import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 /**
  * 无动画翻页实现
  */
-class NoAnimPageManagers private constructor() {
+class NoAnimLayoutManagers private constructor() {
 
     companion object {
-        private const val TAG = "NoAnimPageManagers"
+        private const val TAG = "NoAnimLayoutManagers"
     }
 
     /**

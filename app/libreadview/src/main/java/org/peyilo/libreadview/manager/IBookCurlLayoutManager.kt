@@ -4,7 +4,7 @@ import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.manager.render.CurlRenderer
 import org.peyilo.libreadview.manager.render.IBookCurlRenderer
 
-class IBookCurlPageManager: CurlPageManager() {
+class IBookCurlLayoutManager: CurlLayoutManager() {
 
     override val curlRenderer: CurlRenderer = IBookCurlRenderer()
 

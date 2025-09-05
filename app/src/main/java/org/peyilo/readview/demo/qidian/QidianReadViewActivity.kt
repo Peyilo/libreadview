@@ -9,9 +9,8 @@ import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.loader.SimpleNativeLoader
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.IBookCurlPageManager
+import org.peyilo.libreadview.manager.IBookCurlLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SimpleCurlPageManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.copyAssetToInternalStorage
@@ -65,7 +64,7 @@ class QidianReadViewActivity : AppCompatActivity() {
 
     private fun initPageIndex(selectedFile: File) {
         // Set the page turning mode
-        readview.layoutManager = IBookCurlPageManager()
+        readview.layoutManager = IBookCurlLayoutManager()
         readview.openBook(
             SimpleNativeLoader(
                 selectedFile, encoding = getEncodeing(selectedFile)
@@ -175,8 +174,8 @@ class QidianReadViewActivity : AppCompatActivity() {
                 if (readview.layoutManager is SlideLayoutManager) return@SettingsFragment
                 readview.layoutManager = SlideLayoutManager()
             }, {
-                if (readview.layoutManager is IBookCurlPageManager) return@SettingsFragment
-                readview.layoutManager = IBookCurlPageManager()
+                if (readview.layoutManager is IBookCurlLayoutManager) return@SettingsFragment
+                readview.layoutManager = IBookCurlLayoutManager()
             }, {
                 if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
                 readview.layoutManager = ScrollLayoutManager()
@@ -191,7 +190,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when (layoutManager) {
             is CoverLayoutManager -> 0
             is SlideLayoutManager -> 1
-            is IBookCurlPageManager -> 2
+            is IBookCurlLayoutManager -> 2
             is ScrollLayoutManager -> 3
             is IBookSlideLayoutManager -> 4
             else -> throw IllegalStateException()
@@ -202,7 +201,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         return when(flipModel) {
             0 -> CoverLayoutManager()
             1 -> SlideLayoutManager()
-            2 -> IBookCurlPageManager()
+            2 -> IBookCurlLayoutManager()
             3 -> ScrollLayoutManager()
             4 -> IBookSlideLayoutManager()
             else -> throw IllegalStateException()

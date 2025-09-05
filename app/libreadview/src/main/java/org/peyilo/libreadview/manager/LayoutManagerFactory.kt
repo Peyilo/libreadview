@@ -51,25 +51,25 @@ object LayoutManagerFactory {
      * 根据指定的LayoutManager类型创建对应的LayoutManager
      */
     fun create(layoutManagerType: Int): AbstractPageContainer.LayoutManager = when (layoutManagerType) {
-        NO_ANIMATION -> NoAnimPageManagers.Horizontal()
-        NO_ANIMATION_VERTICAL -> NoAnimPageManagers.Vertical()
-        CURL -> SimpleCurlPageManager()
+        NO_ANIMATION -> NoAnimLayoutManagers.Horizontal()
+        NO_ANIMATION_VERTICAL -> NoAnimLayoutManagers.Vertical()
+        CURL -> SimpleCurlLayoutManager()
         COVER -> CoverLayoutManager()
         SLIDE -> SlideLayoutManager()
         SCROLL -> ScrollLayoutManager()
-        IBOOK_CURL -> IBookCurlPageManager()
+        IBOOK_CURL -> IBookCurlLayoutManager()
         IBOOK_SLIDE -> IBookSlideLayoutManager()
         else -> throw IllegalStateException("Not support layoutManagerType: $layoutManagerType")
     }
 
     fun getType(layoutManager: AbstractPageContainer.LayoutManager): Int =  when (layoutManager) {
-        is NoAnimPageManagers.Horizontal -> NO_ANIMATION
-        is NoAnimPageManagers.Vertical -> NO_ANIMATION_VERTICAL
-        is SimpleCurlPageManager -> CURL
+        is NoAnimLayoutManagers.Horizontal -> NO_ANIMATION
+        is NoAnimLayoutManagers.Vertical -> NO_ANIMATION_VERTICAL
+        is SimpleCurlLayoutManager -> CURL
         is CoverLayoutManager -> COVER
         is SlideLayoutManager -> SLIDE
         is ScrollLayoutManager -> SCROLL
-        is IBookCurlPageManager -> IBOOK_CURL
+        is IBookCurlLayoutManager -> IBOOK_CURL
         is IBookSlideLayoutManager -> IBOOK_SLIDE
         else -> throw IllegalStateException("Not support layoutManager: $layoutManager")
     }

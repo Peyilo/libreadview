@@ -83,7 +83,6 @@ class IBookCurlRenderer: CurlRenderer {
 
     private val shadowCrossPos = PointF()
 
-
     private val cylinderRadius: Float get() {
         val bias = abs(cylinderAxisPos.x - touchPos.x)
         val L = hypot(downAlignRightPos.x - cylinderAxisPos.x, downAlignRightPos.y - cylinderAxisPos.y)

@@ -8,7 +8,7 @@ import org.peyilo.libreadview.manager.util.PageBitmapCache
 import org.peyilo.libreadview.manager.util.screenshot
 import org.peyilo.libreadview.manager.util.screenshotInto
 
-abstract class CurlPageManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
+abstract class CurlLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), AnimatedLayoutManager {
 
     protected val containerWidth get() = pageContainer.width      // 容器的宽度
     protected val containerHeight get() = pageContainer.height    // 容器的高度

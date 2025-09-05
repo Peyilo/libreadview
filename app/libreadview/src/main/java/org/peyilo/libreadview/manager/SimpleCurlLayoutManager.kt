@@ -2,11 +2,10 @@ package org.peyilo.libreadview.manager
 
 import android.graphics.PointF
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
-import org.peyilo.libreadview.manager.CurlPageManager
 import org.peyilo.libreadview.manager.render.CurlRenderer
 import org.peyilo.libreadview.manager.render.SimpleCurlRenderer
 
-class SimpleCurlPageManager: CurlPageManager() {
+class SimpleCurlLayoutManager: CurlLayoutManager() {
 
     override val curlRenderer: CurlRenderer = SimpleCurlRenderer()
 
