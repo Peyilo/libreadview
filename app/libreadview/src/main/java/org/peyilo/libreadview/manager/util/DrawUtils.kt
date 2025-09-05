@@ -3,12 +3,10 @@ package org.peyilo.libreadview.manager.util
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.PointF
-import kotlin.math.PI
-import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -197,58 +195,83 @@ fun computeMiddlePoint(p1: PointF, p2: PointF, result: PointF) {
     result.y = (p1.y + p2.y) / 2
 }
 
+
+
+fun findIntersections(path: Path, p1: PointF, p2: PointF, precision: Int = 1000): List<PointF> {
+    val result = mutableListOf<PointF>()
+
+    // 用 PathMeasure 遍历 Path
+    val pm = PathMeasure(path, true)
+    val length = pm.length
+    val pos = FloatArray(2)
+
+    // 采样点
+    val points = ArrayList<PointF>()
+    for (i in 0..precision) {
+        pm.getPosTan(length * i / precision, pos, null)
+        points.add(PointF(pos[0], pos[1]))
+    }
+
+    // 遍历相邻点，作为边段
+    for (i in 0 until points.size - 1) {
+        val a = points[i]
+        val b = points[i + 1]
+        val cross = computeLineSegmentIntersectionWithLine(a, b, p1, p2)
+        if (cross != null) {
+            result.add(cross)
+            if (result.size == 2) break // 最多两个交点，够了就退出
+        }
+    }
+
+    return result
+}
+
 /**
- * 绘制 y = A * sin(w * x) 在 x ∈ [0, π/(2w)] 的 1/4 周期
- *
- * start 表示 x=0 点，end 表示 x=π/w 点（半周期）
- *
- * @param startX 起点X (x=0)
- * @param startY 起点Y
- * @param endX 半周期点X (x=π/w)
- * @param endY 半周期点Y
- * @param amplitude 振幅 A
- * @param angularFrequency 角频率 w（弧度/px）
- * @param steps 曲线分段，越大越平滑
- * @param isFirstQuarter 取前1/4周期还是后1/4周期
- * @param direction 正弦波在法向的方向：+1=正向，-1=反向
+ * 求线段 ab 与直线 p1p2 的交点, 如果没有交点则返回 null
  */
-fun Path.addQuarterSineFromHalfPeriod(
-    startX: Float,
-    startY: Float,
-    endX: Float,
-    endY: Float,
-    amplitude: Float,
-    angularFrequency: Float,
-    steps: Int = 64,
-    isFirstQuarter: Boolean = true,
-    direction: Int = 1
-) {
-    // 向量表示 x 从 0 到 π/w 的方向
-    val dx = endX - startX
-    val dy = endY - startY
-    val totalLength = hypot(dx.toDouble(), dy.toDouble()).toFloat()
+fun computeLineSegmentIntersectionWithLine(
+    a: PointF, b: PointF,
+    p1: PointF, p2: PointF
+): PointF? {
+    val a1 = p2.y - p1.y
+    val b1 = p1.x - p2.x
+    val c1 = a1 * p1.x + b1 * p1.y
 
-    // 单位向量：主方向（x 轴）
-    val ux = dx / totalLength
-    val uy = dy / totalLength
+    val a2 = b.y - a.y
+    val b2 = a.x - b.x
+    val c2 = a2 * a.x + b2 * a.y
 
-    // 垂直方向（y 轴）
-    val vx = -uy
-    val vy = ux
+    val det = a1 * b2 - a2 * b1
+    if (det == 0f) return null // 平行或重合
 
-    // x ∈ [0, π/(2w)]，距离为 quarterLength = π / (2w)
-    val quarterLength = (PI / (2 * angularFrequency)).toFloat()
+    val x = (b2 * c1 - b1 * c2) / det
+    val y = (a1 * c2 - a2 * c1) / det
 
-    // 采样点数量：由 quarterLength 决定，不超过 floor(quarterLength)
-    val maxSamples = max(1, floor(quarterLength).toInt())
-    val sampleCount = min(steps, maxSamples)
+    // 检查是否在边 ab 范围内
+    if (x < minOf(a.x, b.x) - 0.01f || x > maxOf(a.x, b.x) + 0.01f) return null
+    if (y < minOf(a.y, b.y) - 0.01f || y > maxOf(a.y, b.y) + 0.01f) return null
 
-    for (i in 0..sampleCount) {
-        val xVal = i.toFloat() / steps * quarterLength + if (isFirstQuarter) 0F else quarterLength
-        val sinVal = amplitude * sin(angularFrequency * xVal) * direction
+    return PointF(x, y)
+}
 
-        val x = startX + ux * xVal + vx * sinVal
-        val y = startY + uy * xVal + vy * sinVal
-        lineTo(x, y)
+/**
+ * 根据点集绘制折线
+ */
+fun drawEngleLine(canvas: Canvas, engle: FloatArray, paint: Paint) {
+    var lastX = 0F
+    var lastY = 0F
+    var isFirst = true
+    for (i in engle.indices step 2) {
+        if (isFirst) {
+            lastX = engle[i]
+            lastY = engle[i + 1]
+            isFirst = false
+            continue
+        }
+        val x = engle[i]
+        val y = engle[i + 1]
+        canvas.drawLine(lastX, lastY, x, y, paint)
+        lastX = x
+        lastY = y
     }
 }
