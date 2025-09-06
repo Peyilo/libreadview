@@ -146,7 +146,7 @@ abstract class AbstractPageContainer(
     }
 
     private fun resetPagePosition() {
-        mPageCache.getAllPages().forEach {
+        traverseAllCreatedPages {
             it.translationX = 0F
             it.translationY = 0F
         }
@@ -901,6 +901,12 @@ abstract class AbstractPageContainer(
     fun addPageChild(child: View?, index: Int = -1) {
         val index = if (index == -1) childCount else index + pageViewStart
         addView(child, index)
+    }
+
+    protected fun traverseAllCreatedPages(onTraverse: (View) -> Unit) {
+        mPageCache.getAllPages().forEach {
+            onTraverse(it)
+        }
     }
 
     private inner class PageDataObserver : AdapterDataObserver() {

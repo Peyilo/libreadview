@@ -1,7 +1,6 @@
 package org.peyilo.libreadview.provider
 
 import android.graphics.Canvas
-import android.graphics.Paint
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.parser.ReadChapter
 
@@ -12,6 +11,6 @@ interface PageContentProvider {
      */
     fun split(chap: ReadChapter)
 
-    fun drawPage(page: PageData, canvas: Canvas, paint: Paint)
+    fun drawPage(page: PageData, canvas: Canvas)
 
 }

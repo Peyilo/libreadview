@@ -97,8 +97,8 @@ class PageCurlRenderer(private val ctx: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceCreated(unused: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
         program = buildProgram(
-            loadShaderFromAssets(ctx, "vertex.glsl"),   // 放到 res/raw/vertex.glsl
-            loadShaderFromAssets(ctx, "SimplePageCurl.glsl")  // 放到 res/raw/fragment.glsl
+            loadShaderFromAssets(ctx, "shader/vertex.glsl"),   // 放到 res/raw/vertex.glsl
+            loadShaderFromAssets(ctx, "shader/SimplePageCurl.glsl")  // 放到 res/raw/fragment.glsl
         )
         GLES20.glUseProgram(program)
 

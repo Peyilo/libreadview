@@ -39,7 +39,7 @@ class IBookCurlRenderer: CurlRenderer {
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
      */
-    var enableDebugMode = true
+    var enableDebugMode = false
 
     private var _topBitmap: Bitmap? = null
     private var _bottomBitmap: Bitmap? = null
@@ -207,7 +207,7 @@ class IBookCurlRenderer: CurlRenderer {
 
     private fun computePoints() {
         val cornerMode = getCornerMode()
-        downAlignRightPos.x = topRightPoint.x + 20F
+        downAlignRightPos.x = topRightPoint.x
         downAlignRightPos.y = downPos.y
 
         // process origin point
@@ -341,8 +341,8 @@ class IBookCurlRenderer: CurlRenderer {
         }
     }
 
+    // TODO: 优化性能
     private fun computePaths() {
-        // TODO: 优化性能
         buildBackPagePath()
         buildFrontPagePath()
         pathAC.reset()
@@ -375,13 +375,6 @@ class IBookCurlRenderer: CurlRenderer {
         LogHelper.d(TAG, "$msg: ${(end - start) / 1000}us")
     }
 
-    /**
-     * 性能分析：
-     * computePoints: 27us
-     * computeRegionAMeshVerts: 143us
-     * computeRegionCMeshVerts: 173us
-     * computePaths: 13353us
-     */
     override fun updateTouchPosition(curX: Float, curY: Float) {
         touchPos.x = curX
         touchPos.y = curY

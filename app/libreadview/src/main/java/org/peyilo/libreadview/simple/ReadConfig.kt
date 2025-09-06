@@ -43,18 +43,19 @@ class ReadConfig {
     var paddingTop = 20F
     var paddingBottom = 20F
 
-    val titlePaint: Paint by lazy { Paint().apply {
-        typeface = Typeface.DEFAULT_BOLD
+    val titlePaint: Paint = Paint().apply {
+        typeface = Typeface.DEFAULT
         textSize = 72F
         color = Color.BLACK
-        flags = Paint.ANTI_ALIAS_FLAG
-    } }
+        isAntiAlias = true
+    }
 
-    val contentPaint: Paint by lazy { Paint().apply {
+    val contentPaint: Paint = Paint().apply {
+        typeface = Typeface.DEFAULT
         textSize = 56F
         color = "#2B2B2B".toColorInt()
-        flags = Paint.ANTI_ALIAS_FLAG
-    } }
+        isAntiAlias = true
+    }
 
     val titleTextColor get() = titlePaint.color
     val titleTextSize get() = titlePaint.textSize

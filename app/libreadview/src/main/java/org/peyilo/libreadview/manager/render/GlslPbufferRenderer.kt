@@ -81,13 +81,13 @@ class GlslPbufferRenderer(context: Context) {
     }
 
     // 顶点着色器（最小化）
-    private val vertexShaderCode = loadShaderFromAssets(context, "vertex.glsl")
+    private val vertexShaderCode = loadShaderFromAssets(context, "shader/vertex.glsl")
 
     // 片段着色器（示例：按手势 X 做左右分割；你可以替换为自己的 Shadertoy 逻辑）
     //
     // iChannel0 = topBitmap, iChannel1 = bottomBitmap
     // iMouse.xy = 当前触摸，zw = 按下位置（像素）
-    private val fragmentShaderCode = loadShaderFromAssets(context, "fragment.glsl")
+    private val fragmentShaderCode = loadShaderFromAssets(context, "shader/fragment.glsl")
 
     private fun loadShaderFromAssets(context: Context, filename: String): String {
         context.assets.open(filename).use { input ->

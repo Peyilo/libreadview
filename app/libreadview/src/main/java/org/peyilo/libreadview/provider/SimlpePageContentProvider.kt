@@ -2,14 +2,13 @@ package org.peyilo.libreadview.provider
 
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Typeface
-import org.peyilo.libreadview.simple.ReadConfig
 import org.peyilo.libreadview.data.page.CharData
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.data.page.StringLineData
 import org.peyilo.libreadview.parser.ParagraphContent
 import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.parser.TitleContent
+import org.peyilo.libreadview.simple.ReadConfig
 
 /**
  * 在给定ReadConfig下，负责完成ReadChap的分页，并且负载将PageData绘制到Canvas上
@@ -19,7 +18,7 @@ class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
     private var _config: ReadConfig? = config
     private val config get() = _config!!
 
-    private val paint = Paint()
+    private val measuredPaint = Paint()
 
     private val remainedWidth get() = config.contentWidth - config.paddingLeft - config.paddingRight
     private val remainedHeight get() = config.contentHeight - config.paddingTop - config.paddingBottom
@@ -31,11 +30,11 @@ class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
     }
 
     private fun measureText(string: String, size: Float): Float {
-        synchronized(paint) {
-            if (paint.textSize != size) {
-                paint.textSize = size
+        synchronized(measuredPaint) {
+            if (measuredPaint.textSize != size) {
+                measuredPaint.textSize = size
             }
-            return paint.measureText(string)
+            return measuredPaint.measureText(string)
         }
     }
 
@@ -95,6 +94,7 @@ class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
                 it.apply {                  // 设置TextLine的base、left
                     this@apply.base = base
                     this@apply.left = left
+                    it.isTitleLine = true
                 }
                 page.lines.add(it)
                 base += config.lineMargin
@@ -153,26 +153,18 @@ class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
         chap.pages.add(page)
     }
 
-    override fun drawPage(page: PageData, canvas: Canvas, paint: Paint) {
-        paint.isAntiAlias = true
+    override fun drawPage(page: PageData, canvas: Canvas) {
         page.lines.forEach {line ->
             if (line is StringLineData) {
+                var left = line.left
                 if (line.isTitleLine) {
-                    var left = line.left
-                    paint.textSize = line.textSize
-                    paint.typeface = Typeface.DEFAULT_BOLD
                     line.text.forEach { charData ->
-                        paint.color = charData.color
-                        canvas.drawText(charData.char.toString(), left, line.base, paint)
+                        canvas.drawText(charData.char.toString(), left, line.base, config.titlePaint)
                         left += charData.width + config.textMargin
                     }
                 } else {
-                    var left = line.left
-                    paint.textSize = line.textSize
-                    paint.typeface = Typeface.DEFAULT
                     line.text.forEach { charData ->
-                        paint.color = charData.color
-                        canvas.drawText(charData.char.toString(), left, line.base, paint)
+                        canvas.drawText(charData.char.toString(), left, line.base, config.contentPaint)
                         left += charData.width + config.textMargin
                     }
                 }

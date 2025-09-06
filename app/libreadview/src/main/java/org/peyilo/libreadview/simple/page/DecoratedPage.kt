@@ -12,10 +12,6 @@ open class DecoratedPage(
     context: Context, attrs: AttributeSet? = null
 ): View(context, attrs) {
 
-    init {
-        setBackgroundColor(Color.WHITE)
-    }
-
     private val paint = Paint().apply {
         strokeWidth = 3F
     }

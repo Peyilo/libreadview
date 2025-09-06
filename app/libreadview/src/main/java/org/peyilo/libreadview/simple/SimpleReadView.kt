@@ -3,11 +3,14 @@ package org.peyilo.libreadview.simple
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.annotation.IntRange
+import androidx.core.graphics.drawable.toDrawable
 import org.peyilo.libreadview.AbstractReadView
 import org.peyilo.libreadview.data.Book
 import org.peyilo.libreadview.data.page.PageData
@@ -54,6 +57,8 @@ class SimpleReadView(
     private val mDefaultPageDelegate: PageDelegate by lazy { PageDelegate() }
 
     private var mCallback: Callback? = null
+
+    private var pageBackground: Drawable = Color.WHITE.toDrawable()
 
     init {
         mAdapterData = AdapterData()
@@ -272,6 +277,18 @@ class SimpleReadView(
         adapter.notifyDataSetChanged()
     }
 
+    override fun setPageBackground(drawable: Drawable) {
+        this.pageBackground = drawable
+        // 设置背景后，刷新当前页面
+        traverseAllCreatedPages {
+            it.background = pageBackground
+        }
+    }
+
+    private fun onPageCreated(page: View, viewType: Int) {
+        page.background = pageBackground
+    }
+
     enum class PageType {
         TOC_INIT_PAGE, CHAP_LOAD_PAGE, READ_PAGE,
     }
@@ -300,6 +317,7 @@ class SimpleReadView(
                 }
                 else -> throw IllegalStateException("Unknown page type: $viewType")
             }
+            onPageCreated(page, viewType)
             return PageViewHolder(page)
         }
 
@@ -441,6 +459,17 @@ class SimpleReadView(
 
     fun setPageDelegate(pageDelegate: PageDelegate) {
         this.mPageDelegate = pageDelegate
+    }
+
+    fun setTextColor(color: Int) {
+        mReadConfig.titlePaint.color = color
+        mReadConfig.contentPaint.color = color
+        // 设置文字颜色后，刷新当前页面
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.content.invalidate()
+            }
+        }
     }
 
 }
