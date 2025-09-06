@@ -10,13 +10,16 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.widget.Scroller
+import androidx.core.graphics.blue
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import androidx.core.graphics.withClip
 import org.peyilo.libreadview.manager.util.buildPath
 import org.peyilo.libreadview.manager.util.computeCrossPoint
+import org.peyilo.libreadview.manager.util.computeTime
 import org.peyilo.libreadview.manager.util.perpendicularFoot
 import org.peyilo.libreadview.manager.util.reflectPointAboutLine
-import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -128,8 +131,6 @@ class IBookCurlRenderer: CurlRenderer {
         }
     }
 
-    private val paintBack = makeBackPagePaint()
-
     private val regionCMatrixArray = floatArrayOf(0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F, 1F)
     private val regionCMatrix = Matrix()
 
@@ -152,6 +153,35 @@ class IBookCurlRenderer: CurlRenderer {
 
     private val meshFrontPagePath = Path()
     private val meshBackPagePath = Path()
+
+    // 纸张背面颜色与背景色的混合比例，取值范围[0, 1]
+    private val backColorMixRadio = 0.2F
+    private var backTintColor = Color.WHITE
+    private val cm = ColorMatrix()
+    private val cmFloatArray = floatArrayOf(
+        backColorMixRadio, 0f,   0f,   0f, 0F,     // R
+        0f,   backColorMixRadio, 0f,   0f, 0F,     // G
+        0f,   0f,   backColorMixRadio, 0f, 0F,     // B
+        0f,   0f,   0f,   1F, 0f                   // A
+    )
+    private val paintBack by lazy {
+        Paint().apply {
+            cmFloatArray[4] = backTintColor.red * (1 - backColorMixRadio)
+            cmFloatArray[9] = backTintColor.green * (1 - backColorMixRadio)
+            cmFloatArray[14] = backTintColor.blue * (1 - backColorMixRadio)
+            cm.set(cmFloatArray)
+            colorFilter = ColorMatrixColorFilter(cm)
+        }
+    }
+
+    /**
+     * 设置纸张背面的颜色，默认为白色，推荐根据页面背景色进行设置；
+     * 设置为和页面背景色接近的颜色，可以获得更好的视觉效果
+     */
+    fun setBackTintColor(color: Int) {
+        backTintColor = color
+        makeBackPagePaint(color)
+    }
 
     override fun setPageSize(width: Float, height: Float) {
         topLeftPoint.x = -width
@@ -353,7 +383,7 @@ class IBookCurlRenderer: CurlRenderer {
         pathC.addPath(meshBackPagePath)
 
         // compute pathA
-        computeTime("computePaths.PathA") {
+        computeTime(TAG, "computePaths.PathA") {
             pathA.reset()
             pathA.addPath(meshFrontPagePath)
             // 这一步非常耗时
@@ -361,60 +391,43 @@ class IBookCurlRenderer: CurlRenderer {
         }
 
         // compute pathB
-        computeTime("computePaths.pathB") {
+        computeTime(TAG, "computePaths.pathB") {
             pathB.reset()
             pathB.addPath(rightPageRegion)
             pathB.op(pathAC, Path.Op.DIFFERENCE)
         }
     }
 
-    private fun computeTime(msg: String, block: () -> Unit) {
-        val start = System.nanoTime()
-        block()
-        val end = System.nanoTime()
-        LogHelper.d(TAG, "$msg: ${(end - start) / 1000}us")
-    }
-
     override fun updateTouchPosition(curX: Float, curY: Float) {
         touchPos.x = curX
         touchPos.y = curY
-        computeTime("updateTouchPosition.computePoints") {
+        computeTime(TAG, "updateTouchPosition.computePoints") {
             computePoints()
         }
-        computeTime("updateTouchPosition.computeRegionAMeshVerts") {
+        computeTime(TAG, "updateTouchPosition.computeRegionAMeshVerts") {
             computeRegionAMeshVerts()
         }
-        computeTime("updateTouchPosition.computeRegionCMeshVerts") {
+        computeTime(TAG, "updateTouchPosition.computeRegionCMeshVerts") {
             computeRegionCMeshVerts()
         }
-        computeTime("updateTouchPosition.computePaths") {
+        computeTime(TAG, "updateTouchPosition.computePaths") {
             computePaths()
         }
     }
 
     // 通过ColorMatrixColorFilter实现纸张背面区域的颜色变浅效果
-    private fun makeBackPagePaint(): Paint {
-        // 矩阵思路：
-        // 如果是白色的背景黑色的字体，那么背面就是依旧保持白色背景，但是黑色的字体要变成浅黑色
-        // 1. 保持亮色（白色）接近不变
-        // 2. 黑色被抬高，变成灰色
-        val cm = ColorMatrix().apply {
-            // 把对比度调低，亮部保持，暗部抬高
-            set(floatArrayOf(
-                0.5f, 0f,   0f,   0f, 128f,   // R
-                0f,   0.5f, 0f,   0f, 128f,   // G
-                0f,   0f,   0.5f, 0f, 128f,   // B
-                0f,   0f,   0f,   1f, 0f      // A
-            ))
-        }
-        return Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private fun makeBackPagePaint(color: Int) {
+        cmFloatArray[4] = color.red * (1 - backColorMixRadio)
+        cmFloatArray[9] = color.green * (1 - backColorMixRadio)
+        cmFloatArray[14] = color.blue * (1 - backColorMixRadio)
+        cm.set(cmFloatArray)
+        paintBack.apply {
             colorFilter = ColorMatrixColorFilter(cm)
         }
     }
 
-
     override fun render(canvas: Canvas) {
-        computeTime("render") {
+        computeTime(TAG, "render") {
             // draw region B
             canvas.withClip(pathB) {
                 drawBitmap(bottomBitmap, 0F, 0F, null)
@@ -430,7 +443,8 @@ class IBookCurlRenderer: CurlRenderer {
             // draw region C
             canvas.withClip(pathC) {
                 drawBitmapMesh(topBitmap, meshWidth, meshHeight,
-                    regionCMeshVerts, 0, null, 0, paintBack)
+                    regionCMeshVerts, 0, null, 0,
+                    paintBack)
 
             }
 

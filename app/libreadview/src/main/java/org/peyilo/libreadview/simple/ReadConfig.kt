@@ -53,7 +53,7 @@ class ReadConfig {
     val contentPaint: Paint = Paint().apply {
         typeface = Typeface.DEFAULT
         textSize = 56F
-        color = "#2B2B2B".toColorInt()
+        color = "#1E1A1A".toColorInt()
         isAntiAlias = true
     }
 

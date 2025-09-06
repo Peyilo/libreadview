@@ -102,6 +102,7 @@ class QidianReadViewActivity : AppCompatActivity() {
 
         // 设置页面背景: 亮色的背景
         readview.setPageBackgroundResource(R.drawable.read_page_bg_1)
+//        readview.setPageBackgroundColor("#eeeded".toColorInt())
 
         if (isDemo) {                   // 为demo专门定制的ChapLoadPage
             readview.setPageDelegate(object : SimpleReadView.PageDelegate() {

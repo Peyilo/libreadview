@@ -17,7 +17,7 @@ import java.util.concurrent.Executors
  */
 abstract class AbstractReadView(
     context: Context, attrs: AttributeSet? = null
-): ReadView(context, attrs), BookNavigator {
+): ReadView(context, attrs) {
 
     companion object {
         private const val TAG = "AbstractReadView"
@@ -157,6 +157,42 @@ abstract class AbstractReadView(
             ChapStatus.Finished -> Unit
         }
         return false
+    }
+
+    // 不进行状态检查，直接强制执行
+    protected fun forceLoadChap(chapIndex: Int, block: (Int) -> Boolean): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        val res = block(chapIndex)
+        if (res) {
+            mChapStatusTable[chapIndex] = ChapStatus.Nonpaged
+        } else {
+            mChapStatusTable[chapIndex] = ChapStatus.Unload
+        }
+        return res
+    }
+
+    // 不进行状态检查，直接强制执行
+    protected fun forceSplitChap(chapIndex: Int, block: (Int) -> Boolean): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        val res = block(chapIndex)
+        if (res) {
+            mChapStatusTable[chapIndex] = ChapStatus.Uninflated
+        } else {
+            mChapStatusTable[chapIndex] = ChapStatus.Nonpaged
+        }
+        return res
+    }
+
+    // 不进行状态检查，直接强制执行
+    protected fun forceInflateChap(chapIndex: Int, block: (Int) -> Boolean): Boolean
+    = synchronized(mLocksForChap[chapIndex]!!) {
+        val res = block(chapIndex)
+        if (res) {
+            mChapStatusTable[chapIndex] = ChapStatus.Finished
+        } else {
+            mChapStatusTable[chapIndex] = ChapStatus.Uninflated
+        }
+        return res
     }
 
     /**
