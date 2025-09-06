@@ -50,4 +50,8 @@ class ReadPage (
 
     override fun getContentHeight(): Int = content.measuredHeight
 
+    companion object {
+        private const val TAG = "ReadPage"
+    }
+
 }

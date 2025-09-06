@@ -420,6 +420,8 @@ abstract class AbstractPageContainer(
         open fun createRenderer(): PageGLSurfaceView.PageRenderer? = null
 
         protected val glView get() = pageContainer.glView
+
+        open fun needDrawChild(): Boolean = true
     }
 
     /**
@@ -909,6 +911,12 @@ abstract class AbstractPageContainer(
         }
     }
 
+    protected fun traverseAllAttachedPages(onTraverse: (View) -> Unit) {
+        mPageCache.getAllAttachedViewHolder().forEach {
+            onTraverse(it.itemView)
+        }
+    }
+
     private inner class PageDataObserver : AdapterDataObserver() {
 
         /**
@@ -1348,7 +1356,9 @@ abstract class AbstractPageContainer(
     override fun navigateToPrevPage(): Boolean = flipToPrevPage(false)
 
     override fun dispatchDraw(canvas: Canvas) {
-        super.dispatchDraw(canvas)
+        if (layoutManager.needDrawChild()) {
+            super.dispatchDraw(canvas)
+        }
         layoutManager.dispatchDraw(canvas)
     }
 

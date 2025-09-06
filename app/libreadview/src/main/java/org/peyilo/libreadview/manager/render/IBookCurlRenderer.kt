@@ -164,7 +164,7 @@ class IBookCurlRenderer: CurlRenderer {
         0f,   0f,   backColorMixRadio, 0f, 0F,     // B
         0f,   0f,   0f,   1F, 0f                   // A
     )
-    private val paintBack by lazy {
+    private val backPagePaint by lazy {
         Paint().apply {
             cmFloatArray[4] = backTintColor.red * (1 - backColorMixRadio)
             cmFloatArray[9] = backTintColor.green * (1 - backColorMixRadio)
@@ -421,7 +421,7 @@ class IBookCurlRenderer: CurlRenderer {
         cmFloatArray[9] = color.green * (1 - backColorMixRadio)
         cmFloatArray[14] = color.blue * (1 - backColorMixRadio)
         cm.set(cmFloatArray)
-        paintBack.apply {
+        backPagePaint.apply {
             colorFilter = ColorMatrixColorFilter(cm)
         }
     }
@@ -444,7 +444,7 @@ class IBookCurlRenderer: CurlRenderer {
             canvas.withClip(pathC) {
                 drawBitmapMesh(topBitmap, meshWidth, meshHeight,
                     regionCMeshVerts, 0, null, 0,
-                    paintBack)
+                    backPagePaint)
 
             }
 

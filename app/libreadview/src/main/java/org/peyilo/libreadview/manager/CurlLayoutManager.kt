@@ -136,6 +136,10 @@ abstract class CurlLayoutManager: FlipOnReleaseLayoutManager.Horizontal(), Anima
         }
     }
 
+    override fun needDrawChild(): Boolean {         // 在执行动画时，不需要绘制子View
+        return !(isDragging || isAnimRuning)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         pageBitmapCache.clearBitmap()

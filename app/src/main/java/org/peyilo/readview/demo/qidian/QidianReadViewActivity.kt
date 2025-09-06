@@ -1,7 +1,6 @@
 package org.peyilo.readview.demo.qidian
 
 import android.content.Context
-import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -13,7 +12,7 @@ import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.simple.SimpleReadView
-import org.peyilo.readview.R
+import org.peyilo.readview.ReadViewTheme
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.fragment.ChapListFragment
@@ -29,7 +28,8 @@ class QidianReadViewActivity : AppCompatActivity() {
 
     private val readview: SimpleReadView get() = binding.readview
 
-    private var isLightTheme = true
+    private var curThemeIndex = 0
+
 
     /**
      * isDemo指的是当前打开的是默认的txt文件，而不是通过选择文件传过来的文件
@@ -67,7 +67,7 @@ class QidianReadViewActivity : AppCompatActivity() {
 
     private fun initPageIndex(selectedFile: File) {
         // Set the page turning mode
-        readview.layoutManager = IBookCurlLayoutManager()
+        readview.layoutManager = IBookSlideLayoutManager()
         readview.openBook(
             SimpleNativeLoader(
                 selectedFile, encoding = getEncodeing(selectedFile)
@@ -100,9 +100,7 @@ class QidianReadViewActivity : AppCompatActivity() {
         readview.preprocessBefore = 1
         readview.preprocessBehind = 1
 
-        // 设置页面背景: 亮色的背景
-        readview.setPageBackgroundResource(R.drawable.read_page_bg_1)
-//        readview.setPageBackgroundColor("#eeeded".toColorInt())
+        updateReadViewTheme()
 
         if (isDemo) {                   // 为demo专门定制的ChapLoadPage
             readview.setPageDelegate(object : SimpleReadView.PageDelegate() {
@@ -137,16 +135,9 @@ class QidianReadViewActivity : AppCompatActivity() {
                     showControlPanel(false)
                     showChapList()
                 }, onThemeBtnClick = {
-                    // TODO: 切换主题
-                    if (isLightTheme) {
-                        isLightTheme = false
-                        readview.setPageBackgroundResource(R.drawable.read_page_bg_2)
-                        readview.setTextColor(Color.WHITE)
-                    } else {
-                        isLightTheme = true
-                        readview.setPageBackgroundResource(R.drawable.read_page_bg_1)
-                        readview.setTextColor(Color.BLACK)
-                    }
+                    // 切换主题
+                    curThemeIndex++
+                    updateReadViewTheme()
                 }, onSettingsBtnClick = {
                     showControlPanel(false)
                     showSettings()
@@ -199,6 +190,15 @@ class QidianReadViewActivity : AppCompatActivity() {
                 readview.layoutManager = IBookSlideLayoutManager()
             }).show(fm, tag)
         }
+    }
+
+    fun updateReadViewTheme() {
+        val curTheme = ReadViewTheme.allThemes[(curThemeIndex) % ReadViewTheme.allThemes.size]
+        // TODO：不支持更改字体大小
+        readview.setContentTextColor(curTheme.contentColor)
+        readview.setTitleTextColor(curTheme.titleColor)
+        readview.setPageBackground(curTheme.background)
+        readview.setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
     }
 
 }

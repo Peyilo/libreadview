@@ -1,0 +1,47 @@
+package org.peyilo.readview
+
+import android.graphics.Color
+import android.graphics.drawable.Drawable
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.toColorInt
+
+class ReadViewTheme(
+    val titleColor: Int = Color.BLACK,
+    val contentColor: Int = "#1E1A1A".toColorInt(),
+    val titleSize: Float = 72F,
+    val contentSize: Float = 56F,
+    val background: Drawable = "#EEEDED".toColorInt().toDrawable(),
+    val headerAndFooterTextColor: Int = Color.BLACK,
+) {
+    companion object {
+        val whiteTheme = ReadViewTheme()
+
+        val paperTheme = ReadViewTheme(
+            background = AppCompatResources.getDrawable(App.applicationContext,
+                R.drawable.read_page_bg_1)!!,
+        )
+
+        val nightTheme = ReadViewTheme(
+            titleColor = "#F2F2F0".toColorInt(),
+            contentColor = "#F2F2F0".toColorInt(),
+            background = AppCompatResources.getDrawable(App.applicationContext,
+                R.drawable.read_page_bg_2)!!,
+            headerAndFooterTextColor = "#808085".toColorInt(),
+        )
+
+        val eyeCareTheme = ReadViewTheme(
+            background = "#D2E4D2".toColorInt().toDrawable(),
+        )
+
+        val blackTheme = ReadViewTheme(
+            titleColor = "#F2F2F0".toColorInt(),
+            contentColor = "#F2F2F0".toColorInt(),
+            background = "#1C1C1E".toColorInt().toDrawable(),
+            headerAndFooterTextColor = "#808085".toColorInt(),
+        )
+
+        val allThemes = listOf(paperTheme, whiteTheme, nightTheme, eyeCareTheme, blackTheme)
+    }
+
+}

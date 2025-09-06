@@ -461,13 +461,56 @@ class SimpleReadView(
         this.mPageDelegate = pageDelegate
     }
 
-    fun setTextColor(color: Int) {
+    /**
+     * 设置章节标题文字大小
+     */
+    fun setTitleTextSize(size: Float) {
+        TODO()
+    }
+
+    /**
+     * 设置章节正文文字大小
+     */
+    fun setContentTextSize(size: Float) {
+        TODO()
+    }
+
+    /**
+     * 设置章节标题文字颜色
+     */
+    fun setTitleTextColor(color: Int) {
         mReadConfig.titlePaint.color = color
-        mReadConfig.contentPaint.color = color
         // 设置文字颜色后，刷新当前页面
-        traverseAllCreatedPages {
+        traverseAllAttachedPages {
             if (it is ReadPage) {
                 it.content.invalidate()
+            }
+        }
+    }
+
+    /**
+     * 设置章节正文文字颜色
+     */
+    fun setContentTextColor(color: Int) {
+        mReadConfig.contentPaint.color = color
+        // 设置文字颜色后，刷新当前页面
+        traverseAllAttachedPages {
+            if (it is ReadPage) {
+                it.content.invalidate()
+            }
+        }
+    }
+
+    /**
+     * 设置页眉和页脚文字颜色
+     */
+    fun setHeaderAndFooterTextColor(color: Int) {
+        // 设置文字颜色后，刷新当前页面
+        traverseAllAttachedPages {
+            if (it is ReadPage) {
+                it.header.setTextColor(color)
+                it.progress.setTextColor(color)
+                it.clock.setTextColor(color)
             }
         }
     }

@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.View
 import org.peyilo.libreadview.data.page.PageData
+import org.peyilo.libreadview.manager.util.computeTime
 import org.peyilo.libreadview.provider.PageContentProvider
 
 /**
@@ -22,14 +23,19 @@ class ReadContent(
         this.content = content
     }
 
+    companion object {
+        private const val TAG = "ReadContent"
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        provider?.apply {
-            content?.let {
-                drawPage(content!!, canvas)
+        computeTime(TAG, "onDraw") {
+            provider?.apply {
+                content?.let {
+                    drawPage(content!!, canvas)
+                }
             }
         }
-
     }
 
 }
