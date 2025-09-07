@@ -5,9 +5,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".TestActivity">
+    tools:context=".test.TestActivity">
 
-    <org.peyilo.readview.ui.SimulationViewDoublePage
+    <org.peyilo.readview.test.view.SimulationViewDoublePage
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 

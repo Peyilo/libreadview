@@ -8,9 +8,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.readview.databinding.ActivityMainBinding
 import org.peyilo.readview.demo.NetworkLoadActivity
-import org.peyilo.readview.demo.pagecontainer.PageChangeActivity
-import org.peyilo.readview.demo.pagecontainer.PageContainerActivity
-import org.peyilo.readview.demo.qidian.QidianReadViewActivity
+import org.peyilo.readview.demo.PageChangeActivity
+import org.peyilo.readview.demo.PageContainerActivity
+import org.peyilo.readview.demo.TxtReadActivity
+import org.peyilo.readview.test.OpenGLActivity
+import org.peyilo.readview.test.TestActivity
 import java.io.File
 import java.io.FileOutputStream
 
@@ -18,23 +20,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    companion object {
-        private const val TAG = "MainActivity"
-    }
-
     private val selectFileLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
-            // 文件选择成功，开始读取并保存文件
-            saveFileToAppDirectory(uri)
-        } else {
-            // 用户取消了选择
-            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // 读取文件并保存到应用的私有目录
-    private fun saveFileToAppDirectory(uri: Uri) {
-        try {
+            // 文件选择成功，读取文件并保存到应用的私有目录
             // 获取输入流
             val inputStream = contentResolver.openInputStream(uri)
             inputStream?.let { input ->
@@ -44,15 +32,13 @@ class MainActivity : AppCompatActivity() {
                 input.copyTo(outputStream)
                 input.close()
                 outputStream.close()
-                val intent = Intent(this@MainActivity, QidianReadViewActivity::class.java)
+                val intent = Intent(this@MainActivity, TxtReadActivity::class.java)
                 intent.putExtra("SELECTED_FILE_PATH", selectedFile.absolutePath)
                 startActivity(intent)
-            } ?: run {
-                Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Failed to save file", Toast.LENGTH_SHORT).show()
+        } else {
+            // 用户取消了选择
+            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -62,6 +48,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         supportActionBar?.hide()
 
+        // 为各个按钮设置点击事件，启动相应的Activity
         binding.btnPagecontainerDemo.setOnClickListener {
             startActivity(Intent(this@MainActivity, PageContainerActivity::class.java))
         }
@@ -71,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnReadviewDemo.setOnClickListener {
-            val intent = Intent(this@MainActivity, QidianReadViewActivity::class.java)
+            val intent = Intent(this@MainActivity, TxtReadActivity::class.java)
             startActivity(intent)
         }
 

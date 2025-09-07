@@ -19,13 +19,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ReadView">
         <activity
-            android:name=".TestActivity"
+            android:name=".test.TestActivity"
             android:exported="false" />
         <activity
-            android:name=".OpenGLActivity"
+            android:name=".test.OpenGLActivity"
             android:exported="false" />
         <activity
-            android:name=".demo.qidian.QidianReadViewActivity"
+            android:name=".demo.TxtReadActivity"
             android:exported="false" />
         <activity
             android:name=".demo.NetworkLoadActivity"
@@ -36,10 +36,10 @@
             tools:targetApi="29" />
 
         <activity
-            android:name=".demo.pagecontainer.PageChangeActivity"
+            android:name=".demo.PageChangeActivity"
             android:exported="false" />
         <activity
-            android:name=".demo.pagecontainer.PageContainerActivity"
+            android:name=".demo.PageContainerActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

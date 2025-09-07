@@ -501,6 +501,7 @@ class SimpleReadView(
      * 设置章节正文文字大小
      */
     fun setContentTextSize(size: Float) {
+        // TODO: 待实现
         val curChapIndex = getCurChapIndex()
         val curChapPageIndex = getCurChapPageIndex()
         val oldChapPageCount = getChapPageCount(curChapIndex)
