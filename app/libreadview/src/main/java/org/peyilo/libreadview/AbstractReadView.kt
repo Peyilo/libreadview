@@ -159,7 +159,24 @@ abstract class AbstractReadView(
         return false
     }
 
-    // 不进行状态检查，直接强制执行
+    protected fun invalidateSplittedChapters() {
+       for(i in mChapStatusTable.keys) {
+           synchronized(mLocksForChap[i]!!) {
+               if (mChapStatusTable[i] == ChapStatus.Uninflated
+                   || mChapStatusTable[i] == ChapStatus.Finished) {
+                   mChapStatusTable[i] = ChapStatus.Nonpaged
+               }
+           }
+       }
+    }
+//
+//    private fun invalidateLoadedChapters() {
+//        // TODO: 使现有的章节加载失效，需要重新加载
+//    }
+
+    /**
+     * 不进行状态检查，直接强制执行
+     */
     protected fun forceLoadChap(chapIndex: Int, block: (Int) -> Boolean): Boolean
     = synchronized(mLocksForChap[chapIndex]!!) {
         val res = block(chapIndex)
@@ -171,7 +188,9 @@ abstract class AbstractReadView(
         return res
     }
 
-    // 不进行状态检查，直接强制执行
+    /**
+     * 不进行状态检查，直接强制执行
+     */
     protected fun forceSplitChap(chapIndex: Int, block: (Int) -> Boolean): Boolean
     = synchronized(mLocksForChap[chapIndex]!!) {
         val res = block(chapIndex)
@@ -183,7 +202,9 @@ abstract class AbstractReadView(
         return res
     }
 
-    // 不进行状态检查，直接强制执行
+    /**
+     * 不进行状态检查，直接强制执行
+     */
     protected fun forceInflateChap(chapIndex: Int, block: (Int) -> Boolean): Boolean
     = synchronized(mLocksForChap[chapIndex]!!) {
         val res = block(chapIndex)
@@ -233,7 +254,7 @@ abstract class AbstractReadView(
         super.onPageChanged(oldPageIndex, newPageIndex)
         val newChapIndex = findChapByPosition(newPageIndex - 1).first
         val oldChapIndex = findChapByPosition(oldPageIndex - 1).first
-        if (newPageIndex != oldPageIndex) {
+        if (newChapIndex != oldChapIndex) {
             onChapChanged(oldChapIndex, newChapIndex)
         }
         LogHelper.d(TAG, "onPageChanged: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")

@@ -1222,7 +1222,13 @@ abstract class AbstractPageContainer(
 
     }
 
-    protected open fun onPageChanged(@IntRange(from = 1) oldPageIndex: Int, @IntRange(from = 1) newPageIndex: Int) {
+    /**
+     * 当page发生改变时的回调函数
+     * @param oldPageIndex 变更之前的页码，范围[1, getContainerPageCount()]
+     * @param newPageIndex 变更之后的页码，范围[1, getContainerPageCount()]
+     */
+    protected open fun onPageChanged(@IntRange(from = 1) oldPageIndex: Int,
+                                     @IntRange(from = 1) newPageIndex: Int) {
         mOnPageChangeListener?.onPageChanged(oldPageIndex, newPageIndex)
     }
 

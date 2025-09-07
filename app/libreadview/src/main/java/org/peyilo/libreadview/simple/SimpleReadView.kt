@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -268,13 +269,24 @@ class SimpleReadView(
     /**
      * 当目录完成初始化以后，就会调用这个函数
      */
-    private fun showAllChapLoadPage() = post {
-        mAdapterData.clear()
-        for (i in 1..book!!.chapCount) {
-            mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(getChapTitle(i), i))
-            updateChapPageCount(i, 1)
+    private fun showAllChapLoadPage(delayed: Boolean = true) {
+        if (delayed) {
+            post {
+                mAdapterData.clear()
+                for (i in 1..book!!.chapCount) {
+                    mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(getChapTitle(i), i))
+                    updateChapPageCount(i, 1)
+                }
+                adapter.notifyDataSetChanged()
+            }
+        } else {
+            mAdapterData.clear()
+            for (i in 1..book!!.chapCount) {
+                mAdapterData.add(PageType.CHAP_LOAD_PAGE, listOf(getChapTitle(i), i))
+                updateChapPageCount(i, 1)
+            }
+            adapter.notifyDataSetChanged()
         }
-        adapter.notifyDataSetChanged()
     }
 
     override fun setPageBackground(drawable: Drawable) {
@@ -469,10 +481,64 @@ class SimpleReadView(
     }
 
     /**
+     * 由于字体大小、行间距等参数的改变，可能会导致章节页数发生变化；
+     * 这个函数用于将旧的chapPageIndex映射到新的chapPageIndex
+     * @param chapPageIndex 旧的章节页码，范围1..oldChapPageCount
+     * @param oldChapPageCount 旧的章节总页数，必须大于0
+     * @param newChapPageCount 新的章节总页数，必须大于0
+     * @return 映射后的新的章节页码，范围1..newChapPageCount
+     */
+    private fun mapChapPageIndex(chapPageIndex: Int, oldChapPageCount: Int, newChapPageCount: Int): Int {
+        require(chapPageIndex in 1..oldChapPageCount) {
+            "chapPageIndex 必须在 1..$oldChapPageCount 范围内"
+        }
+        if (oldChapPageCount <= 1) return 1 // 避免除零，只有一页就始终映射为 1
+
+        return 1 + (chapPageIndex - 1) * (newChapPageCount - 1) / (oldChapPageCount - 1)
+    }
+
+    /**
      * 设置章节正文文字大小
      */
     fun setContentTextSize(size: Float) {
-        TODO()
+        val curChapIndex = getCurChapIndex()
+        val curChapPageIndex = getCurChapPageIndex()
+        val oldChapPageCount = getChapPageCount(curChapIndex)
+        navigatePage(curChapIndex)
+        showAllChapLoadPage(delayed = false)
+        mReadConfig.contentPaint.textSize = size
+        // 设置文字大小后，刷新当前页面
+        invalidateSplittedChapters()
+        splitNearbyChapters(curChapIndex)
+        val chapRange = getChapPageRange(curChapIndex)
+        val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
+        inflateNearbyChapters(curChapIndex)
+        val newChapPageCount = getChapPageCount(curChapIndex)
+
+        if (needJumpPage) {
+            val targetChapPageIndex = mapChapPageIndex(curChapPageIndex, oldChapPageCount, newChapPageCount)
+            navigateBook(curChapIndex, targetChapPageIndex)
+            Log.d(TAG, "setContentTextSize: targetChapPageIndex = $targetChapPageIndex" +
+                    ", old=$oldChapPageCount, new=$newChapPageCount")
+        }
+
+//        startTask {
+//            loadNearbyChapters(curChapIndex)
+//            splitNearbyChapters(curChapIndex)
+//            post {
+//                val chapRange = getChapPageRange(curChapIndex)
+//                val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
+//                inflateNearbyChapters(curChapIndex)
+//                val newChapPageCount = getChapPageCount(curChapIndex)
+//
+//                if (needJumpPage) {
+//                    val targetChapPageIndex = mapChapPageIndex(curChapPageIndex, oldChapPageCount, newChapPageCount)
+//                    navigateBook(curChapIndex, targetChapPageIndex)
+//                    Log.d(TAG, "setContentTextSize: targetChapPageIndex = $targetChapPageIndex" +
+//                            ", old=$oldChapPageCount, new=$newChapPageCount")
+//                }
+//            }
+//        }
     }
 
     /**

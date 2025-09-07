@@ -192,13 +192,19 @@ class QidianReadViewActivity : AppCompatActivity() {
         }
     }
 
+    private var isFirst = true
     fun updateReadViewTheme() {
         val curTheme = ReadViewTheme.allThemes[(curThemeIndex) % ReadViewTheme.allThemes.size]
-        // TODO：不支持更改字体大小
+        // TODO：暂时不支持更改字体大小
         readview.setContentTextColor(curTheme.contentColor)
         readview.setTitleTextColor(curTheme.titleColor)
         readview.setPageBackground(curTheme.background)
         readview.setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
+//        if (!isFirst) {
+//            readview.setContentTextSize(curTheme.contentSize + curThemeIndex)
+//        } else {
+//            isFirst = false
+//        }
     }
 
 }

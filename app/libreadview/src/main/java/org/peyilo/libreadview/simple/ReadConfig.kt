@@ -9,8 +9,6 @@ class ReadConfig {
 
     private val lock = Object()
     private var _contentDimenIsInitialized = false
-    val contentDimenIsInitialized: Boolean
-        get() = synchronized(lock) { _contentDimenIsInitialized }
 
     var contentWidth = 0f
     var contentHeight = 0f
