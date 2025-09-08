@@ -7,7 +7,10 @@ import org.peyilo.libreadview.data.RangeData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.util.DirectMapChapIndexer
 import org.peyilo.libreadview.util.LogHelper
+import java.util.Collections
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 /**
  * AbstractReadView没有保存任何小说数据（除了pageview），小说数据如何表示如何处理都交给实现类；
@@ -35,9 +38,8 @@ abstract class AbstractReadView(
 
     private var mChapPageIndexer: DirectMapChapIndexer? = null
 
-    private val mThreadPool by lazy {
-        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
-    }
+    private var mThreadPool: ExecutorService? = null
+    private val futures = Collections.synchronizedList(mutableListOf<Future<*>>())
 
     private val mChapStatusTable = mutableMapOf<Int, ChapStatus>()
     private val mLocksForChap = mutableMapOf<Int, Any>()
@@ -238,16 +240,39 @@ abstract class AbstractReadView(
         @IntRange(from = 1) pageIndex: Int = 1
     )
 
+    // 确保线程池被创建
+    private fun ensureExec(): ExecutorService = synchronized(this) {
+        val alive = mThreadPool?.takeUnless { it.isShutdown || it.isTerminated }
+        if (alive != null) return alive
+        return Executors.newFixedThreadPool(2) { r ->
+            Thread(r, "ReadView-ThreadPool").apply { isDaemon = true }
+        }.also { mThreadPool = it }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // view可能会detach之后重新被attach，需要
+        ensureExec()        // 确保线程池被创建
+    }
+
     override fun onDetachedFromWindow() {
+        // 先取消属于这个 View 的任务，避免“幽灵回调”
+        futures.forEach { it.cancel(true) }
+        futures.clear()
+
+        // 关闭线程池，并且置空
+        mThreadPool?.shutdownNow()
+        mThreadPool = null
+        removeCallbacks(null)
         super.onDetachedFromWindow()
-        mThreadPool.shutdownNow()        // 关闭正在执行的所有线程
     }
 
     /**
      * 向线程池中添加一个任务
      */
     protected fun startTask(task: Runnable) {
-        mThreadPool.submit(task)
+        val future = ensureExec().submit(task)
+        futures.add(future)
     }
 
     override fun onPageChanged(oldPageIndex: Int, newPageIndex: Int) {
