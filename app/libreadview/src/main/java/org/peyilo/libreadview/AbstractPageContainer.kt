@@ -14,7 +14,6 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import androidx.annotation.IntRange
-import androidx.core.view.isNotEmpty
 import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.max
 import kotlin.math.min
@@ -477,7 +476,7 @@ abstract class AbstractPageContainer(
         private val viewGroup: ViewGroup get() = _viewGroup ?: throw IllegalStateException("viewGroup is already clear, are you calling PageCache.destroy?")
 
         @IntRange(from = 0)
-        var maxCachedPage = 5
+        var maxCachedPage = 8
 
         private val attachedPages = mutableMapOf<View, ViewHolder>()
         private val cachedPages = mutableListOf<ViewHolder>()
@@ -612,6 +611,10 @@ abstract class AbstractPageContainer(
                 res.add(it.value)
             }
             return res
+        }
+
+        fun getAllCachedViewHolder(): List<ViewHolder> {
+            return cachedPages.toList()
         }
     }
 
@@ -905,16 +908,51 @@ abstract class AbstractPageContainer(
         addView(child, index)
     }
 
-    protected fun traverseAllCreatedPages(onTraverse: (View) -> Unit) {
+    /**
+     * 遍历全部attached和cached的page
+     */
+    fun traverseAllCreatedPages(onTraverse: (View) -> Unit) {
         mPageCache.getAllPages().forEach {
             onTraverse(it)
         }
     }
 
-    protected fun traverseAllAttachedPages(onTraverse: (View) -> Unit) {
+    /**
+     * 遍历全部attached的page
+     */
+    fun traverseAllAttachedPages(onTraverse: (View) -> Unit) {
         mPageCache.getAllAttachedViewHolder().forEach {
             onTraverse(it.itemView)
         }
+    }
+
+    /**
+     * 遍历全部cached的page
+     */
+    fun traverseAllCachedPages(onTraverse: (View) -> Unit) {
+        mPageCache.getAllCachedViewHolder().forEach {
+            onTraverse(it.itemView)
+        }
+    }
+
+    protected fun getAllCreatedPages(): List<View> {
+        return mPageCache.getAllPages()
+    }
+
+    protected fun getAllAttachedPages(): List<View> {
+        val res = mutableListOf<View>()
+        mPageCache.getAllAttachedViewHolder().forEach {
+            res.add(it.itemView)
+        }
+        return res
+    }
+
+    protected fun getAllCachedPages(): List<View> {
+        val res = mutableListOf<View>()
+        mPageCache.getAllCachedViewHolder().forEach {
+            res.add(it.itemView)
+        }
+        return res
     }
 
     private inner class PageDataObserver : AdapterDataObserver() {
@@ -936,9 +974,7 @@ abstract class AbstractPageContainer(
                 val child = getPageChildAt(i)
                 mPageCache.recycleAttachedView(child)
             }
-            if (isNotEmpty()) {
-                removeAllViews()
-            }
+            removeAllViews()
             forceNotInLayoutOrScroll()
 
             val oldPageIndex = mCurContainerPageIndex

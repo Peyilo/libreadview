@@ -3,9 +3,11 @@ package org.peyilo.libreadview.simple
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
 
-class ReadConfig {
+class ReadContentConfig {
 
     private val lock = Object()
     private var _contentDimenIsInitialized = false
@@ -66,4 +68,6 @@ class ReadConfig {
     var lineMargin = 30F                                        // 行间隔
     var paraMargin = 50F                                        // 段落间隔
 
+    var mPageBackground: Drawable = Color.WHITE.toDrawable()
+    var mHeaderAndFooterTextColor = Color.BLACK
 }
