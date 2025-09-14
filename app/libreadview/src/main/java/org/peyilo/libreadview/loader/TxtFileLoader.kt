@@ -12,7 +12,7 @@ import kotlin.random.Random
 /**
  * 一个简单的本地文件加载器,支持自定义的章节标题匹配规则以及目录初始化和章节加载的随机延迟
  */
-open class SimpleNativeLoader: BookLoader {
+open class TxtFileLoader: BookLoader {
 
     var bookTitle = "No book title"
     val encoding: String            // 编码方式

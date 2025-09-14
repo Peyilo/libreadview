@@ -8,12 +8,12 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Scroller
 import androidx.core.graphics.toColorInt
 import org.peyilo.libreadview.manager.util.reflectPointAboutLine
+import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
@@ -90,7 +90,7 @@ class SimulationViewDoublePage(
             max(minRaidus, dis * raidus)
         }
         if (res != lastRadius) {
-            Log.d(TAG, "cylinderRadius: $res")
+            LogHelper.d(TAG, "cylinderRadius: $res")
             lastRadius = res
         }
         return res

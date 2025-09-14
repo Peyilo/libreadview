@@ -1,7 +1,7 @@
 package org.peyilo.readview.demo
 
 import org.mozilla.universalchardet.UniversalDetector
-import org.peyilo.libreadview.loader.SimpleNativeLoader
+import org.peyilo.libreadview.loader.TxtFileLoader
 import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.demo.extensions.customChapLoadPage
@@ -52,7 +52,7 @@ class TxtReadActivity : ReadActivity() {
 
         // 加载本地txt文件作为内容
         readview.openBook(
-            SimpleNativeLoader(
+            TxtFileLoader(
                 selectedFile, encoding = getEncodeing(selectedFile)
             ).apply {
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节

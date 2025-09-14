@@ -13,7 +13,7 @@ import org.peyilo.libreadview.simple.ReadConfig
 /**
  * 在给定ReadConfig下，负责完成ReadChap的分页，并且负载将PageData绘制到Canvas上
  */
-class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
+class DefaultPageContentProvider(config: ReadConfig): PageContentProvider {
 
     private var _config: ReadConfig? = config
     private val config get() = _config!!

@@ -7,7 +7,7 @@ import org.peyilo.libreadview.data.Chapter
 /**
  * 一个简单的文字加载器，将指定text作为一个无标题章节
  */
-class SimpleTextLoader(private val text: String): BookLoader {
+class TextLoader(private val text: String): BookLoader {
 
     override fun initToc(): Book {
         val book = Book("")

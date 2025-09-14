@@ -6,7 +6,6 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -16,13 +15,13 @@ import org.peyilo.libreadview.AbstractReadView
 import org.peyilo.libreadview.data.Book
 import org.peyilo.libreadview.data.page.PageData
 import org.peyilo.libreadview.loader.BookLoader
-import org.peyilo.libreadview.loader.SimpleNativeLoader
-import org.peyilo.libreadview.loader.SimpleTextLoader
+import org.peyilo.libreadview.loader.TxtFileLoader
+import org.peyilo.libreadview.loader.TextLoader
 import org.peyilo.libreadview.parser.ContentParser
 import org.peyilo.libreadview.parser.ReadChapter
-import org.peyilo.libreadview.parser.SimpleContentParser
+import org.peyilo.libreadview.parser.DefaultContentParser
 import org.peyilo.libreadview.provider.PageContentProvider
-import org.peyilo.libreadview.provider.SimlpePageContentProvider
+import org.peyilo.libreadview.provider.DefaultPageContentProvider
 import org.peyilo.libreadview.simple.page.ChapLoadPage
 import org.peyilo.libreadview.simple.page.ContentMetrics
 import org.peyilo.libreadview.simple.page.MessagePage
@@ -251,8 +250,8 @@ class SimpleReadView(
         @IntRange(from = 1) pageIndex: Int
     ) {
         this.mBookLoader = loader
-        this.mContentParser = SimpleContentParser()
-        this.mPageContentProvider = SimlpePageContentProvider(this.mReadConfig)
+        this.mContentParser = DefaultContentParser()
+        this.mPageContentProvider = DefaultPageContentProvider(this.mReadConfig)
 
         // 进行目录初始化准备工作，如：显示“加载目录中”视图
         showMessagePage("加载目录中......")
@@ -265,11 +264,11 @@ class SimpleReadView(
         @IntRange(from = 1) chapIndex: Int = 1,
         @IntRange(from = 1) pageIndex: Int = 1
     ) {
-        openBook(SimpleNativeLoader(file), chapIndex, pageIndex)
+        openBook(TxtFileLoader(file), chapIndex, pageIndex)
     }
 
     fun showText(text: String) {
-        openBook(SimpleTextLoader(text))
+        openBook(TextLoader(text))
     }
 
     private fun showMessagePage(text: String) = post {
@@ -582,8 +581,6 @@ class SimpleReadView(
             if (needJumpPage) {
                 val targetChapPageIndex = mapChapPageIndex(curChapPageIndex, oldChapPageCount, newChapPageCount)
                 navigateBook(curChapIndex, targetChapPageIndex)
-                Log.d(TAG, "setContentTextSize: targetChapPageIndex = $targetChapPageIndex" +
-                        ", old=$oldChapPageCount, new=$newChapPageCount")
             }
         }
     }
