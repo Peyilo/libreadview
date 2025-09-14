@@ -51,7 +51,7 @@ class SimpleReadView(
     var book: Book? = null
         private set
 
-    private val mReadContentConfig = ReadContentConfig()
+    internal val mReadStyle = ReadStyle()
 
     private lateinit var mBookLoader: BookLoader
     private lateinit var mContentParser: ContentParser
@@ -72,7 +72,7 @@ class SimpleReadView(
                 // onPreDraw在main线程运行
                 // 获取ReadContent的宽高，用于分页
                 val dimenPair = measureContentView()
-                mReadContentConfig.initContentDimen(dimenPair.first, dimenPair.second)
+                mReadStyle.initContentDimen(dimenPair.first, dimenPair.second)
                 LogHelper.d(TAG, "onPreDraw: contentDimemsion = $dimenPair")
                 LogHelper.d(TAG, "onPreDraw: readview.width = $width, readview.height = $height")
                 viewTreeObserver.removeOnPreDrawListener(this)
@@ -213,7 +213,7 @@ class SimpleReadView(
             if (loadChapRes) {
                 // 等待视图宽高数据，用来分页
                 // 等待视图布局完成，然后获取视图的宽高
-                mReadContentConfig.waitForInitialized()
+                mReadStyle.waitForInitialized()
                 bookStatus.set(BOOK_STATUS_PAGINATING)
                 splitNearbyChapters(chapIndex)
                 post {
@@ -247,7 +247,7 @@ class SimpleReadView(
     ) {
         this.mBookLoader = loader
         this.mContentParser = DefaultContentParser()
-        this.mPageContentProvider = DefaultPageContentProvider(this.mReadContentConfig)
+        this.mPageContentProvider = DefaultPageContentProvider(this.mReadStyle)
 
         // 进行目录初始化准备工作，如：显示“加载目录中”视图
         showMessagePage("加载目录中......")
@@ -293,19 +293,23 @@ class SimpleReadView(
     }
 
     override fun setPageBackground(drawable: Drawable) {
-        mReadContentConfig.mPageBackground = drawable
+        mReadStyle.mPageBackground = drawable
         // 设置背景后，刷新当前页面
         traverseAllCreatedPages {
-            it.background = mReadContentConfig.mPageBackground
+            it.background = mReadStyle.mPageBackground
         }
     }
+
+    /**
+     * page创建完成以后调用这个函数，可以在这里对page进行一些初始化操作
+     */
     private fun onPageCreated(page: View, viewType: Int) {
-        page.background = mReadContentConfig.mPageBackground
+        page.background = mReadStyle.mPageBackground
         if (viewType == PageType.READ_PAGE.ordinal) {
             val readPage = page as ReadPage
-            readPage.header.setTextColor(mReadContentConfig.mHeaderAndFooterTextColor)
-            readPage.progress.setTextColor(mReadContentConfig.mHeaderAndFooterTextColor)
-            readPage.clock.setTextColor(mReadContentConfig.mHeaderAndFooterTextColor)
+            readPage.header.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
+            readPage.progress.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
+            readPage.clock.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
         }
     }
 
@@ -484,74 +488,74 @@ class SimpleReadView(
     /**
      * 获取章节正文文字大小
      */
-    fun getContentTextSize(): Float = mReadContentConfig.contentTextSize
+    fun getContentTextSize(): Float = mReadStyle.contentTextSize
 
     /**
      * 获取章节标题文字大小
      */
-    fun getTitleTextSize(): Float = mReadContentConfig.titleTextSize
+    fun getTitleTextSize(): Float = mReadStyle.titleTextSize
 
     /**
      * 获取章节正文文字颜色
      */
-    fun getContentTextColor(): Int = mReadContentConfig.contentTextColor
+    fun getContentTextColor(): Int = mReadStyle.contentTextColor
 
     /**
      * 获取章节标题文字颜色
      */
-    fun getTitleTextColor(): Int = mReadContentConfig.titleTextColor
+    fun getTitleTextColor(): Int = mReadStyle.titleTextColor
 
     /**
      * 获取页面的左边距
      */
-    fun getPagePaddingLeft() = mReadContentConfig.paddingLeft
+    fun getPagePaddingLeft() = mReadStyle.paddingLeft
 
     /**
      * 获取页面的右边距
      */
-    fun getPagePaddingRight() = mReadContentConfig.paddingRight
+    fun getPagePaddingRight() = mReadStyle.paddingRight
 
     /**
      * 获取页面的上边距
      */
-    fun getPagePaddingTop() = mReadContentConfig.paddingTop
+    fun getPagePaddingTop() = mReadStyle.paddingTop
 
     /**
      * 获取页面的下边距
      */
-    fun getPagePaddingBottom() = mReadContentConfig.paddingBottom
+    fun getPagePaddingBottom() = mReadStyle.paddingBottom
 
     /**
      * 获取段落首行缩进
      */
-    fun getFirstParaIndent() = mReadContentConfig.firstParaIndent
+    fun getFirstParaIndent() = mReadStyle.firstParaIndent
 
     /**
      * 获取标题与正文的间距
      */
-    fun getTitleMargin() = mReadContentConfig.titleMargin
+    fun getTitleMargin() = mReadStyle.titleMargin
 
     /**
      * 获取正文文字的边距
      */
-    fun getTextMargin() = mReadContentConfig.textMargin
+    fun getTextMargin() = mReadStyle.textMargin
 
     /**
      * 获取正文文字的行间距
      */
-    fun getLineMargin() = mReadContentConfig.lineMargin
+    fun getLineMargin() = mReadStyle.lineMargin
 
     /**
      * 获取段落间距
      */
-    fun getParaMargin() = mReadContentConfig.paraMargin
+    fun getParaMargin() = mReadStyle.paraMargin
 
 
     /**
      * 当影响分页的参数发生变化时，调用这个函数，并在runnable中更改参数,
      * 这个函数会在runnable.run()前后做一些必要的处理
      */
-    private fun onReadviewLayoutInvalidated(runnable: Runnable) {
+    internal fun onReadviewLayoutInvalidated(runnable: Runnable) {
         val bookStatus = bookStatus.get()
         if (bookStatus == BOOK_STATUS_PAGINATING) {
             throw IllegalStateException("The book is paginating now, please try again later.")
@@ -603,82 +607,82 @@ class SimpleReadView(
      * 设置页面的边距 (请在ui线程调用)
      */
     fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.paddingLeft = left
-        mReadContentConfig.paddingTop = top
-        mReadContentConfig.paddingRight = right
-        mReadContentConfig.paddingBottom = bottom
+        mReadStyle.paddingLeft = left
+        mReadStyle.paddingTop = top
+        mReadStyle.paddingRight = right
+        mReadStyle.paddingBottom = bottom
     }
 
     /**
      * 设置页面的水平边距 (请在ui线程调用)
      */
     fun setPageHorizontalPadding(left: Float, right: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.paddingLeft = left
-        mReadContentConfig.paddingRight = right
+        mReadStyle.paddingLeft = left
+        mReadStyle.paddingRight = right
     }
 
     /**
      * 设置页面的垂直边距 (请在ui线程调用)
      */
     fun setPageVerticalPadding(top: Float, bottom: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.paddingTop = top
-        mReadContentConfig.paddingBottom = bottom
+        mReadStyle.paddingTop = top
+        mReadStyle.paddingBottom = bottom
     }
 
     /**
      * 设置段落首行缩进 (请在ui线程调用)
      */
     fun setFirstParaIndent(indent: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.firstParaIndent = indent
+        mReadStyle.firstParaIndent = indent
     }
 
     /**
      * 设置标题与正文的间距 (请在ui线程调用)
      */
     fun setTitleMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.titleMargin = margin
+        mReadStyle.titleMargin = margin
     }
 
     /**
      * 设置正文文字的边距 (请在ui线程调用)
      */
     fun setTextMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.textMargin = margin
+        mReadStyle.textMargin = margin
     }
 
     /**
      * 设置正文文字的行间距 (请在ui线程调用)
      */
     fun setLineMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.lineMargin = margin
+        mReadStyle.lineMargin = margin
     }
 
     /**
      * 设置段落间距 (请在ui线程调用)
      */
     fun setParaMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.paraMargin = margin
+        mReadStyle.paraMargin = margin
     }
 
     /**
      * 设置章节标题文字大小 (请在ui线程调用)
      */
     fun setTitleTextSize(size: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.titlePaint.textSize = size
+        mReadStyle.titlePaint.textSize = size
     }
 
     /**
      * 设置章节正文文字大小 (请在ui线程调用)
      */
     fun setContentTextSize(size: Float) = onReadviewLayoutInvalidated {
-        mReadContentConfig.contentPaint.textSize = size
+        mReadStyle.contentPaint.textSize = size
     }
 
     /**
      * 设置章节标题文字颜色
      */
     fun setTitleTextColor(color: Int) {
-        mReadContentConfig.titlePaint.color = color
+        mReadStyle.titlePaint.color = color
         // 设置文字颜色后，刷新当前页面
         traverseAllCreatedPages {
             if (it is ReadPage) {
@@ -691,7 +695,7 @@ class SimpleReadView(
      * 设置章节正文文字颜色
      */
     fun setContentTextColor(color: Int) {
-        mReadContentConfig.contentPaint.color = color
+        mReadStyle.contentPaint.color = color
         // 设置文字颜色后，刷新当前页面
         traverseAllCreatedPages {
             if (it is ReadPage) {
@@ -705,7 +709,7 @@ class SimpleReadView(
      */
     fun setHeaderAndFooterTextColor(color: Int) {
         // 设置文字颜色后，刷新当前页面
-        mReadContentConfig.mHeaderAndFooterTextColor = color
+        mReadStyle.mHeaderAndFooterTextColor = color
         traverseAllCreatedPages {
             if (it is ReadPage) {
                 it.header.setTextColor(color)

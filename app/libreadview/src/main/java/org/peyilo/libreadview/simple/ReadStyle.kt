@@ -7,7 +7,7 @@ import android.graphics.drawable.Drawable
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
 
-class ReadContentConfig {
+class ReadStyle {
 
     private val lock = Object()
     private var _contentDimenIsInitialized = false

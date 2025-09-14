@@ -7,6 +7,7 @@ import org.peyilo.libreadview.manager.IBookCurlLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
+import org.peyilo.libreadview.simple.ReadStyleBuilder
 import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.fragment.ChapListFragment
@@ -142,11 +143,13 @@ open class ReadActivity: AppCompatActivity() {
 
     fun updateReadViewTheme() {
         val curTheme = ReadViewTheme.allThemes[(curThemeIndex) % ReadViewTheme.allThemes.size]
-        readview.setContentTextColor(curTheme.contentColor)
-        readview.setTitleTextColor(curTheme.titleColor)
-        readview.setPageBackground(curTheme.background)
-        readview.setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
-        readview.setContentTextSize(curTheme.contentSize)
-        readview.setTitleTextSize(curTheme.titleSize)
+        ReadStyleBuilder(readview).apply {
+            setContentTextColor(curTheme.contentColor)
+            setTitleTextColor(curTheme.titleColor)
+            setPageBackground(curTheme.background)
+            setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
+            setContentTextSize(curTheme.contentSize)
+            setTitleTextSize(curTheme.titleSize)
+        }.build()
     }
 }

@@ -1,0 +1,155 @@
+package org.peyilo.libreadview.simple
+
+import android.graphics.drawable.Drawable
+import androidx.core.graphics.drawable.toDrawable
+import org.peyilo.libreadview.simple.page.ReadPage
+
+/**
+ * Builder for defining style options of a [SimpleReadView].
+ *
+ * This builder provides a fluent API for setting style-related properties
+ * such as paddings, margins, text sizes, text colors, and page background.
+ * Once all style options are configured, call [build] to apply them
+ * to a target [SimpleReadView].
+ *
+ * Key points:
+ * - Centralizes all style setters into a single builder.
+ * - Enables chain calls for better readability and convenience.
+ * - Batches multiple style changes to apply them at once, avoiding unnecessary redraws/re-layouts.
+ */
+class ReadStyleBuilder(val readView: SimpleReadView) {
+
+    // Page paddings
+    private var paddingLeft: Float? = null
+    private var paddingTop: Float? = null
+    private var paddingRight: Float? = null
+    private var paddingBottom: Float? = null
+
+    // Text layout parameters
+    private var firstParaIndent: Float? = null
+    private var titleMargin: Float? = null
+    private var textMargin: Float? = null
+    private var lineMargin: Float? = null
+    private var paraMargin: Float? = null
+
+    // Text style properties
+    private var titleTextSize: Float? = null
+    private var contentTextSize: Float? = null
+    private var titleTextColor: Int? = null
+    private var contentTextColor: Int? = null
+    private var headerAndFooterTextColor: Int? = null
+
+    // Page background
+    private var mPageBackground: Drawable? = null
+
+    /** Sets all four paddings of the page. */
+    fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = apply {
+        paddingLeft = left
+        paddingTop = top
+        paddingRight = right
+        paddingBottom = bottom
+    }
+
+    /** Sets horizontal paddings (left and right) of the page. */
+    fun setPageHorizontalPadding(left: Float, right: Float) = apply {
+        paddingLeft = left
+        paddingRight = right
+    }
+
+    /** Sets vertical paddings (top and bottom) of the page. */
+    fun setPageVerticalPadding(top: Float, bottom: Float) = apply {
+        paddingTop = top
+        paddingBottom = bottom
+    }
+
+    /** Sets the first paragraph indent in content. */
+    fun setFirstParaIndent(indent: Float) = apply { firstParaIndent = indent }
+
+    /** Sets spacing between title and content. */
+    fun setTitleMargin(margin: Float) = apply { titleMargin = margin }
+
+    /** Sets margin around text blocks. */
+    fun setTextMargin(margin: Float) = apply { textMargin = margin }
+
+    /** Sets line spacing inside paragraphs. */
+    fun setLineMargin(margin: Float) = apply { lineMargin = margin }
+
+    /** Sets spacing between paragraphs. */
+    fun setParaMargin(margin: Float) = apply { paraMargin = margin }
+
+    /** Sets title text size. */
+    fun setTitleTextSize(size: Float) = apply { titleTextSize = size }
+
+    /** Sets content text size. */
+    fun setContentTextSize(size: Float) = apply { contentTextSize = size }
+
+    /** Sets title text color. */
+    fun setTitleTextColor(color: Int) = apply { titleTextColor = color }
+
+    /** Sets content text color. */
+    fun setContentTextColor(color: Int) = apply { contentTextColor = color }
+
+    /** Sets text color for header and footer (progress, clock, etc.). */
+    fun setHeaderAndFooterTextColor(color: Int) = apply { headerAndFooterTextColor = color }
+
+    /** Sets a drawable as the page background. */
+    fun setPageBackground(background: Drawable) = apply { mPageBackground = background }
+
+    /** Sets a solid color as the page background. */
+    fun setPageBackgroundColor(color: Int) = apply { setPageBackground(color.toDrawable()) }
+
+    /**
+     * Applies all configured style properties to the given [SimpleReadView].
+     *
+     * - Updates paint properties (colors, text sizes, background).
+     * - Invalidates page content if necessary to trigger redraw.
+     * - Triggers re-layout if paddings, margins, or text sizes were changed.
+     */
+    fun build() {
+        // Apply paint colors and background
+        titleTextColor?.let { readView.mReadStyle.titlePaint.color = it }
+        contentTextColor?.let { readView.mReadStyle.contentPaint.color = it }
+        headerAndFooterTextColor?.let { readView.mReadStyle.mHeaderAndFooterTextColor = it }
+        mPageBackground?.let { readView.mReadStyle.mPageBackground = it }
+
+        // Refresh pages if style-related attributes changed
+        if (titleTextColor != null || contentTextColor != null
+            || headerAndFooterTextColor != null || mPageBackground != null) {
+            readView.traverseAllCreatedPages { page ->
+                mPageBackground?.let { bg -> page.background = bg }
+                if (page is ReadPage) {
+                    if (titleTextColor != null || contentTextColor != null) {
+                        page.content.invalidate()
+                    }
+                    headerAndFooterTextColor?.let { color ->
+                        page.header.setTextColor(color)
+                        page.progress.setTextColor(color)
+                        page.clock.setTextColor(color)
+                    }
+                }
+            }
+        }
+
+        // Apply layout-related parameters and trigger re-layout if needed
+        if (paddingLeft != null || paddingTop != null || paddingRight != null || paddingBottom != null
+            || firstParaIndent != null || titleMargin != null || textMargin != null
+            || lineMargin != null || paraMargin != null
+            || titleTextSize != null || contentTextSize != null) {
+            readView.onReadviewLayoutInvalidated {
+                paddingLeft?.let { readView.mReadStyle.paddingLeft = it }
+                paddingTop?.let { readView.mReadStyle.paddingTop = it }
+                paddingRight?.let { readView.mReadStyle.paddingRight = it }
+                paddingBottom?.let { readView.mReadStyle.paddingBottom = it }
+
+                firstParaIndent?.let { readView.mReadStyle.firstParaIndent = it }
+                titleMargin?.let { readView.mReadStyle.titleMargin = it }
+                textMargin?.let { readView.mReadStyle.textMargin = it }
+                lineMargin?.let { readView.mReadStyle.lineMargin = it }
+                paraMargin?.let { readView.mReadStyle.paraMargin = it }
+
+                titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = it }
+                contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = it }
+            }
+        }
+    }
+}

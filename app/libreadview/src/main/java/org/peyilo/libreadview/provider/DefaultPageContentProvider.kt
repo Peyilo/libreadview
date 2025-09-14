@@ -8,14 +8,14 @@ import org.peyilo.libreadview.data.page.StringLineData
 import org.peyilo.libreadview.parser.ParagraphContent
 import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.parser.TitleContent
-import org.peyilo.libreadview.simple.ReadContentConfig
+import org.peyilo.libreadview.simple.ReadStyle
 
 /**
  * 在给定ReadConfig下，负责完成ReadChap的分页，并且负载将PageData绘制到Canvas上
  */
-class DefaultPageContentProvider(config: ReadContentConfig): PageContentProvider {
+class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
 
-    private var _config: ReadContentConfig? = config
+    private var _config: ReadStyle? = config
     private val config get() = _config!!
 
     private val measuredPaint = Paint()
