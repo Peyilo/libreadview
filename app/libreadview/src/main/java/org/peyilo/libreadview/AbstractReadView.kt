@@ -125,9 +125,7 @@ abstract class AbstractReadView(
     protected fun splitChapWithLock(chapIndex: Int, block: (Int) -> Boolean): Boolean
     = synchronized(mLocksForChap[chapIndex]!!) {
         when (mChapStatusTable[chapIndex]!!) {
-            ChapStatus.Unload -> {
-                throw IllegalStateException("章节[$chapIndex]未完成加载，不能进行分页!")
-            }
+            ChapStatus.Unload -> Unit
             ChapStatus.Nonpaged -> {
                 val res = block(chapIndex)
                 if (res) {
@@ -143,12 +141,8 @@ abstract class AbstractReadView(
     protected fun inflateChapWithLock(chapIndex: Int, block: (Int) -> Boolean): Boolean
     = synchronized(mLocksForChap[chapIndex]!!) {
         when (mChapStatusTable[chapIndex]!!) {
-            ChapStatus.Unload -> {
-                throw IllegalStateException("章节[$chapIndex]未完成加载，不能进行填充!")
-            }
-            ChapStatus.Nonpaged -> {
-                throw IllegalStateException("章节[$chapIndex]未完成分页，不能进行填充!")
-            }
+            ChapStatus.Unload -> Unit
+            ChapStatus.Nonpaged -> Unit
             ChapStatus.Uninflated -> {
                 val res = block(chapIndex)
                 if (res) {
@@ -162,19 +156,18 @@ abstract class AbstractReadView(
     }
 
     protected fun invalidateSplittedChapters() {
-       for(i in mChapStatusTable.keys) {
-           synchronized(mLocksForChap[i]!!) {
-               if (mChapStatusTable[i] == ChapStatus.Uninflated
-                   || mChapStatusTable[i] == ChapStatus.Finished) {
-                   mChapStatusTable[i] = ChapStatus.Nonpaged
-               }
-           }
-       }
+        // 先取消全部任务
+        futures.forEach { it.cancel(true) }
+        futures.clear()
+        for(i in mChapStatusTable.keys) {
+            synchronized(mLocksForChap[i]!!) {
+                if (mChapStatusTable[i] == ChapStatus.Uninflated
+                    || mChapStatusTable[i] == ChapStatus.Finished) {
+                    mChapStatusTable[i] = ChapStatus.Nonpaged
+                }
+            }
+        }
     }
-//
-//    private fun invalidateLoadedChapters() {
-//        // TODO: 使现有的章节加载失效，需要重新加载
-//    }
 
     /**
      * 不进行状态检查，直接强制执行
@@ -285,6 +278,7 @@ abstract class AbstractReadView(
         LogHelper.d(TAG, "onPageChanged: oldPageIndex = $oldPageIndex, newPageIndex = $newPageIndex")
     }
 
+
     /**
      * 当章节发生改变，就会回调这个函数
      */
@@ -294,7 +288,7 @@ abstract class AbstractReadView(
             processNearbyChapters(newChapIndex) {
                 loadChap(it)
                 splitChap(it)
-                post {
+                post{
                     inflateChap(it)
                 }
             }

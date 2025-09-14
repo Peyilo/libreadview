@@ -121,7 +121,7 @@ class SimlpePageContentProvider(config: ReadConfig): PageContentProvider {
         for (i in parasStartIndex until chap.content.size) {
             val para = chap.content[i] as ParagraphContent
             val paraLines = breakLines(para.text, width, config.contentTextSize,
-                config.textMargin, config.paraOffset)
+                config.textMargin, config.firstParaIndent)
             for (j in paraLines.indices) {
                 val line = paraLines[j]
                 if (height < config.contentTextSize) {

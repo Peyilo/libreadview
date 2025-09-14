@@ -60,7 +60,7 @@ class ReadConfig {
     val contentTextColor get() = contentPaint.color
     val contentTextSize get() = contentPaint.textSize
 
-    val paraOffset get() = contentPaint.measureText("测试") // 段落首行的偏移
+    var firstParaIndent = contentPaint.measureText("测试") // 段落首行的偏移
     var titleMargin = 160F                                      // 章节标题与章节正文的间距
     var textMargin = 0F                                         // 字符间隔
     var lineMargin = 30F                                        // 行间隔

@@ -140,12 +140,13 @@ open class ReadActivity: AppCompatActivity() {
         }
     }
 
-    // TODO：暂时不支持更改字体大小
     fun updateReadViewTheme() {
         val curTheme = ReadViewTheme.allThemes[(curThemeIndex) % ReadViewTheme.allThemes.size]
         readview.setContentTextColor(curTheme.contentColor)
         readview.setTitleTextColor(curTheme.titleColor)
         readview.setPageBackground(curTheme.background)
         readview.setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
+        readview.setContentTextSize(curTheme.contentSize)
+        readview.setTitleTextSize(curTheme.titleSize)
     }
 }

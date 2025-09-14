@@ -29,6 +29,7 @@ import org.peyilo.libreadview.simple.page.MessagePage
 import org.peyilo.libreadview.simple.page.ReadPage
 import org.peyilo.libreadview.util.LogHelper
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 
 class SimpleReadView(
@@ -39,7 +40,13 @@ class SimpleReadView(
 
     companion object {
         private const val TAG = "SimpleReadView"
+
+        private const val BOOK_STATUS_INIT = 0
+        private const val BOOK_STATUS_PAGINATING = 1
+        private const val BOOK_STATUS_READY = 2
     }
+
+    private var bookStatus = AtomicInteger(BOOK_STATUS_INIT)
 
     /**
      * 不要主动更改book的数据，只能通过openBook()函数
@@ -192,6 +199,9 @@ class SimpleReadView(
         return Pair(measuredWidth, measuredHeight)
     }
 
+
+
+
     /**
      * 初始化目录，并且预加载并分割章节
      * @param pageIndex page在指定的章节中的位置
@@ -209,6 +219,7 @@ class SimpleReadView(
                 // 等待视图宽高数据，用来分页
                 // 等待视图布局完成，然后获取视图的宽高
                 mReadConfig.waitForInitialized()
+                bookStatus.set(BOOK_STATUS_PAGINATING)
                 splitNearbyChapters(chapIndex)
                 post {
                     val chapRange = getChapPageRange(chapIndex)
@@ -220,6 +231,7 @@ class SimpleReadView(
                     if (needJumpPage) {
                         navigateBook(chapIndex, pageIndex)
                     }
+                    bookStatus.set(BOOK_STATUS_READY)
                 }
 
             } else {
@@ -474,10 +486,106 @@ class SimpleReadView(
     }
 
     /**
-     * 设置章节标题文字大小
+     * 获取章节正文文字大小
      */
-    fun setTitleTextSize(size: Float) {
-        TODO()
+    fun getContentTextSize(): Float = mReadConfig.contentTextSize
+
+    /**
+     * 获取章节标题文字大小
+     */
+    fun getTitleTextSize(): Float = mReadConfig.titleTextSize
+
+    /**
+     * 获取章节正文文字颜色
+     */
+    fun getContentTextColor(): Int = mReadConfig.contentTextColor
+
+    /**
+     * 获取章节标题文字颜色
+     */
+    fun getTitleTextColor(): Int = mReadConfig.titleTextColor
+
+    /**
+     * 获取页面的左边距
+     */
+    fun getPagePaddingLeft() = mReadConfig.paddingLeft
+
+    /**
+     * 获取页面的右边距
+     */
+    fun getPagePaddingRight() = mReadConfig.paddingRight
+
+    /**
+     * 获取页面的上边距
+     */
+    fun getPagePaddingTop() = mReadConfig.paddingTop
+
+    /**
+     * 获取页面的下边距
+     */
+    fun getPagePaddingBottom() = mReadConfig.paddingBottom
+
+    /**
+     * 获取段落首行缩进
+     */
+    fun getFirstParaIndent() = mReadConfig.firstParaIndent
+
+    /**
+     * 获取标题与正文的间距
+     */
+    fun getTitleMargin() = mReadConfig.titleMargin
+
+    /**
+     * 获取正文文字的边距
+     */
+    fun getTextMargin() = mReadConfig.textMargin
+
+    /**
+     * 获取正文文字的行间距
+     */
+    fun getLineMargin() = mReadConfig.lineMargin
+
+    /**
+     * 获取段落间距
+     */
+    fun getParaMargin() = mReadConfig.paraMargin
+
+
+    /**
+     * 当影响分页的参数发生变化时，调用这个函数，并在runnable中更改参数,
+     * 这个函数会在runnable.run()前后做一些必要的处理
+     */
+    private fun onReadviewLayoutInvalidated(runnable: Runnable) {
+        val bookStatus = bookStatus.get()
+        if (bookStatus == BOOK_STATUS_PAGINATING) {
+            throw IllegalStateException("The book is paginating now, please try again later.")
+        }
+        if (bookStatus == BOOK_STATUS_INIT) {
+            runnable.run()
+        } else {
+            // bookStatus == BOOK_STATUS_READY
+            val curChapIndex = getCurChapIndex()
+            val curChapPageIndex = getCurChapPageIndex()
+            val oldChapPageCount = getChapPageCount(curChapIndex)
+            navigatePage(curChapIndex)
+            showAllChapLoadPage(delayed = false)
+            runnable.run()
+
+            // 设置文字大小后，刷新当前页面
+            invalidateSplittedChapters()
+            splitNearbyChapters(curChapIndex)
+            val chapRange = getChapPageRange(curChapIndex)
+            val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
+            inflateNearbyChapters(curChapIndex)
+            val newChapPageCount = getChapPageCount(curChapIndex)
+
+            if (needJumpPage) {
+                val targetChapPageIndex = mapChapPageIndex(curChapPageIndex, oldChapPageCount, newChapPageCount)
+                navigateBook(curChapIndex, targetChapPageIndex)
+                Log.d(TAG, "setContentTextSize: targetChapPageIndex = $targetChapPageIndex" +
+                        ", old=$oldChapPageCount, new=$newChapPageCount")
+            }
+        }
     }
 
     /**
@@ -498,48 +606,78 @@ class SimpleReadView(
     }
 
     /**
-     * 设置章节正文文字大小
+     * 设置页面的边距 (请在ui线程调用)
      */
-    fun setContentTextSize(size: Float) {
-        // TODO: 待实现
-        val curChapIndex = getCurChapIndex()
-        val curChapPageIndex = getCurChapPageIndex()
-        val oldChapPageCount = getChapPageCount(curChapIndex)
-        navigatePage(curChapIndex)
-        showAllChapLoadPage(delayed = false)
+    fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.paddingLeft = left
+        mReadConfig.paddingTop = top
+        mReadConfig.paddingRight = right
+        mReadConfig.paddingBottom = bottom
+    }
+
+    /**
+     * 设置页面的水平边距 (请在ui线程调用)
+     */
+    fun setPageHorizontalPadding(left: Float, right: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.paddingLeft = left
+        mReadConfig.paddingRight = right
+    }
+
+    /**
+     * 设置页面的垂直边距 (请在ui线程调用)
+     */
+    fun setPageVerticalPadding(top: Float, bottom: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.paddingTop = top
+        mReadConfig.paddingBottom = bottom
+    }
+
+    /**
+     * 设置段落首行缩进 (请在ui线程调用)
+     */
+    fun setFirstParaIndent(indent: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.firstParaIndent = indent
+    }
+
+    /**
+     * 设置标题与正文的间距 (请在ui线程调用)
+     */
+    fun setTitleMargin(margin: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.titleMargin = margin
+    }
+
+    /**
+     * 设置正文文字的边距 (请在ui线程调用)
+     */
+    fun setTextMargin(margin: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.textMargin = margin
+    }
+
+    /**
+     * 设置正文文字的行间距 (请在ui线程调用)
+     */
+    fun setLineMargin(margin: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.lineMargin = margin
+    }
+
+    /**
+     * 设置段落间距 (请在ui线程调用)
+     */
+    fun setParaMargin(margin: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.paraMargin = margin
+    }
+
+    /**
+     * 设置章节标题文字大小 (请在ui线程调用)
+     */
+    fun setTitleTextSize(size: Float) = onReadviewLayoutInvalidated {
+        mReadConfig.titlePaint.textSize = size
+    }
+
+    /**
+     * 设置章节正文文字大小 (请在ui线程调用)
+     */
+    fun setContentTextSize(size: Float) = onReadviewLayoutInvalidated {
         mReadConfig.contentPaint.textSize = size
-        // 设置文字大小后，刷新当前页面
-        invalidateSplittedChapters()
-        splitNearbyChapters(curChapIndex)
-        val chapRange = getChapPageRange(curChapIndex)
-        val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
-        inflateNearbyChapters(curChapIndex)
-        val newChapPageCount = getChapPageCount(curChapIndex)
-
-        if (needJumpPage) {
-            val targetChapPageIndex = mapChapPageIndex(curChapPageIndex, oldChapPageCount, newChapPageCount)
-            navigateBook(curChapIndex, targetChapPageIndex)
-            Log.d(TAG, "setContentTextSize: targetChapPageIndex = $targetChapPageIndex" +
-                    ", old=$oldChapPageCount, new=$newChapPageCount")
-        }
-
-//        startTask {
-//            loadNearbyChapters(curChapIndex)
-//            splitNearbyChapters(curChapIndex)
-//            post {
-//                val chapRange = getChapPageRange(curChapIndex)
-//                val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
-//                inflateNearbyChapters(curChapIndex)
-//                val newChapPageCount = getChapPageCount(curChapIndex)
-//
-//                if (needJumpPage) {
-//                    val targetChapPageIndex = mapChapPageIndex(curChapPageIndex, oldChapPageCount, newChapPageCount)
-//                    navigateBook(curChapIndex, targetChapPageIndex)
-//                    Log.d(TAG, "setContentTextSize: targetChapPageIndex = $targetChapPageIndex" +
-//                            ", old=$oldChapPageCount, new=$newChapPageCount")
-//                }
-//            }
-//        }
     }
 
     /**
