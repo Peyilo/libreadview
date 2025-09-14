@@ -5,14 +5,14 @@ import android.graphics.drawable.Drawable
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
+import org.peyilo.libreadview.simple.ReadStyleBuilder
+import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.App
 import org.peyilo.readview.R
 
 class ReadViewTheme(
     val titleColor: Int = Color.BLACK,
     val contentColor: Int = "#1E1A1A".toColorInt(),
-    val titleSize: Float = 72F,
-    val contentSize: Float = 56F,
     val background: Drawable = "#EEEDED".toColorInt().toDrawable(),
     val headerAndFooterTextColor: Int = Color.BLACK,
 ) {
@@ -48,4 +48,14 @@ class ReadViewTheme(
         val allThemes = listOf(paperTheme, whiteTheme, nightTheme, eyeCareTheme, blackTheme)
     }
 
+}
+
+fun SimpleReadView.setReadViewTheme(idx: Int = 0) {
+    val curTheme = ReadViewTheme.allThemes[idx]
+    ReadStyleBuilder(this).apply {
+        setContentTextColor(curTheme.contentColor)
+        setTitleTextColor(curTheme.titleColor)
+        setPageBackground(curTheme.background)
+        setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
+    }.build()
 }

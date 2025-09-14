@@ -75,9 +75,9 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="切换主题"
+            android:text="界面"
             android:textColor="@color/black"
-            android:drawableTop="@drawable/dark"
+            android:drawableTop="@drawable/ui"
             tools:ignore="HardcodedText" />
 
         <androidx.appcompat.widget.AppCompatButton

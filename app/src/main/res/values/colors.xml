@@ -14,4 +14,6 @@
     <color name="purple">#D284FF</color>
 
     <color name="trasparent">#00FFFFFF</color>
+
+    <color name="split_line">#EBEBEB</color>
 </resources>

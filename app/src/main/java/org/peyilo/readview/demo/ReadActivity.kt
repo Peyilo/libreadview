@@ -7,12 +7,12 @@ import org.peyilo.libreadview.manager.IBookCurlLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
-import org.peyilo.libreadview.simple.ReadStyleBuilder
 import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
 import org.peyilo.readview.demo.fragment.SettingsFragment
+import org.peyilo.readview.demo.fragment.UiFragment
 
 open class ReadActivity: AppCompatActivity() {
 
@@ -21,8 +21,6 @@ open class ReadActivity: AppCompatActivity() {
     protected val readview: SimpleReadView get() = binding.readview
 
     protected val chapTitleList: MutableList<String> = mutableListOf()
-
-    private var curThemeIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +62,7 @@ open class ReadActivity: AppCompatActivity() {
         readview.preprocessBehind = 1
 
         // 设置主题
-        updateReadViewTheme()
+        readview.setReadViewTheme()
     }
 
     /**
@@ -83,10 +81,9 @@ open class ReadActivity: AppCompatActivity() {
                 }, onTocBtnClick = {
                     showControlPanel(false)
                     showChapList()
-                }, onThemeBtnClick = {
-                    // 切换主题
-                    curThemeIndex++
-                    updateReadViewTheme()
+                }, onUiBtnClick = {
+                    showControlPanel(false)
+                    showUiPanel()
                 }, onSettingsBtnClick = {
                     showControlPanel(false)
                     showSettings()
@@ -141,15 +138,14 @@ open class ReadActivity: AppCompatActivity() {
         }
     }
 
-    fun updateReadViewTheme() {
-        val curTheme = ReadViewTheme.allThemes[(curThemeIndex) % ReadViewTheme.allThemes.size]
-        ReadStyleBuilder(readview).apply {
-            setContentTextColor(curTheme.contentColor)
-            setTitleTextColor(curTheme.titleColor)
-            setPageBackground(curTheme.background)
-            setHeaderAndFooterTextColor(curTheme.headerAndFooterTextColor)
-            setContentTextSize(curTheme.contentSize)
-            setTitleTextSize(curTheme.titleSize)
-        }.build()
+    fun showUiPanel() {
+        val tag = "UiFragment"
+        val fm = supportFragmentManager
+        val existing = fm.findFragmentByTag(tag)
+        if (existing == null) {
+            UiFragment(readview).show(fm, tag)
+        }
     }
+
+
 }

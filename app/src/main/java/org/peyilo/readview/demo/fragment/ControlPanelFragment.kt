@@ -16,7 +16,7 @@ class ControlPanelFragment(
     private val onPrevChapClick: () -> Unit,
     private val onNextChapClick: () -> Unit,
     private val onTocBtnClick: () -> Unit,
-    private val onThemeBtnClick: () -> Unit,
+    private val onUiBtnClick: () -> Unit,
     private val onSettingsBtnClick: () -> Unit,
 ) : BottomSheetDialogFragment() {
 
@@ -30,7 +30,7 @@ class ControlPanelFragment(
     ): View {
         val view = inflater.inflate(R.layout.fragment_control_panel, container, false)
         view.findViewById<View>(R.id.menu_toc).setOnClickListener { onTocBtnClick() }
-        view.findViewById<View>(R.id.menu_theme).setOnClickListener { onThemeBtnClick() }
+        view.findViewById<View>(R.id.menu_theme).setOnClickListener { onUiBtnClick() }
         view.findViewById<View>(R.id.menu_settings).setOnClickListener { onSettingsBtnClick() }
 
         view.findViewById<View>(R.id.menu_prev_chap).setOnClickListener { onPrevChapClick() }
