@@ -1,5 +1,9 @@
-import kotlin.collections.forEach
-import java.net.URL
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 plugins {
     alias(libs.plugins.android.application)
@@ -83,7 +87,6 @@ dependencies {
 tasks.register("downloadTxtFiles") {
     val outputDir = File(projectDir, "src/main/assets/txts")
 
-    // Pair(下载地址, 保存时的文件名)
     val urls = listOf(
         "https://github.com/Peyilo/libreadview/releases/download/0.0.2/default.txt" to "妖精之诗 作者：尼希维尔特.txt"
     )
@@ -91,15 +94,18 @@ tasks.register("downloadTxtFiles") {
     doLast {
         if (!outputDir.exists()) outputDir.mkdirs()
 
+        val client = HttpClient.newBuilder().build()
+
         urls.forEach { (url, fileName) ->
             val outputFile = File(outputDir, fileName)
             if (!outputFile.exists()) {
                 println("Downloading $url -> $outputFile")
-                URL(url).openStream().use { input ->
-                    outputFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
+                val request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .build()
+
+                val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
+                Files.copy(response.body(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
             } else {
                 println("Already exists: $outputFile")
             }

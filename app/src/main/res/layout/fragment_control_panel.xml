@@ -27,12 +27,10 @@
             android:drawableStart="@drawable/prev_chap"
             tools:ignore="HardcodedText" />
 
-        <androidx.appcompat.widget.AppCompatSeekBar
+        <org.peyilo.readview.demo.view.DualThumbProgressBar
             android:id="@+id/menu_progress_bar"
             android:layout_weight="2"
             android:layout_width="0dp"
-            android:thumbTint="#4B4B4B"
-            android:progressTint="#4B4B4B"
             android:paddingTop="15dp"
             android:layout_height="wrap_content"/>
 

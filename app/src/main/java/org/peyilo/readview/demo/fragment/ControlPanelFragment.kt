@@ -1,13 +1,12 @@
 package org.peyilo.readview.demo.fragment
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.SeekBar
-import androidx.appcompat.widget.AppCompatSeekBar
 import androidx.core.view.ViewCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -15,6 +14,7 @@ import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.R
 import org.peyilo.readview.demo.ReadActivity
+import org.peyilo.readview.demo.view.DualThumbProgressBar
 
 class ControlPanelFragment(
     private val readview: SimpleReadView,
@@ -24,6 +24,8 @@ class ControlPanelFragment(
     companion object {
         private const val TAG = "ControlPanelFragment"
     }
+
+    private var progressBar: DualThumbProgressBar? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,12 +38,12 @@ class ControlPanelFragment(
     }
 
     private fun initView(view: View) {
-        val progressBar = view.findViewById<AppCompatSeekBar>(R.id.menu_progress_bar)
+        progressBar = view.findViewById(R.id.menu_progress_bar)
 
         view.findViewById<View>(R.id.menu_toc).setOnClickListener {
             readActivity.showControlPanel(false)
             readActivity.showChapList { chapIndex, res ->
-                if (res) progressBar.progress = chapIndex - 1
+                if (res) progressBar!!.setProgress(chapIndex - 1)
             }
         }
         view.findViewById<View>(R.id.menu_theme).setOnClickListener {
@@ -54,34 +56,24 @@ class ControlPanelFragment(
         }
         view.findViewById<View>(R.id.menu_prev_chap).setOnClickListener {
             readview.navigateToPrevChapter().let {
-                if (it) progressBar.progress -= 1
+                if (it) progressBar!!.setProgress(progressBar!!.getProgress() - 1)
             }
         }
         view.findViewById<View>(R.id.menu_next_chap).setOnClickListener {
             readview.navigateToNextChapter().let {
-                if (it) progressBar.progress += 1
+                if (it) progressBar!!.setProgress(progressBar!!.getProgress() + 1)
             }
         }
 
-        progressBar.apply {
+        progressBar!!.apply {
             max = readview.getChapCount() - 1
-            progress = readview.getCurChapIndex() - 1
-            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        val chapIndex = progress + 1
-                        readview.navigateToChapter(chapIndex)
-                    }
+            setProgress(readview.getCurChapIndex() - 1, needJoin = true)
+            onProgressChanged = { progress, fromUser ->
+                if (fromUser) {
+                    val chapIndex = progress + 1
+                    readview.navigateToChapter(chapIndex)
                 }
-
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
+            }
         }
     }
 
@@ -106,6 +98,11 @@ class ControlPanelFragment(
             }
         }
         LogHelper.d(TAG, "onViewCreated")
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        progressBar?.commitProgress()
     }
 
 }
