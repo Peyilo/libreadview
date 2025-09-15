@@ -1,5 +1,6 @@
 package org.peyilo.libreadview.simple
 
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import androidx.core.graphics.drawable.toDrawable
 import org.peyilo.libreadview.simple.page.ReadPage
@@ -43,6 +44,10 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
 
     // Page background
     private var mPageBackground: Drawable? = null
+
+    // Custom typefaces
+    private var titleTypeface: Typeface? = null
+    private var contentTypeface: Typeface? = null
 
     /** Sets all four paddings of the page. */
     fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = apply {
@@ -103,6 +108,10 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
     /** Sets a solid color as the page background. */
     fun setPageBackgroundColor(color: Int) = apply { setPageBackground(color.toDrawable()) }
 
+    fun setTitleTypeface(typeface: Typeface) = apply { titleTypeface = typeface }
+
+    fun setContentTypeface(typeface: Typeface) = apply { contentTypeface = typeface }
+
     /**
      * Applies all configured style properties to the given [SimpleReadView].
      *
@@ -155,6 +164,9 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
 
                 titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(readView.context, it) }
                 contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(readView.context, it) }
+
+                titleTypeface?.let { readView.mReadStyle.titlePaint.typeface = it }
+                contentTypeface?.let { readView.mReadStyle.contentPaint.typeface = it}
             }
         }
     }

@@ -10,6 +10,9 @@ import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.readview.App
 import org.peyilo.readview.R
 
+/**
+ * 定义了几种阅读主题：背景色、文字色等
+ */
 class ReadViewTheme(
     val titleColor: Int = Color.BLACK,
     val contentColor: Int = "#1E1A1A".toColorInt(),

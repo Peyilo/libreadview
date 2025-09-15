@@ -3,6 +3,7 @@ package org.peyilo.libreadview.simple
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.View
@@ -684,6 +685,20 @@ class SimpleReadView(
      */
     fun setContentTextSize(size: Float) = onReadviewLayoutInvalidated {
         mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(context, size)
+    }
+
+    /**
+     * 设置章节标题文字字体 (请在ui线程调用)
+     */
+    fun setTitleTypeface(typeface: Typeface) = onReadviewLayoutInvalidated {
+        mReadStyle.titlePaint.typeface = typeface
+    }
+
+    /**
+     * 设置章节正文文字字体 (请在ui线程调用)
+     */
+    fun setContentTypeface(typeface: Typeface) = onReadviewLayoutInvalidated {
+        mReadStyle.contentPaint.typeface = typeface
     }
 
     /**
