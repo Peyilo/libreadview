@@ -24,6 +24,7 @@ import org.peyilo.libreadview.simple.page.ChapLoadPage
 import org.peyilo.libreadview.simple.page.ContentMetrics
 import org.peyilo.libreadview.simple.page.MessagePage
 import org.peyilo.libreadview.simple.page.ReadPage
+import org.peyilo.libreadview.util.DisplayUtil
 import org.peyilo.libreadview.util.LogHelper
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -51,7 +52,7 @@ class SimpleReadView(
     var book: Book? = null
         private set
 
-    internal val mReadStyle = ReadStyle()
+    internal val mReadStyle = ReadStyle(context)
 
     private lateinit var mBookLoader: BookLoader
     private lateinit var mContentParser: ContentParser
@@ -486,14 +487,14 @@ class SimpleReadView(
     }
 
     /**
-     * 获取章节正文文字大小
+     * 获取章节正文文字大小（单位：sp）
      */
-    fun getContentTextSize(): Float = mReadStyle.contentTextSize
+    fun getContentTextSize(): Float = DisplayUtil.pxToSp(context, mReadStyle.contentTextSize)
 
     /**
      * 获取章节标题文字大小
      */
-    fun getTitleTextSize(): Float = mReadStyle.titleTextSize
+    fun getTitleTextSize(): Float = DisplayUtil.pxToSp(context, mReadStyle.titleTextSize)
 
     /**
      * 获取章节正文文字颜色
@@ -508,47 +509,47 @@ class SimpleReadView(
     /**
      * 获取页面的左边距
      */
-    fun getPagePaddingLeft() = mReadStyle.paddingLeft
+    fun getPagePaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.paddingLeft)
 
     /**
      * 获取页面的右边距
      */
-    fun getPagePaddingRight() = mReadStyle.paddingRight
+    fun getPagePaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.paddingRight)
 
     /**
      * 获取页面的上边距
      */
-    fun getPagePaddingTop() = mReadStyle.paddingTop
+    fun getPagePaddingTop() = DisplayUtil.pxToDp(context, mReadStyle.paddingTop)
 
     /**
      * 获取页面的下边距
      */
-    fun getPagePaddingBottom() = mReadStyle.paddingBottom
+    fun getPagePaddingBottom() = DisplayUtil.pxToDp(context, mReadStyle.paddingBottom)
 
     /**
      * 获取段落首行缩进
      */
-    fun getFirstParaIndent() = mReadStyle.firstParaIndent
+    fun getFirstParaIndent() = DisplayUtil.pxToDp(context, mReadStyle.firstParaIndent)
 
     /**
      * 获取标题与正文的间距
      */
-    fun getTitleMargin() = mReadStyle.titleMargin
+    fun getTitleMargin() = DisplayUtil.pxToDp(context, mReadStyle.titleMargin)
 
     /**
      * 获取正文文字的边距
      */
-    fun getTextMargin() = mReadStyle.textMargin
+    fun getTextMargin() = DisplayUtil.pxToDp(context, mReadStyle.textMargin)
 
     /**
      * 获取正文文字的行间距
      */
-    fun getLineMargin() = mReadStyle.lineMargin
+    fun getLineMargin() = DisplayUtil.pxToDp(context, mReadStyle.lineMargin)
 
     /**
      * 获取段落间距
      */
-    fun getParaMargin() = mReadStyle.paraMargin
+    fun getParaMargin() = DisplayUtil.pxToDp(context, mReadStyle.paraMargin)
 
 
     /**
@@ -607,26 +608,26 @@ class SimpleReadView(
      * 设置页面的边距 (请在ui线程调用)
      */
     fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingLeft = left
-        mReadStyle.paddingTop = top
-        mReadStyle.paddingRight = right
-        mReadStyle.paddingBottom = bottom
+        mReadStyle.paddingLeft = DisplayUtil.dpToPx(context, left)
+        mReadStyle.paddingTop = DisplayUtil.dpToPx(context, top)
+        mReadStyle.paddingRight = DisplayUtil.dpToPx(context, right)
+        mReadStyle.paddingBottom = DisplayUtil.dpToPx(context, bottom)
     }
 
     /**
      * 设置页面的水平边距 (请在ui线程调用)
      */
     fun setPageHorizontalPadding(left: Float, right: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingLeft = left
-        mReadStyle.paddingRight = right
+        mReadStyle.paddingLeft = DisplayUtil.dpToPx(context, left)
+        mReadStyle.paddingRight = DisplayUtil.dpToPx(context, right)
     }
 
     /**
      * 设置页面的垂直边距 (请在ui线程调用)
      */
     fun setPageVerticalPadding(top: Float, bottom: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingTop = top
-        mReadStyle.paddingBottom = bottom
+        mReadStyle.paddingTop = DisplayUtil.dpToPx(context, top)
+        mReadStyle.paddingBottom = DisplayUtil.dpToPx(context, bottom)
     }
 
     /**
@@ -640,42 +641,42 @@ class SimpleReadView(
      * 设置标题与正文的间距 (请在ui线程调用)
      */
     fun setTitleMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.titleMargin = margin
+        mReadStyle.titleMargin = DisplayUtil.dpToPx(context, margin)
     }
 
     /**
      * 设置正文文字的边距 (请在ui线程调用)
      */
     fun setTextMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.textMargin = margin
+        mReadStyle.textMargin = DisplayUtil.dpToPx(context, margin)
     }
 
     /**
      * 设置正文文字的行间距 (请在ui线程调用)
      */
     fun setLineMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.lineMargin = margin
+        mReadStyle.lineMargin = DisplayUtil.dpToPx(context, margin)
     }
 
     /**
      * 设置段落间距 (请在ui线程调用)
      */
     fun setParaMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paraMargin = margin
+        mReadStyle.paraMargin = DisplayUtil.dpToPx(context, margin)
     }
 
     /**
      * 设置章节标题文字大小 (请在ui线程调用)
      */
     fun setTitleTextSize(size: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.titlePaint.textSize = size
+        mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(context, size)
     }
 
     /**
      * 设置章节正文文字大小 (请在ui线程调用)
      */
     fun setContentTextSize(size: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.contentPaint.textSize = size
+        mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(context, size)
     }
 
     /**

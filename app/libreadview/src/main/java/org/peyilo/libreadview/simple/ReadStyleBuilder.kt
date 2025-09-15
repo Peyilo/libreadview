@@ -3,6 +3,7 @@ package org.peyilo.libreadview.simple
 import android.graphics.drawable.Drawable
 import androidx.core.graphics.drawable.toDrawable
 import org.peyilo.libreadview.simple.page.ReadPage
+import org.peyilo.libreadview.util.DisplayUtil
 
 /**
  * Builder for defining style options of a [SimpleReadView].
@@ -136,19 +137,19 @@ class ReadStyleBuilder(val readView: SimpleReadView) {
             || lineMargin != null || paraMargin != null
             || titleTextSize != null || contentTextSize != null) {
             readView.onReadviewLayoutInvalidated {
-                paddingLeft?.let { readView.mReadStyle.paddingLeft = it }
-                paddingTop?.let { readView.mReadStyle.paddingTop = it }
-                paddingRight?.let { readView.mReadStyle.paddingRight = it }
-                paddingBottom?.let { readView.mReadStyle.paddingBottom = it }
+                paddingLeft?.let { readView.mReadStyle.paddingLeft = DisplayUtil.dpToPx(readView.context, it) }
+                paddingTop?.let { readView.mReadStyle.paddingTop = DisplayUtil.dpToPx(readView.context, it) }
+                paddingRight?.let { readView.mReadStyle.paddingRight = DisplayUtil.dpToPx(readView.context, it) }
+                paddingBottom?.let { readView.mReadStyle.paddingBottom = DisplayUtil.dpToPx(readView.context, it) }
 
-                firstParaIndent?.let { readView.mReadStyle.firstParaIndent = it }
-                titleMargin?.let { readView.mReadStyle.titleMargin = it }
-                textMargin?.let { readView.mReadStyle.textMargin = it }
-                lineMargin?.let { readView.mReadStyle.lineMargin = it }
-                paraMargin?.let { readView.mReadStyle.paraMargin = it }
+                firstParaIndent?.let { readView.mReadStyle.firstParaIndent = DisplayUtil.dpToPx(readView.context, it) }
+                titleMargin?.let { readView.mReadStyle.titleMargin = DisplayUtil.dpToPx(readView.context, it) }
+                textMargin?.let { readView.mReadStyle.textMargin = DisplayUtil.dpToPx(readView.context, it) }
+                lineMargin?.let { readView.mReadStyle.lineMargin = DisplayUtil.dpToPx(readView.context, it) }
+                paraMargin?.let { readView.mReadStyle.paraMargin = DisplayUtil.dpToPx(readView.context, it) }
 
-                titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = it }
-                contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = it }
+                titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(readView.context, it) }
+                contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(readView.context, it) }
             }
         }
     }

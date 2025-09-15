@@ -1,10 +1,12 @@
 package org.peyilo.libreadview
 
+import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.peyilo.libreadview.util.DisplayUtil
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -142,6 +144,13 @@ class ExampleInstrumentedTest {
     fun testRegex() {
         assertRegexMatchs("序·故事开始前的故事", "序·故事开始前的故事")
         assertRegexMatchs("3.摔倒的惩罚", "^\\d+\\..+")
+    }
+
+    @Test
+    fun testDimen() {
+        val spToPx =
+            DisplayUtil.spToPx(InstrumentationRegistry.getInstrumentation().targetContext, 16f)
+        Log.d(TAG, "testDimen: $spToPx")
     }
 
 }
