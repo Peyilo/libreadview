@@ -29,19 +29,12 @@ class TxtReadActivity : ReadActivity() {
         isDefault = selectedFilePath == null
         var selectedFile: File?
         if (selectedFilePath == null) {
-            // 未指定本地文件路径，使用内置的本地文件
-            // 这个文件应该位于 app/src/main/assets/txts 目录下
-            // 如果没有这个文件，可以尝试添加一个txt文件到该目录，并且修改 assetFileName 变量
+            // 没有指定文件路径，使用默认的txt文件
+            // 先将 assets 目录下的文件复制到应用的私有目录
             val assetFileName = "txts/妖精之诗 作者：尼希维尔特.txt"
             selectedFile = File(this.filesDir, assetFileName.split("/").last())
             if (!selectedFile.exists()) {
-                try {
-                    copyAssetToInternalStorage(this, assetFileName, selectedFile)
-                } catch (_: Exception) {
-                    throw IllegalStateException("Failed to copy asset file: $assetFileName,\n" +
-                            " 为避免txt文件影响代码行数统计，\"app/src/main/assets/txts/妖精之诗 作者：尼希维尔特.txt\"这个文件并没有添加到版本控制中，" +
-                            " 如果有需要，你可以尝试添加一个txt文件到 app/src/main/assets/txts 目录，并且修改 assetFileName 变量")
-                }
+                copyAssetToInternalStorage(this, assetFileName, selectedFile)
             }
         } else {
             // 指定了本地文件路径，直接使用该文件

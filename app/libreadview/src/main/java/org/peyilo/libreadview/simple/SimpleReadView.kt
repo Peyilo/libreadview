@@ -196,9 +196,6 @@ class SimpleReadView(
         return Pair(measuredWidth, measuredHeight)
     }
 
-
-
-
     /**
      * 初始化目录，并且预加载并分割章节
      * @param pageIndex page在指定的章节中的位置

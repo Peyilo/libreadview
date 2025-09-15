@@ -1,3 +1,6 @@
+import kotlin.collections.forEach
+import java.net.URL
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -73,4 +76,37 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.leakcanary)
+}
+
+
+// 下载txt文件到src/main/assets/txts目录
+tasks.register("downloadTxtFiles") {
+    val outputDir = File(projectDir, "src/main/assets/txts")
+
+    // Pair(下载地址, 保存时的文件名)
+    val urls = listOf(
+        "https://github.com/Peyilo/libreadview/releases/download/0.0.2/default.txt" to "妖精之诗 作者：尼希维尔特.txt"
+    )
+
+    doLast {
+        if (!outputDir.exists()) outputDir.mkdirs()
+
+        urls.forEach { (url, fileName) ->
+            val outputFile = File(outputDir, fileName)
+            if (!outputFile.exists()) {
+                println("Downloading $url -> $outputFile")
+                URL(url).openStream().use { input ->
+                    outputFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } else {
+                println("Already exists: $outputFile")
+            }
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("downloadTxtFiles")
 }
