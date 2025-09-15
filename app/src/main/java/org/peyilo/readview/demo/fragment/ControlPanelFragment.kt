@@ -100,9 +100,4 @@ class ControlPanelFragment(
         LogHelper.d(TAG, "onViewCreated")
     }
 
-    override fun onDismiss(dialog: DialogInterface) {
-        super.onDismiss(dialog)
-        progressBar?.commitProgress()
-    }
-
 }

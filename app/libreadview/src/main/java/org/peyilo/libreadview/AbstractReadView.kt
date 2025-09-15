@@ -7,9 +7,9 @@ import org.peyilo.libreadview.data.RangeData
 import org.peyilo.libreadview.loader.BookLoader
 import org.peyilo.libreadview.util.DirectMapChapIndexer
 import org.peyilo.libreadview.util.LogHelper
+import org.peyilo.libreadview.util.newLifoFixedThreadPool
 import java.util.Collections
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
 /**
@@ -237,7 +237,7 @@ abstract class AbstractReadView(
     private fun ensureExec(): ExecutorService = synchronized(this) {
         val alive = mThreadPool?.takeUnless { it.isShutdown || it.isTerminated }
         if (alive != null) return alive
-        return Executors.newFixedThreadPool(2) { r ->
+        return newLifoFixedThreadPool(2) { r ->
             Thread(r, "ReadView-ThreadPool").apply { isDaemon = true }
         }.also { mThreadPool = it }
     }

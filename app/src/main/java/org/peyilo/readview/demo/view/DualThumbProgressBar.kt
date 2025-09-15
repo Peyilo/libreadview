@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.RectF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -189,17 +188,6 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
         val barEnd = width - paddingRight - barCornerRadius
         val ratio = progress.toFloat() / max
         return barStart + ratio * (barEnd - barStart)
-    }
-
-    /** 将 primaryProgress 合并到 secondaryProgress（外部手动调用） */
-    fun commitProgress() {
-        secondaryProgress = primaryProgress
-        Log.d(TAG, "commitProgress: $secondaryProgress")
-        invalidate()
-    }
-
-    companion object {
-        private const val TAG = "DualThumbProgressBar"
     }
 
     /**
