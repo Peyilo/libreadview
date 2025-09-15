@@ -79,7 +79,6 @@ abstract class ReadView(
         setPageBackground(drawable)
     }
 
-
 //    /**
 //     * 为长按选择文本手势提供支持。
 //     * 如果本轮手势不是长按手势，那么所有事件应该交给AbstractPageContainer处理；

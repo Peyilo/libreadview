@@ -18,7 +18,7 @@ import org.peyilo.libreadview.util.DisplayUtil
  * - Enables chain calls for better readability and convenience.
  * - Batches multiple style changes to apply them at once, avoiding unnecessary redraws/re-layouts.
  */
-class ReadStyleBuilder(val readView: SimpleReadView) {
+class ReadStyleBuilder(private val readView: SimpleReadView) {
 
     // Page paddings
     private var paddingLeft: Float? = null
@@ -29,7 +29,8 @@ class ReadStyleBuilder(val readView: SimpleReadView) {
     // Text layout parameters
     private var firstParaIndent: Float? = null
     private var titleMargin: Float? = null
-    private var textMargin: Float? = null
+    private var titleTextMargin: Float? = null
+    private var contentTextMargin: Float? = null
     private var lineMargin: Float? = null
     private var paraMargin: Float? = null
 
@@ -69,8 +70,11 @@ class ReadStyleBuilder(val readView: SimpleReadView) {
     /** Sets spacing between title and content. */
     fun setTitleMargin(margin: Float) = apply { titleMargin = margin }
 
-    /** Sets margin around text blocks. */
-    fun setTextMargin(margin: Float) = apply { textMargin = margin }
+    /** Sets margin around title text blocks. */
+    fun setTitleTextMargin(margin: Float) = apply { titleTextMargin = margin }
+
+    /** Sets margin around content text blocks. */
+    fun setContentTextMargin(margin: Float) = apply { contentTextMargin = margin }
 
     /** Sets line spacing inside paragraphs. */
     fun setLineMargin(margin: Float) = apply { lineMargin = margin }
@@ -133,7 +137,7 @@ class ReadStyleBuilder(val readView: SimpleReadView) {
 
         // Apply layout-related parameters and trigger re-layout if needed
         if (paddingLeft != null || paddingTop != null || paddingRight != null || paddingBottom != null
-            || firstParaIndent != null || titleMargin != null || textMargin != null
+            || firstParaIndent != null || titleMargin != null || contentTextMargin != null
             || lineMargin != null || paraMargin != null
             || titleTextSize != null || contentTextSize != null) {
             readView.onReadviewLayoutInvalidated {
@@ -144,7 +148,8 @@ class ReadStyleBuilder(val readView: SimpleReadView) {
 
                 firstParaIndent?.let { readView.mReadStyle.firstParaIndent = DisplayUtil.dpToPx(readView.context, it) }
                 titleMargin?.let { readView.mReadStyle.titleMargin = DisplayUtil.dpToPx(readView.context, it) }
-                textMargin?.let { readView.mReadStyle.textMargin = DisplayUtil.dpToPx(readView.context, it) }
+                titleTextMargin?.let { readView.mReadStyle.titleTextMargin = DisplayUtil.dpToPx(readView.context, it) }
+                contentTextMargin?.let { readView.mReadStyle.contentTextMargin = DisplayUtil.dpToPx(readView.context, it) }
                 lineMargin?.let { readView.mReadStyle.lineMargin = DisplayUtil.dpToPx(readView.context, it) }
                 paraMargin?.let { readView.mReadStyle.paraMargin = DisplayUtil.dpToPx(readView.context, it) }
 

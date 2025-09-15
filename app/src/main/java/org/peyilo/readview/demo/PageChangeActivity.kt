@@ -112,36 +112,7 @@ class PageChangeActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            SettingsFragment({
-                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
-                    == LayoutManagerFactory.COVER
-                ) return@SettingsFragment
-                pageContainer.layoutManager =
-                    LayoutManagerFactory.create(LayoutManagerFactory.COVER)
-            }, {
-                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
-                    == LayoutManagerFactory.SLIDE
-                ) return@SettingsFragment
-                pageContainer.layoutManager =
-                    LayoutManagerFactory.create(LayoutManagerFactory.SLIDE)
-            }, {
-                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
-                    == LayoutManagerFactory.CURL
-                ) return@SettingsFragment
-                pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.CURL)
-            }, {
-                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
-                    == LayoutManagerFactory.SCROLL
-                ) return@SettingsFragment
-                pageContainer.layoutManager =
-                    LayoutManagerFactory.create(LayoutManagerFactory.SCROLL)
-            }, {
-                if (LayoutManagerFactory.getType(pageContainer.layoutManager)
-                    == LayoutManagerFactory.IBOOK_SLIDE
-                ) return@SettingsFragment
-                pageContainer.layoutManager =
-                    LayoutManagerFactory.create(LayoutManagerFactory.IBOOK_SLIDE)
-            }).show(fm, tag)
+            SettingsFragment(pageContainer).show(fm, tag)
         }
     }
 

@@ -6,18 +6,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.SeekBar
+import androidx.appcompat.widget.AppCompatSeekBar
 import androidx.core.view.ViewCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.R
+import org.peyilo.readview.demo.ReadActivity
 
 class ControlPanelFragment(
-    private val onPrevChapClick: () -> Unit,
-    private val onNextChapClick: () -> Unit,
-    private val onTocBtnClick: () -> Unit,
-    private val onUiBtnClick: () -> Unit,
-    private val onSettingsBtnClick: () -> Unit,
+    private val readview: SimpleReadView,
+    private val readActivity: ReadActivity,
 ) : BottomSheetDialogFragment() {
 
     companion object {
@@ -29,16 +30,59 @@ class ControlPanelFragment(
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_control_panel, container, false)
-        view.findViewById<View>(R.id.menu_toc).setOnClickListener { onTocBtnClick() }
-        view.findViewById<View>(R.id.menu_theme).setOnClickListener { onUiBtnClick() }
-        view.findViewById<View>(R.id.menu_settings).setOnClickListener { onSettingsBtnClick() }
-
-        view.findViewById<View>(R.id.menu_prev_chap).setOnClickListener { onPrevChapClick() }
-        view.findViewById<View>(R.id.menu_next_chap).setOnClickListener {
-            onNextChapClick()
-        }
+        initView(view)
         LogHelper.d(TAG, "onCreateView")
         return view
+    }
+
+    private fun initView(view: View) {
+        val progressBar = view.findViewById<AppCompatSeekBar>(R.id.menu_progress_bar)
+
+        view.findViewById<View>(R.id.menu_toc).setOnClickListener {
+            readActivity.showControlPanel(false)
+            readActivity.showChapList { chapIndex, res ->
+                if (res) progressBar.progress = chapIndex - 1
+            }
+        }
+        view.findViewById<View>(R.id.menu_theme).setOnClickListener {
+            readActivity.showControlPanel(false)
+            readActivity.showUiPanel()
+        }
+        view.findViewById<View>(R.id.menu_settings).setOnClickListener {
+            readActivity.showControlPanel(false)
+            readActivity.showSettings()
+        }
+        view.findViewById<View>(R.id.menu_prev_chap).setOnClickListener {
+            readview.navigateToPrevChapter().let {
+                if (it) progressBar.progress -= 1
+            }
+        }
+        view.findViewById<View>(R.id.menu_next_chap).setOnClickListener {
+            readview.navigateToNextChapter().let {
+                if (it) progressBar.progress += 1
+            }
+        }
+
+        progressBar.apply {
+            max = readview.getChapCount() - 1
+            progress = readview.getCurChapIndex() - 1
+            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        val chapIndex = progress + 1
+                        readview.navigateToChapter(chapIndex)
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

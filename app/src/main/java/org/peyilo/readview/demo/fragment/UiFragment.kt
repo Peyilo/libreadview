@@ -6,7 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.SeekBar
 import android.widget.TextView
+import androidx.appcompat.widget.AppCompatSeekBar
 import androidx.core.view.ViewCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -71,77 +73,162 @@ class UiFragment(
         }
 
         // 调节字体大小
-        view.findViewById<TextView>(R.id.ui_font_size_num).text =
-            readview.getContentTextSize().toInt().toString()
+        val uiFontSizeNum = view.findViewById<TextView>(R.id.ui_font_size_num)
+        val uiFontSizeProgress = view.findViewById<AppCompatSeekBar>(R.id.ui_font_size_progress_bar)
+        uiFontSizeNum.text = readview.getContentTextSize().toInt().toString()
         view.findViewById<View>(R.id.ui_font_size_plus).setOnClickListener {
             val curSize = readview.getContentTextSize()
             val newSize = (curSize + 2F).coerceIn(0F, 100F)
             readview.setContentTextSize(newSize)
-            view.findViewById<TextView>(R.id.ui_font_size_num).text = newSize.toInt().toString()
+            uiFontSizeNum.text = newSize.toInt().toString()
+            uiFontSizeProgress.progress = newSize.toInt()
         }
         view.findViewById<View>(R.id.ui_font_size_minus).setOnClickListener {
             val curSize = readview.getContentTextSize()
             val newSize = (curSize - 2F).coerceIn(0F, 100F)
             readview.setContentTextSize(newSize)
-            view.findViewById<TextView>(R.id.ui_font_size_num).text = newSize.toInt().toString()
+            uiFontSizeNum.text = newSize.toInt().toString()
+            uiFontSizeProgress.progress = newSize.toInt()
+        }
+        uiFontSizeProgress.apply {
+            max = 100
+            progress = readview.getContentTextSize().toInt()
+            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        uiFontSizeNum.text = progress.toString()
+                        readview.setContentTextSize(progress.toFloat())
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
         }
 
         // 调整字体间距
-        view.findViewById<TextView>(R.id.ui_font_space_num).text =
-            readview.getTextMargin().toInt().toString()
+        val uiFontSpaceNum = view.findViewById<TextView>(R.id.ui_font_space_num)
+        val uiFontSpaceProgress = view.findViewById<AppCompatSeekBar>(R.id.ui_font_space_progress_bar)
+        uiFontSpaceNum.text = readview.getTextMargin().toInt().toString()
         view.findViewById<View>(R.id.ui_font_space_plus).setOnClickListener {
             val curSpace = readview.getTextMargin()
             val newSpace = (curSpace + 2F).coerceIn(0F, 100F)
-            readview.setTextMargin(newSpace)
-            view.findViewById<TextView>(R.id.ui_font_space_num).text =
-                newSpace.toInt().toString()
+            readview.setContentTextMargin(newSpace)
+            uiFontSpaceNum.text = newSpace.toInt().toString()
+            uiFontSpaceProgress.progress = newSpace.toInt()
         }
         view.findViewById<View>(R.id.ui_font_space_minus).setOnClickListener {
             val curSpace = readview.getTextMargin()
             val newSpace = (curSpace - 2F).coerceIn(0F, 100F)
-            readview.setTextMargin(newSpace)
-            view.findViewById<TextView>(R.id.ui_font_space_num).text =
-                newSpace.toInt().toString()
+            readview.setContentTextMargin(newSpace)
+            uiFontSpaceNum.text = newSpace.toInt().toString()
+            uiFontSpaceProgress.progress = newSpace.toInt()
+        }
+        uiFontSpaceProgress.apply {
+            max = 100
+            progress = readview.getTextMargin().toInt()
+            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        // 仅在用户拖动时才更新，避免和加减按钮的点击事件冲突
+                        uiFontSpaceNum.text = progress.toString()
+                        readview.setContentTextMargin(progress.toFloat())
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
         }
 
         // 调整行间距
-        view.findViewById<TextView>(R.id.ui_line_space_num).text =
-            readview.getLineMargin().toInt().toString()
+        val uiLineSpaceNum = view.findViewById<TextView>(R.id.ui_line_space_num)
+        val uiLineSpaceProgress = view.findViewById<AppCompatSeekBar>(R.id.ui_line_space_progress_bar)
+        uiLineSpaceNum.text = readview.getLineMargin().toInt().toString()
         view.findViewById<View>(R.id.ui_line_space_plus).setOnClickListener {
             val curSpace = readview.getLineMargin()
             val newSpace = (curSpace + 2F).coerceIn(0F, 100F)
             readview.setLineMargin(newSpace)
-            view.findViewById<TextView>(R.id.ui_line_space_num).text =
-                newSpace.toInt().toString()
+            uiLineSpaceNum.text = newSpace.toInt().toString()
+            uiLineSpaceProgress.progress = newSpace.toInt()
         }
         view.findViewById<View>(R.id.ui_line_space_minus).setOnClickListener {
             val curSpace = readview.getLineMargin()
             val newSpace = (curSpace - 2F).coerceIn(0F, 100F)
             readview.setLineMargin(newSpace)
-            view.findViewById<TextView>(R.id.ui_line_space_num).text =
-                newSpace.toInt().toString()
+            uiLineSpaceNum.text = newSpace.toInt().toString()
+            uiLineSpaceProgress.progress = newSpace.toInt()
+        }
+        uiLineSpaceProgress.apply {
+            max = 100
+            progress = readview.getLineMargin().toInt()
+            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        uiLineSpaceNum.text = progress.toString()
+                        readview.setLineMargin(progress.toFloat())
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
         }
 
         // 调节段间距
-        view.findViewById<TextView>(R.id.ui_para_space_num).text =
-            readview.getParaMargin().toInt().toString()
+        val uiParaSpaceNum = view.findViewById<TextView>(R.id.ui_para_space_num)
+        val uiParaSpaceProgress = view.findViewById<AppCompatSeekBar>(R.id.ui_para_space_progress_bar)
+        uiParaSpaceNum.text = readview.getParaMargin().toInt().toString()
         view.findViewById<View>(R.id.ui_para_space_plus).setOnClickListener {
             val curSpace = readview.getParaMargin()
             val newSpace = (curSpace + 2F).coerceIn(0F, 100F)
             readview.setParaMargin(newSpace)
-            view.findViewById<TextView>(R.id.ui_para_space_num).text =
-                newSpace.toInt().toString()
+            uiParaSpaceNum.text = newSpace.toInt().toString()
+            uiParaSpaceProgress.progress = newSpace.toInt()
         }
         view.findViewById<View>(R.id.ui_para_space_minus).setOnClickListener {
             val curSpace = readview.getParaMargin()
             val newSpace = (curSpace - 2F).coerceIn(0F, 100F)
             readview.setParaMargin(newSpace)
-            view.findViewById<TextView>(R.id.ui_para_space_num).text =
-                newSpace.toInt().toString()
+            uiParaSpaceNum.text = newSpace.toInt().toString()
+            uiParaSpaceProgress.progress = newSpace.toInt()
+        }
+        uiParaSpaceProgress.apply {
+            max = 100
+            progress = readview.getParaMargin().toInt()
+            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        uiParaSpaceNum.text = progress.toString()
+                        readview.setParaMargin(progress.toFloat())
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
         }
     }
-
-
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog

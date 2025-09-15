@@ -68,26 +68,13 @@ open class ReadActivity: AppCompatActivity() {
     /**
      * 控制底部菜单栏的显示
      */
-    private fun showControlPanel(visible: Boolean) {
+    fun showControlPanel(visible: Boolean) {
         val tag = "ControlPanelFragment"
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (visible) {          // 避免重复显示
             if (existing == null) {
-                ControlPanelFragment(onPrevChapClick = {
-                    readview.navigateToPrevChapter()
-                }, onNextChapClick = {
-                    readview.navigateToNextChapter()
-                }, onTocBtnClick = {
-                    showControlPanel(false)
-                    showChapList()
-                }, onUiBtnClick = {
-                    showControlPanel(false)
-                    showUiPanel()
-                }, onSettingsBtnClick = {
-                    showControlPanel(false)
-                    showSettings()
-                }).show(fm, tag)
+                ControlPanelFragment(readview, this).show(fm, tag)
             }
         } else {
             // 如果已显示，就 dismiss 掉
@@ -100,13 +87,15 @@ open class ReadActivity: AppCompatActivity() {
     /**
      * 显示目录列表视图
      */
-    fun showChapList() {
+    fun showChapList(callback: ((Int, Boolean) -> Unit)? = null) {
         val tag = "ChapListFragment"
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
             ChapListFragment(chapTitleList) { chapterIndex ->
-                readview.navigateToChapter(chapterIndex + 1)
+                readview.navigateToChapter(chapterIndex + 1).let {
+                    callback?.invoke(chapterIndex + 1, it)
+                }
             }.show(fm, tag)
         }
     }
@@ -119,22 +108,7 @@ open class ReadActivity: AppCompatActivity() {
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            SettingsFragment({
-                if (readview.layoutManager is CoverLayoutManager) return@SettingsFragment
-                readview.layoutManager = CoverLayoutManager()
-            }, {
-                if (readview.layoutManager is SlideLayoutManager) return@SettingsFragment
-                readview.layoutManager = SlideLayoutManager()
-            }, {
-                if (readview.layoutManager is IBookCurlLayoutManager) return@SettingsFragment
-                readview.layoutManager = IBookCurlLayoutManager()
-            }, {
-                if (readview.layoutManager is ScrollLayoutManager) return@SettingsFragment
-                readview.layoutManager = ScrollLayoutManager()
-            }, {
-                if (readview.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
-                readview.layoutManager = IBookSlideLayoutManager()
-            }).show(fm, tag)
+            SettingsFragment(readview).show(fm, tag)
         }
     }
 

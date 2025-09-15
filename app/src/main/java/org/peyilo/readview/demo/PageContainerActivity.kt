@@ -88,22 +88,7 @@ class PageContainerActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            SettingsFragment({
-                if (pageContainer.layoutManager is CoverLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = CoverLayoutManager()
-            }, {
-                if (pageContainer.layoutManager is SlideLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = SlideLayoutManager()
-            }, {
-                if (pageContainer.layoutManager is SimpleCurlLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = SimpleCurlLayoutManager()
-            }, {
-                if (pageContainer.layoutManager is ScrollLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = ScrollLayoutManager()
-            }, {
-                if (pageContainer.layoutManager is IBookSlideLayoutManager) return@SettingsFragment
-                pageContainer.layoutManager = IBookSlideLayoutManager()
-            }).show(fm, tag)
+            SettingsFragment(pageContainer).show(fm, tag)
         }
     }
 }

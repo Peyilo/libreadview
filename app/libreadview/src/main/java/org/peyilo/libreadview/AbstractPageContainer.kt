@@ -1616,7 +1616,6 @@ abstract class AbstractPageContainer(
         var flipTouchSlop: Int = 0
         var maxCachedPage: Int = 0
 
-
         constructor(superState: Parcelable?) : super(superState)
 
         private constructor(parcel: Parcel) : super(parcel) {

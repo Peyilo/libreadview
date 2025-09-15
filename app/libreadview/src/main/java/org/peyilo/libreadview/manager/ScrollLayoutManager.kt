@@ -247,6 +247,7 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
     override fun onAddPage(view: View, position: Int) {
         var dx: Float
         try {
+            // getCurPage()有可能抛出异常
             val curPage = pageContainer.getCurPage()
             dx = curPage?.translationY ?: 0F
         } catch (_: Exception) {

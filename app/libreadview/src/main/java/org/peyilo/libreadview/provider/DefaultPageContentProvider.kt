@@ -88,7 +88,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         val firstContent = chap.content[0]
         val hasTitle = firstContent is TitleContent
         if (hasTitle) {
-            val titleLines = breakLines(firstContent.text, width, config.titleTextSize, 0F, 0F)
+            val titleLines = breakLines(firstContent.text, width, config.titleTextSize, config.titleTextMargin, 0F)
             titleLines.forEach {
                 base += config.titleTextSize
                 it.apply {                  // 设置TextLine的base、left
@@ -121,7 +121,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         for (i in parasStartIndex until chap.content.size) {
             val para = chap.content[i] as ParagraphContent
             val paraLines = breakLines(para.text, width, config.contentTextSize,
-                config.textMargin, config.firstParaIndent)
+                config.contentTextMargin, config.firstParaIndent)
             for (j in paraLines.indices) {
                 val line = paraLines[j]
                 if (height < config.contentTextSize) {
@@ -160,12 +160,12 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
                 if (line.isTitleLine) {
                     line.text.forEach { charData ->
                         canvas.drawText(charData.char.toString(), left, line.base, config.titlePaint)
-                        left += charData.width + config.textMargin
+                        left += charData.width + config.titleTextMargin
                     }
                 } else {
                     line.text.forEach { charData ->
                         canvas.drawText(charData.char.toString(), left, line.base, config.contentPaint)
-                        left += charData.width + config.textMargin
+                        left += charData.width + config.contentTextMargin
                     }
                 }
             }

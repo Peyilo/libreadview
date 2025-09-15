@@ -539,7 +539,7 @@ class SimpleReadView(
     /**
      * 获取正文文字的边距
      */
-    fun getTextMargin() = DisplayUtil.pxToDp(context, mReadStyle.textMargin)
+    fun getTextMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentTextMargin)
 
     /**
      * 获取正文文字的行间距
@@ -647,8 +647,15 @@ class SimpleReadView(
     /**
      * 设置正文文字的边距 (请在ui线程调用)
      */
-    fun setTextMargin(margin: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.textMargin = DisplayUtil.dpToPx(context, margin)
+    fun setContentTextMargin(margin: Float) = onReadviewLayoutInvalidated {
+        mReadStyle.contentTextMargin = DisplayUtil.dpToPx(context, margin)
+    }
+
+    /**
+     * 设置标题文字间距 (请在ui线程调用)
+     */
+    fun setTitleTextMargin(margin: Float) = onReadviewLayoutInvalidated {
+        mReadStyle.titleTextMargin = DisplayUtil.dpToPx(context, margin)
     }
 
     /**

@@ -68,7 +68,10 @@ class ReadStyle(
 
     var firstParaIndent = contentPaint.measureText("测试") // 段落首行的偏移
     var titleMargin = DisplayUtil.dpToPx(context, 50F)                                    // 章节标题与章节正文的间距
-    var textMargin = DisplayUtil.dpToPx(context, 0F)                                     // 字符间隔
+
+    var titleTextMargin = DisplayUtil.dpToPx(context, 0F)                                 // 章节标题字符间隔
+
+    var contentTextMargin = DisplayUtil.dpToPx(context, 0F)                               // 正文字符间隔
     var lineMargin = DisplayUtil.dpToPx(context, 16F)                                     // 行间隔
     var paraMargin = DisplayUtil.dpToPx(context, 30F)                                    // 段落间隔
 
