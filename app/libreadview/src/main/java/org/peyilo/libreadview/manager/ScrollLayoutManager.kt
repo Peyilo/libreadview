@@ -245,7 +245,14 @@ class ScrollLayoutManager: NoFlipOnReleaseLayoutManager.Vertical(), AnimatedLayo
     }
 
     override fun onAddPage(view: View, position: Int) {
-        view.translationY = getTranslateY(position) + (pageContainer.getCurPage()?.translationY ?: 0F)
+        var dx: Float
+        try {
+            val curPage = pageContainer.getCurPage()
+            dx = curPage?.translationY ?: 0F
+        } catch (_: Exception) {
+            dx = 0F
+        }
+        view.translationY = getTranslateY(position) + dx
     }
 
     override fun onDestroy() {

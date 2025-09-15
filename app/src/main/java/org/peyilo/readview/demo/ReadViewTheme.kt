@@ -45,7 +45,7 @@ class ReadViewTheme(
             headerAndFooterTextColor = "#808085".toColorInt(),
         )
 
-        val allThemes = listOf(paperTheme, whiteTheme, nightTheme, eyeCareTheme, blackTheme)
+        val allThemes = listOf(whiteTheme, nightTheme, paperTheme, eyeCareTheme, blackTheme)
     }
 
 }

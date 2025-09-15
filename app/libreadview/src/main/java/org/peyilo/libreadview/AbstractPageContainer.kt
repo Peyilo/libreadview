@@ -146,9 +146,17 @@ abstract class AbstractPageContainer(
 
     private fun resetPagePosition() {
         traverseAllCreatedPages {
-            it.translationX = 0F
-            it.translationY = 0F
+            resetPagePosition(it)
         }
+    }
+
+    private fun resetPagePosition(child: View) {
+        // 重置位置，避免被复用时位置不对
+        child.translationX = 0F
+        child.translationY = 0F
+        child.scrollX = 0
+        child.scrollY = 0
+        child.visibility = VISIBLE
     }
 
     protected fun getInnerAdapter(): Adapter<out ViewHolder>? = innerAdapter
@@ -846,6 +854,7 @@ abstract class AbstractPageContainer(
     override fun removeAllViews() {
         for (i in childCount - 1 downTo pageViewStart) {      // 倒序遍历避免下标错乱
             val child = getChildAt(i)
+            resetPagePosition(child)
             removeView(child)
         }
     }
@@ -856,6 +865,7 @@ abstract class AbstractPageContainer(
         if (view == glView) {
             throw IllegalStateException("glView can not be removed!")
         }
+        resetPagePosition(view)
         super.removeView(view)
     }
 
@@ -865,6 +875,7 @@ abstract class AbstractPageContainer(
         if (child == glView) {
             throw IllegalStateException("glView can not be removed!")
         }
+        resetPagePosition(child)
         super.removeViewAt(index)
     }
 
@@ -872,6 +883,10 @@ abstract class AbstractPageContainer(
     override fun removeViews(start: Int, count: Int) {
         if (start == 0) {
             throw IllegalStateException("glView can not be removed!")
+        }
+        for (i in start until start + count) {
+            val child = getChildAt(i)
+            resetPagePosition(child)
         }
         super.removeViews(start, count)
     }
@@ -896,7 +911,11 @@ abstract class AbstractPageContainer(
         if (index < 0 || index >= maxPageChildCount) {
             throw IllegalArgumentException("index out of range: $index")
         }
-        return getChildAt(index + pageViewStart)
+        val child = getChildAt(index + pageViewStart)
+        if (child == null) {
+            throw IllegalStateException("no child at index: $index")
+        }
+        return child
     }
 
     fun getPageChildCount(): Int {
