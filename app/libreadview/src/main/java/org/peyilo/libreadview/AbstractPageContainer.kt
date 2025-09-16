@@ -126,6 +126,10 @@ abstract class AbstractPageContainer(
     private val pageViewStart = 1                       //  pageView的起始index，为1
     private val maxPageChildCount = 3                   // 最多3个pageView
 
+    private var targetChild: View? = null
+    private var selfHandling: Boolean = false
+    private val tmpRect = Rect()
+
     init {
         isChildrenDrawingOrderEnabled = true            // 启用子View绘制顺序控制
         addGlViewToBottom()
@@ -298,24 +302,116 @@ abstract class AbstractPageContainer(
         }
     }
 
-//    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-//        // 遍历子 View，顺序：最上层到最下层
-//        for (i in childCount - 1 downTo 0) {
-//            val child = getChildAt(i)
-//
-//            if (child.visibility != VISIBLE) continue
-//
-//            val rect = Rect()
-//            child.getHitRect(rect)
-//            if (rect.contains(ev.x.toInt(), ev.y.toInt())) {
-//                // 命中第一个子 view，无论它返回 true 或 false，都直接返回
-//                return child.dispatchTouchEvent(ev)
-//            }
-//        }
-//
-//        // 没有子 view 命中，交给父类处理
-//        return super.dispatchTouchEvent(ev)
-//    }
+    /**
+     * 事件分发策略：
+     * 1) DOWN 命中某个 child：
+     *    - 若 child.dispatchTouchEvent(DOWN) == true：
+     *         记为 targetChild，并且后续 MOVE/UP/POINTER_xxx/CANCEL 全部派发给该 child，返回 true。
+     *    - 若 == false：
+     *         不再传给其他 child，交给自己 onTouchEvent，随后整段手势也交给自己（不穿透到其他 child）。
+     *
+     * 2) 若没有 child 命中：交给自己 onTouchEvent。
+     */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                targetChild = null
+                selfHandling = false
+
+                // 按绘制顺序的倒序遍历
+                for (i in childCount - 1 downTo 0) {
+                    val childIndex = getChildDrawingOrder(childCount, i)
+                    val child = getChildAt(childIndex)
+                    if (child.visibility != VISIBLE) continue
+                    if (!isTouchInsideChild(ev, child)) continue
+
+                    // 命中：先把事件坐标转换后派发给 child
+                    val handledByChild = dispatchToChild(child, ev)
+                    return if (handledByChild) {
+                        // child 接手整个手势（包括多点）
+                        targetChild = child
+                        true
+                    } else {
+                        // 命中但未消费：不再传给兄弟，交给自己
+                        targetChild = null
+                        selfHandling = true
+                        onTouchEvent(ev)
+                    }
+                }
+
+                // 没有 child 命中 → 自己处理
+                selfHandling = true
+                return onTouchEvent(ev)
+            }
+
+            // 后续整段手势事件
+            MotionEvent.ACTION_MOVE,
+            MotionEvent.ACTION_POINTER_DOWN,
+            MotionEvent.ACTION_POINTER_UP,
+            MotionEvent.ACTION_UP,
+            MotionEvent.ACTION_CANCEL -> {
+                // 若 DOWN 时已经确定由 child 接手 → 全部事件继续派发给它
+                targetChild?.let { child ->
+                    dispatchToChild(child, ev)
+                    if (ev.actionMasked == MotionEvent.ACTION_UP ||
+                        ev.actionMasked == MotionEvent.ACTION_CANCEL) {
+                        targetChild = null
+                        selfHandling = false
+                    }
+                    // 一旦交给 child 接手，就视为本次事件被处理
+                    return true
+                }
+
+                // 若 DOWN 时就是自己处理（命中但未消费或无 child 命中）
+                if (selfHandling) {
+                    val res = onTouchEvent(ev)
+                    if (ev.actionMasked == MotionEvent.ACTION_UP ||
+                        ev.actionMasked == MotionEvent.ACTION_CANCEL) {
+                        selfHandling = false
+                    }
+                    return res
+                }
+
+                // 极端：未确定接收者而来了非 DOWN 事件，走默认
+                return super.dispatchTouchEvent(ev)
+            }
+        }
+
+        // 其他类型事件（极少）走默认
+        return super.dispatchTouchEvent(ev)
+    }
+
+    /**
+     * 命中测试：用 getHitRect 得到 child 在父坐标系中的区域，
+     * 再用 (ev.x + scrollX, ev.y + scrollY) 判断是否在内。
+     * 注意把父容器的 scroll 偏移计入。
+     */
+    private fun isTouchInsideChild(ev: MotionEvent, child: View): Boolean {
+        child.getHitRect(tmpRect) // rect 是父坐标系
+        val x = (ev.x + scrollX).toInt()
+        val y = (ev.y + scrollY).toInt()
+        return tmpRect.contains(x, y)
+    }
+
+    /**
+     * 把父坐标系的事件转换成 child 坐标系后派发。
+     * - 考虑父容器的 scrollX/scrollY
+     * - 考虑 child 的 left/top
+     * - 考虑 child 的 translationX/translationY
+     */
+    private fun dispatchToChild(child: View, ev: MotionEvent): Boolean {
+        val childEvent = MotionEvent.obtain(ev)
+
+        // 从父坐标系 → 子坐标系
+        val offsetX = scrollX - child.left - child.translationX
+        val offsetY = scrollY - child.top - child.translationY
+        childEvent.offsetLocation(offsetX, offsetY)
+
+        val handled = child.dispatchTouchEvent(childEvent)
+        childEvent.recycle()
+        return handled
+    }
+
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
