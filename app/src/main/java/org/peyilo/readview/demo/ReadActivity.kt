@@ -1,6 +1,8 @@
 package org.peyilo.readview.demo
 
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookCurlLayoutManager
@@ -8,6 +10,8 @@ import org.peyilo.libreadview.manager.IBookSlideLayoutManager
 import org.peyilo.libreadview.manager.ScrollLayoutManager
 import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.simple.page.ReadPage
+import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
@@ -68,6 +72,15 @@ open class ReadActivity: AppCompatActivity() {
 
         // 设置主题
         readview.setReadViewTheme()
+
+        // 给readpage的页眉退出按钮设置点击事件
+        readview.setHeaderQuitBtnOnClickListener {
+            // 可以在这里做一些提示保存进度等操作
+            // 获取当前章节索引和页码：
+            // readview.getCurChapIndex()
+            // readview.getCurChapPageIndex()
+           finish()
+        }
     }
 
     /**

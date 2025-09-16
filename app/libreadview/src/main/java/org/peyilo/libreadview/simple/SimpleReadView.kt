@@ -22,7 +22,6 @@ import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.provider.DefaultPageContentProvider
 import org.peyilo.libreadview.provider.PageContentProvider
 import org.peyilo.libreadview.simple.page.ChapLoadPage
-import org.peyilo.libreadview.simple.page.ContentMetrics
 import org.peyilo.libreadview.simple.page.MessagePage
 import org.peyilo.libreadview.simple.page.ReadPage
 import org.peyilo.libreadview.util.DisplayUtil
@@ -155,12 +154,8 @@ class SimpleReadView(
      * 注意：这个函数要在ReadView测量完成后调用才可以获取正确的宽高
      */
     private fun measureContentView(): Pair<Int, Int> {
-        val contentMetrics = mPageDelegate?.createReadPage(context)
+        val readPage = mPageDelegate?.createReadPage(context)
             ?: mDefaultPageDelegate.createReadPage(context)
-        if (contentMetrics !is View) {
-            throw IllegalStateException("The readpage must be a view implemented the ContentMetrics interface.")
-        }
-        val createdReadPage = contentMetrics as View
         val widthSize = width
         val heightSize = height
 
@@ -178,7 +173,7 @@ class SimpleReadView(
         var childWidth = availableWidth
         var childHeight = availableHeight
         // 子 View 的测量尺寸 = 可用空间 - margin
-        val lp = createdReadPage.layoutParams
+        val lp = readPage.layoutParams
         if (lp is MarginLayoutParams) {
             childWidth -= lp.leftMargin + lp.rightMargin
             childHeight -= lp.topMargin + lp.bottomMargin
@@ -189,11 +184,11 @@ class SimpleReadView(
         // 开始测量子View
         val childWidthSpec = MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY)
         val childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY)
-        createdReadPage.measure(childWidthSpec, childHeightSpec)
+        readPage.measure(childWidthSpec, childHeightSpec)
 
         // 获取测量后的宽高
-        val measuredWidth = contentMetrics.getContentWidth()
-        val measuredHeight = contentMetrics.getContentHeight()
+        val measuredWidth = readPage.getContentWidth()
+        val measuredHeight = readPage.getContentHeight()
 
         // 返回子视图的测量宽高
         return Pair(measuredWidth, measuredHeight)
@@ -257,6 +252,12 @@ class SimpleReadView(
         initBook(chapIndex, pageIndex)
     }
 
+    /**
+     * 打开一个本地txt文件
+     * @param file 必须是一个存在的文件
+     * @param chapIndex 章节索引，范围1..chapCount
+     * @param pageIndex 章节页码，范围1..chapPageCount
+     */
     fun openFile(
         file: File,
         @IntRange(from = 1) chapIndex: Int = 1,
@@ -265,6 +266,9 @@ class SimpleReadView(
         openBook(TxtFileLoader(file), chapIndex, pageIndex)
     }
 
+    /**
+     * 打开一段文本内容
+     */
     fun showText(text: String) {
         openBook(TextLoader(text))
     }
@@ -309,9 +313,10 @@ class SimpleReadView(
         page.background = mReadStyle.mPageBackground
         if (viewType == PageType.READ_PAGE.ordinal) {
             val readPage = page as ReadPage
-            readPage.header.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
+            readPage.chapTitle.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
             readPage.progress.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
             readPage.clock.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
+            readPage.quitImgView.setOnClickListener(quitBtnOnClickListener)
         }
     }
 
@@ -336,9 +341,6 @@ class SimpleReadView(
                 PageType.READ_PAGE.ordinal -> {
                     val createdPage = mPageDelegate?.createReadPage(parent.context)
                         ?: mDefaultPageDelegate.createReadPage(parent.context)
-                    if (createdPage !is View) {
-                        throw IllegalStateException("The readpage must be a view implemented the ContentMetrics interface.")
-                    }
                     createdPage as View
                 }
                 else -> throw IllegalStateException("Unknown page type: $viewType")
@@ -374,7 +376,7 @@ class SimpleReadView(
                             indexPair.first, indexPair.second,
                             getChapPageCount(indexPair.first), mPageContentProvider)
 
-                    LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.header.text}, ${page.progress.text}")
+                    LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.chapTitle.text}, ${page.progress.text}")
                 }
             }
         }
@@ -450,10 +452,7 @@ class SimpleReadView(
 
         open fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
 
-        /**
-         * 创建的ReadView必须是一个实现了ContentMetrics接口的View
-         */
-        open fun createReadPage(context: Context): ContentMetrics {
+        open fun createReadPage(context: Context): ReadPage {
             val res = ReadPage(context)
             return res
         }
@@ -470,12 +469,11 @@ class SimpleReadView(
         }
 
         @SuppressLint("SetTextI18n")
-        open fun bindReadPage(page: ContentMetrics, pageData: PageData, title: String, chapIndex: Int,
+        open fun bindReadPage(page: ReadPage, pageData: PageData, title: String, chapIndex: Int,
                               chapPageIndex: Int, chapPageCount: Int,
                               provider: PageContentProvider
         ) {
-            val page = page as ReadPage
-            page.header.text = title
+            page.chapTitle.text = title
             page.progress.text = "${chapPageIndex}/${chapPageCount}"
             page.content.setContent(pageData)
             page.content.provider = provider
@@ -763,11 +761,21 @@ class SimpleReadView(
         mReadStyle.mHeaderAndFooterTextColor = color
         traverseAllCreatedPages {
             if (it is ReadPage) {
-                it.header.setTextColor(color)
+                it.chapTitle.setTextColor(color)
                 it.progress.setTextColor(color)
                 it.clock.setTextColor(color)
             }
         }
     }
 
+    private var quitBtnOnClickListener: OnClickListener? = null
+
+    fun setHeaderQuitBtnOnClickListener(listener: OnClickListener) {
+        quitBtnOnClickListener = listener
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.quitImgView.setOnClickListener(listener)
+            }
+        }
+    }
 }

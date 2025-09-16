@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Observable
 import android.graphics.Canvas
 import android.graphics.PointF
+import android.graphics.Rect
 import android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY
 import android.os.Parcel
 import android.os.Parcelable
@@ -296,6 +297,25 @@ abstract class AbstractPageContainer(
             layoutManager.initPagePosition()
         }
     }
+
+//    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+//        // 遍历子 View，顺序：最上层到最下层
+//        for (i in childCount - 1 downTo 0) {
+//            val child = getChildAt(i)
+//
+//            if (child.visibility != VISIBLE) continue
+//
+//            val rect = Rect()
+//            child.getHitRect(rect)
+//            if (rect.contains(ev.x.toInt(), ev.y.toInt())) {
+//                // 命中第一个子 view，无论它返回 true 或 false，都直接返回
+//                return child.dispatchTouchEvent(ev)
+//            }
+//        }
+//
+//        // 没有子 view 命中，交给父类处理
+//        return super.dispatchTouchEvent(ev)
+//    }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {

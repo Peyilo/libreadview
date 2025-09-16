@@ -136,7 +136,7 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
                         page.content.invalidate()
                     }
                     headerAndFooterTextColor?.let { color ->
-                        page.header.setTextColor(color)
+                        page.chapTitle.setTextColor(color)
                         page.progress.setTextColor(color)
                         page.clock.setTextColor(color)
                     }
