@@ -10,9 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:paddingTop="64dp"
-        android:paddingBottom="20dp"
-        android:paddingHorizontal="20dp"
         android:orientation="horizontal">
 
         <ImageView
@@ -40,8 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/page_footer"
-        android:layout_below="@id/page_header"
-        android:padding="10dp"/>
+        android:layout_below="@id/page_header" />
 
     <RelativeLayout
         android:id="@+id/page_footer"
@@ -49,9 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="20dp" >
+        android:orientation="horizontal">
         <TextView
             android:id="@+id/page_footer_progress"
             android:layout_width="wrap_content"

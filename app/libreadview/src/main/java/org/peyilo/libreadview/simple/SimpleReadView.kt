@@ -156,6 +156,7 @@ class SimpleReadView(
     private fun measureContentView(): Pair<Int, Int> {
         val readPage = mPageDelegate?.createReadPage(context)
             ?: mDefaultPageDelegate.createReadPage(context)
+        onPageCreated(readPage)
         val widthSize = width
         val heightSize = height
 
@@ -309,15 +310,8 @@ class SimpleReadView(
     /**
      * page创建完成以后调用这个函数，可以在这里对page进行一些初始化操作
      */
-    private fun onPageCreated(page: View, viewType: Int) {
-        page.background = mReadStyle.mPageBackground
-        if (viewType == PageType.READ_PAGE.ordinal) {
-            val readPage = page as ReadPage
-            readPage.chapTitle.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
-            readPage.progress.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
-            readPage.clock.setTextColor(mReadStyle.mHeaderAndFooterTextColor)
-            readPage.quitImgView.setOnClickListener(quitBtnOnClickListener)
-        }
+    private fun onPageCreated(page: View) {
+        mReadStyle.initPage(page)
     }
 
     enum class PageType {
@@ -345,7 +339,7 @@ class SimpleReadView(
                 }
                 else -> throw IllegalStateException("Unknown page type: $viewType")
             }
-            onPageCreated(page, viewType)
+            onPageCreated(page)
             return PageViewHolder(page)
         }
 
@@ -491,41 +485,6 @@ class SimpleReadView(
     fun getContentTextSize(): Float = DisplayUtil.pxToSp(context, mReadStyle.contentTextSize)
 
     /**
-     * 获取章节标题文字大小
-     */
-    fun getTitleTextSize(): Float = DisplayUtil.pxToSp(context, mReadStyle.titleTextSize)
-
-    /**
-     * 获取章节正文文字颜色
-     */
-    fun getContentTextColor(): Int = mReadStyle.contentTextColor
-
-    /**
-     * 获取章节标题文字颜色
-     */
-    fun getTitleTextColor(): Int = mReadStyle.titleTextColor
-
-    /**
-     * 获取页面的左边距
-     */
-    fun getPagePaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.paddingLeft)
-
-    /**
-     * 获取页面的右边距
-     */
-    fun getPagePaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.paddingRight)
-
-    /**
-     * 获取页面的上边距
-     */
-    fun getPagePaddingTop() = DisplayUtil.pxToDp(context, mReadStyle.paddingTop)
-
-    /**
-     * 获取页面的下边距
-     */
-    fun getPagePaddingBottom() = DisplayUtil.pxToDp(context, mReadStyle.paddingBottom)
-
-    /**
      * 获取段落首行缩进
      */
     fun getFirstParaIndent() = DisplayUtil.pxToDp(context, mReadStyle.firstParaIndent)
@@ -552,24 +511,30 @@ class SimpleReadView(
 
 
     /**
-     * 当影响分页的参数发生变化时，调用这个函数，并在runnable中更改参数,
-     * 这个函数会在runnable.run()前后做一些必要的处理
+     * 当影响分页的参数发生变化时，调用这个函数
+     * @param contentMetricsChanged 是否影响content的宽高，比如padding变化会影响content的宽高
      */
-    internal fun onReadviewLayoutInvalidated(runnable: Runnable) {
+    internal fun invalidateReadLayout(contentMetricsChanged: Boolean = false) {
+        if (contentMetricsChanged) {
+            if (mReadStyle.isContentDimenInitialized()) {
+                // 已经初始化过content的宽高，但是此时padding发生了变化，需要重新计算content的宽高
+                measureContentView().apply {
+                    mReadStyle.initContentDimen(first, second)
+                }
+            }
+        }
+
         val bookStatus = bookStatus.get()
         if (bookStatus == BOOK_STATUS_PAGINATING) {
             throw IllegalStateException("The book is paginating now, please try again later.")
         }
-        if (bookStatus == BOOK_STATUS_INIT) {
-            runnable.run()
-        } else {
+        if (bookStatus != BOOK_STATUS_INIT) {
             // bookStatus == BOOK_STATUS_READY
             val curChapIndex = getCurChapIndex()
             val curChapPageIndex = getCurChapPageIndex()
             val oldChapPageCount = getChapPageCount(curChapIndex)
             navigatePage(curChapIndex)
             showAllChapLoadPage(delayed = false)
-            runnable.run()
 
             // 设置文字大小后，刷新当前页面
             invalidateSplittedChapters()
@@ -603,128 +568,85 @@ class SimpleReadView(
         return 1 + (chapPageIndex - 1) * (newChapPageCount - 1) / (oldChapPageCount - 1)
     }
 
-    /**
-     * 设置页面的边距 (请在ui线程调用)
-     */
-    fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingLeft = DisplayUtil.dpToPx(context, left)
-        mReadStyle.paddingTop = DisplayUtil.dpToPx(context, top)
-        mReadStyle.paddingRight = DisplayUtil.dpToPx(context, right)
-        mReadStyle.paddingBottom = DisplayUtil.dpToPx(context, bottom)
-    }
-
-    /**
-     * 设置页面的水平边距 (请在ui线程调用)
-     */
-    fun setPageHorizontalPadding(left: Float, right: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingLeft = DisplayUtil.dpToPx(context, left)
-        mReadStyle.paddingRight = DisplayUtil.dpToPx(context, right)
-    }
-
-    /**
-     * 设置页面的垂直边距 (请在ui线程调用)
-     */
-    fun setPageVerticalPadding(top: Float, bottom: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingTop = DisplayUtil.dpToPx(context, top)
-        mReadStyle.paddingBottom = DisplayUtil.dpToPx(context, bottom)
-    }
-
-    /**
-     * 设置页面的左边距
-     */
-    fun setPageLeftPadding(left: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingLeft = DisplayUtil.dpToPx(context, left)
-    }
-
-    /**
-     * 设置页面的右边距
-     */
-    fun setPageRightPadding(right: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingRight = DisplayUtil.dpToPx(context, right)
-    }
-
-    /**
-     * 设置页面的上边距
-     */
-    fun setPageTopPadding(top: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingTop = DisplayUtil.dpToPx(context, top)
-    }
-
-    /**
-     * 设置页面的下边距
-     */
-    fun setPageBottomPadding(bottom: Float) = onReadviewLayoutInvalidated {
-        mReadStyle.paddingBottom = DisplayUtil.dpToPx(context, bottom)
-    }
 
     /**
      * 设置段落首行缩进 (请在ui线程调用)
      */
-    fun setFirstParaIndent(indent: Float) = onReadviewLayoutInvalidated {
+    fun setFirstParaIndent(indent: Float) {
         mReadStyle.firstParaIndent = indent
+        invalidateReadLayout()
     }
 
     /**
      * 设置标题与正文的间距 (请在ui线程调用)
      */
-    fun setTitleMargin(margin: Float) = onReadviewLayoutInvalidated {
+    fun setTitleMargin(margin: Float) {
         mReadStyle.titleMargin = DisplayUtil.dpToPx(context, margin)
+        invalidateReadLayout()
     }
 
     /**
      * 设置正文文字的边距 (请在ui线程调用)
      */
-    fun setContentTextMargin(margin: Float) = onReadviewLayoutInvalidated {
+    fun setContentTextMargin(margin: Float) {
         mReadStyle.contentTextMargin = DisplayUtil.dpToPx(context, margin)
+        invalidateReadLayout()
     }
 
     /**
      * 设置标题文字间距 (请在ui线程调用)
      */
-    fun setTitleTextMargin(margin: Float) = onReadviewLayoutInvalidated {
+    fun setTitleTextMargin(margin: Float) {
         mReadStyle.titleTextMargin = DisplayUtil.dpToPx(context, margin)
+        invalidateReadLayout()
     }
 
     /**
      * 设置行间距 (请在ui线程调用)
      */
-    fun setLineMargin(margin: Float) = onReadviewLayoutInvalidated {
+    fun setLineMargin(margin: Float) {
         mReadStyle.lineMargin = DisplayUtil.dpToPx(context, margin)
+        invalidateReadLayout()
     }
 
     /**
      * 设置段落间距 (请在ui线程调用)
      */
-    fun setParaMargin(margin: Float) = onReadviewLayoutInvalidated {
+    fun setParaMargin(margin: Float) {
         mReadStyle.paraMargin = DisplayUtil.dpToPx(context, margin)
+        invalidateReadLayout()
     }
 
     /**
      * 设置章节标题文字大小 (请在ui线程调用)
      */
-    fun setTitleTextSize(size: Float) = onReadviewLayoutInvalidated {
+    fun setTitleTextSize(size: Float) {
         mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(context, size)
+        invalidateReadLayout()
     }
 
     /**
      * 设置章节正文文字大小 (请在ui线程调用)
      */
-    fun setContentTextSize(size: Float) = onReadviewLayoutInvalidated {
+    fun setContentTextSize(size: Float) {
         mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(context, size)
+        invalidateReadLayout()
     }
 
     /**
      * 设置章节标题文字字体 (请在ui线程调用)
      */
-    fun setTitleTypeface(typeface: Typeface) = onReadviewLayoutInvalidated {
+    fun setTitleTypeface(typeface: Typeface) {
         mReadStyle.titlePaint.typeface = typeface
+        invalidateReadLayout()
     }
 
     /**
      * 设置章节正文文字字体 (请在ui线程调用)
      */
-    fun setContentTypeface(typeface: Typeface) = onReadviewLayoutInvalidated {
+    fun setContentTypeface(typeface: Typeface) {
         mReadStyle.contentPaint.typeface = typeface
+        invalidateReadLayout()
     }
 
     /**
@@ -768,14 +690,314 @@ class SimpleReadView(
         }
     }
 
-    private var quitBtnOnClickListener: OnClickListener? = null
-
-    fun setHeaderQuitBtnOnClickListener(listener: OnClickListener) {
-        quitBtnOnClickListener = listener
+    fun setHeaderQuitBtnOnClickListener(listener: OnClickListener?) {
+        mReadStyle.quitBtnOnClickListener = listener
         traverseAllCreatedPages {
             if (it is ReadPage) {
                 it.quitImgView.setOnClickListener(listener)
             }
         }
     }
+
+    // 只能在ui线程调用
+    fun setPagePaddingTop(top: Int) {
+        mReadStyle.pagePaddingTop = DisplayUtil.dpToPx(context, top)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.setPadding(
+                    it.paddingLeft, mReadStyle.pagePaddingTop,
+                    it.paddingRight, it.paddingBottom
+                )
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setPagePaddingBottom(bottom: Int) {
+        mReadStyle.pagePaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.setPadding(
+                    it.paddingLeft, it.paddingTop,
+                    it.paddingRight, mReadStyle.pagePaddingBottom
+                )
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setPagePaddingLeft(left: Int) {
+        mReadStyle.pagePaddingLeft = DisplayUtil.dpToPx(context, left)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.setPadding(
+                    mReadStyle.pagePaddingLeft, it.paddingTop,
+                    it.paddingRight, it.paddingBottom
+                )
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setPagePaddingRight(right: Int) {
+        mReadStyle.pagePaddingRight = DisplayUtil.dpToPx(context, right)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.setPadding(
+                    it.paddingLeft, it.paddingTop,
+                    mReadStyle.pagePaddingRight, it.paddingBottom
+                )
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setPagePadding(
+        left: Int, top: Int, right: Int, bottom: Int
+    ) {
+        mReadStyle.pagePaddingLeft = DisplayUtil.dpToPx(context, left)
+        mReadStyle.pagePaddingTop = DisplayUtil.dpToPx(context, top)
+        mReadStyle.pagePaddingRight = DisplayUtil.dpToPx(context, right)
+        mReadStyle.pagePaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.setPadding(
+                    mReadStyle.pagePaddingLeft, mReadStyle.pagePaddingTop,
+                    mReadStyle.pagePaddingRight, mReadStyle.pagePaddingBottom
+                )
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setPagePadding(padding: Int) {
+        setPagePadding(padding, padding, padding, padding)
+    }
+
+    fun setPageHorizontalPadding(padding: Int) {
+        setPagePadding(padding, getPagePaddingTop(), padding, getPagePaddingBottom())
+    }
+
+    fun setPageVerticalPadding(padding: Int) {
+        setPagePadding(getPagePaddingLeft(), padding, getPagePaddingRight(), padding)
+    }
+
+    fun getPagePaddingTop() = DisplayUtil.pxToDp(context, mReadStyle.pagePaddingTop)
+    fun getPagePaddingBottom() = DisplayUtil.pxToDp(context, mReadStyle.pagePaddingBottom)
+    fun getPagePaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.pagePaddingLeft)
+    fun getPagePaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.pagePaddingRight)
+
+    fun setHeaderPaddingTop(top: Int) {
+        mReadStyle.headerPaddingTop = DisplayUtil.dpToPx(context, top)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.headerPaddingTop = mReadStyle.headerPaddingTop
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setHeaderPaddingBottom(bottom: Int) {
+        mReadStyle.headerPaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.headerPaddingBottom = mReadStyle.headerPaddingBottom
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setHeaderPaddingLeft(left: Int) {
+        mReadStyle.headerPaddingLeft = DisplayUtil.dpToPx(context, left)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.headerPaddingLeft = mReadStyle.headerPaddingLeft
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setHeaderPaddingRight(right: Int) {
+        mReadStyle.headerPaddingRight = DisplayUtil.dpToPx(context, right)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.headerPaddingRight = mReadStyle.headerPaddingRight
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setHeaderPadding(
+        left: Int, top: Int, right: Int, bottom: Int
+    ) {
+        mReadStyle.headerPaddingLeft = DisplayUtil.dpToPx(context, left)
+        mReadStyle.headerPaddingTop = DisplayUtil.dpToPx(context, top)
+        mReadStyle.headerPaddingRight = DisplayUtil.dpToPx(context, right)
+        mReadStyle.headerPaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.headerPaddingLeft = mReadStyle.headerPaddingLeft
+                it.headerPaddingTop = mReadStyle.headerPaddingTop
+                it.headerPaddingRight = mReadStyle.headerPaddingRight
+                it.headerPaddingBottom = mReadStyle.headerPaddingBottom
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+
+    fun setHeaderPadding(padding: Int) {
+        setHeaderPadding(padding, padding, padding, padding)
+    }
+
+    fun setHeaderHorizontalPadding(padding: Int) {
+        setHeaderPadding(padding, getHeaderPaddingTop(), padding, getHeaderPaddingBottom())
+    }
+
+    fun setHeaderVerticalPadding(padding: Int) {
+        setHeaderPadding(getHeaderPaddingLeft(), padding, getHeaderPaddingRight(), padding)
+    }
+
+    fun getHeaderPaddingTop() = DisplayUtil.pxToDp(context, mReadStyle.headerPaddingTop)
+    fun getHeaderPaddingBottom() = DisplayUtil.pxToDp(context, mReadStyle.headerPaddingBottom)
+    fun getHeaderPaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.headerPaddingLeft)
+    fun getHeaderPaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.headerPaddingRight)
+
+    fun setFooterPaddingTop(top: Int) {
+        mReadStyle.footerPaddingTop = DisplayUtil.dpToPx(context, top)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.footerPaddingTop = mReadStyle.footerPaddingTop
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setFooterPaddingBottom(bottom: Int) {
+        mReadStyle.footerPaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.footerPaddingBottom = mReadStyle.footerPaddingBottom
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setFooterPaddingLeft(left: Int) {
+        mReadStyle.footerPaddingLeft = DisplayUtil.dpToPx(context, left)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.footerPaddingLeft = mReadStyle.footerPaddingLeft
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setFooterPaddingRight(right: Int) {
+        mReadStyle.footerPaddingRight = DisplayUtil.dpToPx(context, right)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.footerPaddingRight = mReadStyle.footerPaddingRight
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setFooterPadding(
+        left: Int, top: Int, right: Int, bottom: Int
+    ) {
+        mReadStyle.footerPaddingLeft = DisplayUtil.dpToPx(context, left)
+        mReadStyle.footerPaddingTop = DisplayUtil.dpToPx(context, top)
+        mReadStyle.footerPaddingRight = DisplayUtil.dpToPx(context, right)
+        mReadStyle.footerPaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        traverseAllCreatedPages {
+            if (it is ReadPage) {
+                it.footerPaddingLeft = mReadStyle.footerPaddingLeft
+                it.footerPaddingTop = mReadStyle.footerPaddingTop
+                it.footerPaddingRight = mReadStyle.footerPaddingRight
+                it.footerPaddingBottom = mReadStyle.footerPaddingBottom
+            }
+        }
+        invalidateReadLayout(true)
+    }
+
+    fun setFooterPadding(padding: Int) {
+        setFooterPadding(padding, padding, padding, padding)
+    }
+
+    fun setFooterHorizontalPadding(padding: Int) {
+        setFooterPadding(padding, getFooterPaddingTop(), padding, getFooterPaddingBottom())
+    }
+
+    fun setFooterVerticalPadding(padding: Int) {
+        setFooterPadding(getFooterPaddingLeft(), padding, getFooterPaddingRight(), padding)
+    }
+
+    fun getFooterPaddingTop() = DisplayUtil.pxToDp(context, mReadStyle.footerPaddingTop)
+
+    fun getFooterPaddingBottom() = DisplayUtil.pxToDp(context, mReadStyle.footerPaddingBottom)
+
+    fun getFooterPaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.footerPaddingLeft)
+
+    fun getFooterPaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.footerPaddingRight)
+
+    fun setContentPaddingTop(top: Int) {
+        mReadStyle.contentPaddingTop = DisplayUtil.dpToPx(context, top)
+        invalidateReadLayout()
+    }
+
+    fun setContentPaddingBottom(bottom: Int) {
+        mReadStyle.contentPaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        invalidateReadLayout()
+    }
+
+    fun setContentPaddingLeft(left: Int) {
+        mReadStyle.contentPaddingLeft = DisplayUtil.dpToPx(context, left)
+        invalidateReadLayout()
+    }
+
+    fun setContentPaddingRight(right: Int) {
+        mReadStyle.contentPaddingRight = DisplayUtil.dpToPx(context, right)
+        invalidateReadLayout()
+    }
+
+    fun setContentPadding(
+        left: Int, top: Int, right: Int, bottom: Int
+    ) {
+        mReadStyle.contentPaddingLeft = DisplayUtil.dpToPx(context, left)
+        mReadStyle.contentPaddingTop = DisplayUtil.dpToPx(context, top)
+        mReadStyle.contentPaddingRight = DisplayUtil.dpToPx(context, right)
+        mReadStyle.contentPaddingBottom = DisplayUtil.dpToPx(context, bottom)
+        invalidateReadLayout()
+    }
+
+    fun setContentPadding(padding: Int) {
+        mReadStyle.contentPaddingLeft = DisplayUtil.dpToPx(context, padding)
+        mReadStyle.contentPaddingTop = DisplayUtil.dpToPx(context, padding)
+        mReadStyle.contentPaddingRight = DisplayUtil.dpToPx(context, padding)
+        mReadStyle.contentPaddingBottom = DisplayUtil.dpToPx(context, padding)
+        invalidateReadLayout()
+    }
+
+    fun setContentHorizontalPadding(padding: Int) {
+        mReadStyle.contentPaddingLeft = DisplayUtil.dpToPx(context, padding)
+        mReadStyle.contentPaddingRight = DisplayUtil.dpToPx(context, padding)
+        invalidateReadLayout()
+    }
+
+    fun setContentVerticalPadding(padding: Int) {
+        mReadStyle.contentPaddingTop = DisplayUtil.dpToPx(context, padding)
+        mReadStyle.contentPaddingBottom = DisplayUtil.dpToPx(context, padding)
+        invalidateReadLayout()
+    }
+
+    fun getContentPaddingTop() = DisplayUtil.pxToDp(context, mReadStyle.contentPaddingTop)
+
+    fun getContentPaddingBottom() = DisplayUtil.pxToDp(context, mReadStyle.contentPaddingBottom)
+
+    fun getContentPaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.contentPaddingLeft)
+
+    fun getContentPaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.contentPaddingRight)
+
+
 }

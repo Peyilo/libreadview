@@ -228,6 +228,83 @@ class UiFragment(
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
             })
         }
+
+        // 调整页面左间距
+        val uiPagePaddingLeftNum = view.findViewById<TextView>(R.id.ui_page_padding_left_num)
+        val uiPagePaddingLeftProgress = view.findViewById<AppCompatSeekBar>(R.id.ui_page_padding_left_progress_bar)
+        uiPagePaddingLeftNum.text = readview.getPagePaddingLeft().toString()
+        view.findViewById<View>(R.id.ui_page_padding_left_plus).setOnClickListener {
+            val curPadding = readview.getPagePaddingLeft()
+            val newPadding = (curPadding + 2).coerceIn(0, 200)
+            readview.setPagePaddingLeft(newPadding)
+            uiPagePaddingLeftNum.text = newPadding.toString()
+            uiPagePaddingLeftProgress.progress = newPadding
+        }
+        view.findViewById<View>(R.id.ui_page_padding_left_minus).setOnClickListener {
+            val curPadding = readview.getPagePaddingLeft()
+            val newPadding = (curPadding - 2).coerceIn(0, 200)
+            readview.setPagePaddingLeft(newPadding)
+            uiPagePaddingLeftNum.text = newPadding.toString()
+            uiPagePaddingLeftProgress.progress = newPadding
+        }
+        uiPagePaddingLeftProgress.apply {
+            max = 200
+            progress = readview.getPagePaddingLeft()
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        uiPagePaddingLeftNum.text = progress.toString()
+                        readview.setPagePaddingLeft(progress)
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+
+        // 调整页面右间距
+        val uiPagePaddingRightNum = view.findViewById<TextView>(R.id.ui_page_padding_right_num)
+        val uiPagePaddingRightProgress = view.findViewById<AppCompatSeekBar>(R.id.ui_page_padding_right_progress_bar)
+        uiPagePaddingRightNum.text = readview.getPagePaddingRight().toString()
+        view.findViewById<View>(R.id.ui_page_padding_right_plus).setOnClickListener {
+            val curPadding = readview.getPagePaddingRight()
+            val newPadding = (curPadding + 2).coerceIn(0, 200)
+            readview.setPagePaddingRight(newPadding)
+            uiPagePaddingRightNum.text = newPadding.toString()
+            uiPagePaddingRightProgress.progress = newPadding
+        }
+        view.findViewById<View>(R.id.ui_page_padding_right_minus).setOnClickListener {
+            val curPadding = readview.getPagePaddingRight()
+            val newPadding = (curPadding - 2).coerceIn(0, 200)
+            readview.setPagePaddingRight(newPadding)
+            uiPagePaddingRightNum.text = newPadding.toString()
+            uiPagePaddingRightProgress.progress = newPadding
+        }
+        uiPagePaddingRightProgress.apply {
+            max = 200
+            progress = readview.getPagePaddingRight()
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    if (fromUser) {
+                        uiPagePaddingRightNum.text = progress.toString()
+                        readview.setPagePaddingRight(progress)
+                    }
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

@@ -96,17 +96,27 @@ open class BaseReadPage(
             throw IllegalStateException("only support childCount == 1")
         }
 
-        // Step 1: 测量自身，尽可能的大
+        // 父容器的最终宽高
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val heightSize = MeasureSpec.getSize(heightMeasureSpec)
         setMeasuredDimension(widthSize, heightSize)
 
-        // Step 2: 测量子View，子View都和其父View一样大
-        root.measure(widthMeasureSpec, heightMeasureSpec)
+        // 可用空间 = 父容器大小 - padding
+        val childWidth = widthSize - paddingLeft - paddingRight
+        val childHeight = heightSize - paddingTop - paddingBottom
+
+        val childWidthSpec = MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY)
+        val childHeightSpec = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY)
+
+        root.measure(childWidthSpec, childHeightSpec)
     }
-    
+
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        val left = paddingLeft
+        val top = paddingTop
+        val right = left + root.measuredWidth
+        val bottom = top + root.measuredHeight
+        root.layout(left, top, right, bottom)
     }
 
     fun getContentWidth(): Int = content.measuredWidth

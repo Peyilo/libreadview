@@ -21,12 +21,6 @@ import org.peyilo.libreadview.util.DisplayUtil
  */
 class ReadStyleBuilder(private val readView: SimpleReadView) {
 
-    // Page paddings
-    private var paddingLeft: Float? = null
-    private var paddingTop: Float? = null
-    private var paddingRight: Float? = null
-    private var paddingBottom: Float? = null
-
     // Text layout parameters
     private var firstParaIndent: Float? = null
     private var titleMargin: Float? = null
@@ -48,26 +42,6 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
     // Custom typefaces
     private var titleTypeface: Typeface? = null
     private var contentTypeface: Typeface? = null
-
-    /** Sets all four paddings of the page. */
-    fun setPagePadding(left: Float, top: Float, right: Float, bottom: Float) = apply {
-        paddingLeft = left
-        paddingTop = top
-        paddingRight = right
-        paddingBottom = bottom
-    }
-
-    /** Sets horizontal paddings (left and right) of the page. */
-    fun setPageHorizontalPadding(left: Float, right: Float) = apply {
-        paddingLeft = left
-        paddingRight = right
-    }
-
-    /** Sets vertical paddings (top and bottom) of the page. */
-    fun setPageVerticalPadding(top: Float, bottom: Float) = apply {
-        paddingTop = top
-        paddingBottom = bottom
-    }
 
     /** Sets the first paragraph indent in content. */
     fun setFirstParaIndent(indent: Float) = apply { firstParaIndent = indent }
@@ -145,29 +119,23 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
         }
 
         // Apply layout-related parameters and trigger re-layout if needed
-        if (paddingLeft != null || paddingTop != null || paddingRight != null || paddingBottom != null
-            || firstParaIndent != null || titleMargin != null || contentTextMargin != null
+        if (firstParaIndent != null || titleMargin != null || contentTextMargin != null
             || lineMargin != null || paraMargin != null
             || titleTextSize != null || contentTextSize != null) {
-            readView.onReadviewLayoutInvalidated {
-                paddingLeft?.let { readView.mReadStyle.paddingLeft = DisplayUtil.dpToPx(readView.context, it) }
-                paddingTop?.let { readView.mReadStyle.paddingTop = DisplayUtil.dpToPx(readView.context, it) }
-                paddingRight?.let { readView.mReadStyle.paddingRight = DisplayUtil.dpToPx(readView.context, it) }
-                paddingBottom?.let { readView.mReadStyle.paddingBottom = DisplayUtil.dpToPx(readView.context, it) }
 
-                firstParaIndent?.let { readView.mReadStyle.firstParaIndent = DisplayUtil.dpToPx(readView.context, it) }
-                titleMargin?.let { readView.mReadStyle.titleMargin = DisplayUtil.dpToPx(readView.context, it) }
-                titleTextMargin?.let { readView.mReadStyle.titleTextMargin = DisplayUtil.dpToPx(readView.context, it) }
-                contentTextMargin?.let { readView.mReadStyle.contentTextMargin = DisplayUtil.dpToPx(readView.context, it) }
-                lineMargin?.let { readView.mReadStyle.lineMargin = DisplayUtil.dpToPx(readView.context, it) }
-                paraMargin?.let { readView.mReadStyle.paraMargin = DisplayUtil.dpToPx(readView.context, it) }
+            firstParaIndent?.let { readView.mReadStyle.firstParaIndent = DisplayUtil.dpToPx(readView.context, it) }
+            titleMargin?.let { readView.mReadStyle.titleMargin = DisplayUtil.dpToPx(readView.context, it) }
+            titleTextMargin?.let { readView.mReadStyle.titleTextMargin = DisplayUtil.dpToPx(readView.context, it) }
+            contentTextMargin?.let { readView.mReadStyle.contentTextMargin = DisplayUtil.dpToPx(readView.context, it) }
+            lineMargin?.let { readView.mReadStyle.lineMargin = DisplayUtil.dpToPx(readView.context, it) }
+            paraMargin?.let { readView.mReadStyle.paraMargin = DisplayUtil.dpToPx(readView.context, it) }
 
-                titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(readView.context, it) }
-                contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(readView.context, it) }
+            titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(readView.context, it) }
+            contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(readView.context, it) }
 
-                titleTypeface?.let { readView.mReadStyle.titlePaint.typeface = it }
-                contentTypeface?.let { readView.mReadStyle.contentPaint.typeface = it}
-            }
+            titleTypeface?.let { readView.mReadStyle.titlePaint.typeface = it }
+            contentTypeface?.let { readView.mReadStyle.contentPaint.typeface = it}
+            readView.invalidateReadLayout()
         }
     }
 }

@@ -20,10 +20,10 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
 
     private val measuredPaint = Paint()
 
-    private val remainedWidth get() = config.contentWidth - config.paddingLeft - config.paddingRight
-    private val remainedHeight get() = config.contentHeight - config.paddingTop - config.paddingBottom
-    private val startLeft get() = config.paddingLeft
-    private val startTop get() = config.paddingTop
+    private val remainedWidth get() = config.contentWidth - config.contentPaddingRight - config.contentPaddingLeft
+    private val remainedHeight get() = config.contentHeight - config.contentPaddingTop - config.contentPaddingBottom
+    private val startLeft get() = config.contentPaddingLeft.toFloat()
+    private val startTop get() = config.contentPaddingTop.toFloat()
 
     private fun measureText(char: Char, size: Float): Float {
         return measureText(char.toString(), size)
