@@ -134,6 +134,9 @@ class SimpleReadView(
         assert(chapRange.size == 1 && mAdapterData.getPageType(chapRange.from) == PageType.CHAP_LOAD_PAGE)
         this@SimpleReadView.mAdapterData.removeAt(chapRange.from)
         var pagesSize = 0
+        if (!mReadChapterTable.containsKey(chapIndex)) {
+            throw IllegalStateException("The chapter $chapIndex is not loaded.")
+        }
         mReadChapterTable[chapIndex]!!.apply {
             this@SimpleReadView.mAdapterData.insert(
                 chapRange.from, PageType.READ_PAGE,
@@ -629,6 +632,34 @@ class SimpleReadView(
     }
 
     /**
+     * 设置页面的左边距
+     */
+    fun setPageLeftPadding(left: Float) = onReadviewLayoutInvalidated {
+        mReadStyle.paddingLeft = DisplayUtil.dpToPx(context, left)
+    }
+
+    /**
+     * 设置页面的右边距
+     */
+    fun setPageRightPadding(right: Float) = onReadviewLayoutInvalidated {
+        mReadStyle.paddingRight = DisplayUtil.dpToPx(context, right)
+    }
+
+    /**
+     * 设置页面的上边距
+     */
+    fun setPageTopPadding(top: Float) = onReadviewLayoutInvalidated {
+        mReadStyle.paddingTop = DisplayUtil.dpToPx(context, top)
+    }
+
+    /**
+     * 设置页面的下边距
+     */
+    fun setPageBottomPadding(bottom: Float) = onReadviewLayoutInvalidated {
+        mReadStyle.paddingBottom = DisplayUtil.dpToPx(context, bottom)
+    }
+
+    /**
      * 设置段落首行缩进 (请在ui线程调用)
      */
     fun setFirstParaIndent(indent: Float) = onReadviewLayoutInvalidated {
@@ -657,7 +688,7 @@ class SimpleReadView(
     }
 
     /**
-     * 设置正文文字的行间距 (请在ui线程调用)
+     * 设置行间距 (请在ui线程调用)
      */
     fun setLineMargin(margin: Float) = onReadviewLayoutInvalidated {
         mReadStyle.lineMargin = DisplayUtil.dpToPx(context, margin)

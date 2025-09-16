@@ -16,7 +16,7 @@ import org.peyilo.readview.R
 class ReadViewTheme(
     val titleColor: Int = Color.BLACK,
     val contentColor: Int = "#1E1A1A".toColorInt(),
-    val background: Drawable = "#EEEDED".toColorInt().toDrawable(),
+    val background: Drawable = "#F6F6F6".toColorInt().toDrawable(),
     val headerAndFooterTextColor: Int = Color.BLACK,
 ) {
     companion object {

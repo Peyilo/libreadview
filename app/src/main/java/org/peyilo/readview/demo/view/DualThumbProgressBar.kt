@@ -29,17 +29,26 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
 
     // ====== Paint ======
     private val completedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = "#C8C8C8".toColorInt() // 已完成部分颜色
+        color = "#D1D1D1".toColorInt() // 已完成部分颜色
     }
     private val remainingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = "#D8D8D8".toColorInt() // 未完成部分颜色
+        color = "#E9E9E9".toColorInt() // 未完成部分颜色
     }
     private val primaryThumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = "#EDEDED".toColorInt() // 当前进度游标
+        color = "#FFFFFF".toColorInt() // 当前进度游标
+        setShadowLayer(10f, 0f, 0f, "#D1D1D1".toColorInt())
     }
     private val secondaryThumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = "#E5E5E5".toColorInt() // 参考进度游标
+        color = "#BCBCBC".toColorInt() // 参考进度游标
     }
+
+    var useDual = true
+        set(value) {
+            field = value
+            secondaryProgress = primaryProgress
+            invalidate()
+        }
+
 
     // ====== 进度相关属性 ======
     var max = 100
@@ -54,7 +63,9 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
             requestLayout()
         }
 
-    private val thumbRadius get() = barHeight / 2.3f
+    private val primaryThumbRadius get() = barHeight / 1.5f
+    private val secondaryThumbRadius get() = barHeight / 2.0f
+
     private val barCornerRadius get() = barHeight / 2f
 
     // ====== 回调 ======
@@ -108,11 +119,13 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
         canvas.drawRoundRect(rectCompleted, barCornerRadius, barCornerRadius, completedPaint)
 
         // secondaryProgress 游标
-        val secX = progressToX(secondaryProgress)
-        canvas.drawCircle(secX, barTop + barHeight / 2f, thumbRadius, secondaryThumbPaint)
+        if (useDual) {
+            val secX = progressToX(secondaryProgress)
+            canvas.drawCircle(secX, barTop + barHeight / 2f, secondaryThumbRadius, secondaryThumbPaint)
+        }
 
         // primaryProgress 游标
-        canvas.drawCircle(currX, barTop + barHeight / 2f, thumbRadius, primaryThumbPaint)
+        canvas.drawCircle(currX, barTop + barHeight / 2f, primaryThumbRadius, primaryThumbPaint)
     }
 
     private var isPrimaryThumb = true
@@ -129,7 +142,7 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
 
                 // 判断是否点击 primaryThumb
                 val currX = progressToX(primaryProgress)
-                if (abs(event.x - currX) <= thumbRadius) {
+                if (abs(event.x - currX) <= primaryThumbRadius) {
                     parent.requestDisallowInterceptTouchEvent(true)
                     isPrimaryThumb = true
                     return true
@@ -137,7 +150,7 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
 
                 // 判断是否点击 secondaryThumb
                 val secX = progressToX(secondaryProgress)
-                if (abs(event.x - secX) <= thumbRadius) {
+                if (abs(event.x - secX) <= secondaryThumbRadius) {
                     parent.requestDisallowInterceptTouchEvent(true)
                     isPrimaryThumb = false
                     return true
@@ -170,13 +183,16 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
     }
 
     private fun updateProgress(x: Float) {
-        val barStart = paddingLeft + thumbRadius
-        val barEnd = width - paddingRight - thumbRadius
+        val barStart = paddingLeft + barHeight / 2f
+        val barEnd = width - paddingRight - barHeight / 2f
         val clampedX = x.coerceIn(barStart, barEnd)
         val ratio = (clampedX - barStart) / (barEnd - barStart)
         val newValue = (ratio * max).toInt()
         val oldValue = primaryProgress
         primaryProgress = newValue
+        if (!useDual) {
+            secondaryProgress = newValue
+        }
         invalidate()
         if (oldValue != newValue) {
             onProgressChanged?.invoke(primaryProgress, true)
@@ -215,8 +231,8 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
     }
 
     /**
-     * 设置参考游标的颜色
-     */
+    * 设置参考游标的颜色
+    */
     fun setSecondaryThumbColor(color: Int) {
         secondaryThumbPaint.color = color
         invalidate()
