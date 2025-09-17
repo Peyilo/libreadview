@@ -20,10 +20,16 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
 
     private val measuredPaint = Paint()
 
-    private val remainedWidth get() = config.contentWidth - config.contentPaddingRight - config.contentPaddingLeft
-    private val remainedHeight get() = config.contentHeight - config.contentPaddingTop - config.contentPaddingBottom
-    private val startLeft get() = config.contentPaddingLeft.toFloat()
-    private val startTop get() = config.contentPaddingTop.toFloat()
+    private val remainedBodyWidth get() = config.bodyWidth - config.bodyPaddingRight - config.bodyPaddingLeft
+    private val remainedBodyHeight get() = config.bodyHeight - config.bodyPaddingTop - config.bodyPaddingBottom
+    private val bodyStartLeft get() = config.bodyPaddingLeft.toFloat()
+    private val bodyStartTop get() = config.bodyPaddingTop.toFloat()
+
+    private val remainedTitleWidth get() = remainedBodyWidth - config.titlePaddingLeft - config.titlePaddingRight
+    private val remainedTitleHeight get() = remainedBodyHeight - config.titlePaddingTop - config.titlePaddingBottom
+
+    private val remainedContentWidth get() = remainedBodyWidth - config.contentPaddingLeft - config.contentPaddingRight
+    private val remainedContentHeight get() = remainedBodyHeight - config.contentPaddingTop - config.contentPaddingBottom
 
     private fun measureText(char: Char, size: Float): Float {
         return measureText(char.toString(), size)
@@ -71,47 +77,57 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         return lineList
     }
 
-    override fun split(chap: ReadChapter) {
+    override fun paginate(chap: ReadChapter) {
         // 如果留给绘制内容的空间不足以绘制标题或者正文的一行，直接返回false
-        if (config.contentTextSize > remainedHeight
-            || config.titleTextSize > remainedHeight) {
+        if (config.contentTextSize > remainedBodyHeight
+            || config.titleTextSize > remainedBodyHeight) {
             throw IllegalStateException()
         }
         chap.pages.clear()           // 清空pageData
-        val width = remainedWidth
-        var height = remainedHeight
-        var base = startTop
-        val left = startLeft
+        val width = remainedBodyWidth
+        var height = remainedBodyHeight
+        var base = bodyStartTop
+        val left = bodyStartLeft
         var curPageIndex = 1
         var page = PageData(curPageIndex)
 
+        // 开始章节标题的处理
         val firstContent = chap.content[0]
         val hasTitle = firstContent is TitleContent
         if (hasTitle) {
-            val titleLines = breakLines(firstContent.text, width, config.titleTextSize, config.titleTextMargin, 0F)
+            // 剩余的空间为width - config.titlePaddingLeft - config.titlePaddingRight
+            val titleLines = breakLines(firstContent.text,
+                width - config.titlePaddingLeft - config.titlePaddingRight,
+                config.titleTextSize, config.titleTextMargin, 0F)
+            base += config.titlePaddingTop
+            val titleLeft = left + config.titlePaddingLeft
             titleLines.forEach {
                 base += config.titleTextSize
                 it.apply {                  // 设置TextLine的base、left
                     this@apply.base = base
-                    this@apply.left = left
+                    this@apply.left = titleLeft
                     it.isTitleLine = true
                 }
                 page.lines.add(it)
-                base += config.lineMargin
+                base += config.titleLineMargin
             }
             var offset = 0F     // 正文内容的偏移
             if (titleLines.isNotEmpty()) {
-                base += config.titleMargin - config.lineMargin
-                offset += config.titleMargin
+                base += config.titlePaddingBottom - config.titleLineMargin
+                offset += config.titlePaddingBottom + config.titlePaddingTop
                 offset += config.titleTextSize * titleLines.size
-                offset += config.lineMargin * (titleLines.size - 1)
+                offset += config.titleLineMargin * (titleLines.size - 1)
+
+                // 处理正文内容的偏移
+                base += config.contentPaddingTop
+                offset += config.contentPaddingTop
             }
             height -= offset.toInt()
         }
         // 如果剩余空间已经不足以再添加一行，就换成下一页
-        if (height < config.contentTextSize) {
-            height = remainedHeight
-            base = startTop
+        if (height < config.contentTextSize + config.contentPaddingBottom) {
+            height = remainedBodyHeight
+            base = bodyStartTop
             chap.pages.add(page)
             curPageIndex++
             page = PageData(curPageIndex)
@@ -120,35 +136,32 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         val parasStartIndex = if (hasTitle) 1 else 0
         for (i in parasStartIndex until chap.content.size) {
             val para = chap.content[i] as ParagraphContent
-            val paraLines = breakLines(para.text, width, config.contentTextSize,
+            val paraLines = breakLines(para.text,
+                width - config.contentPaddingLeft - config.contentPaddingRight,
+                config.contentTextSize,
                 config.contentTextMargin, config.firstParaIndent)
             for (j in paraLines.indices) {
                 val line = paraLines[j]
-                if (height < config.contentTextSize) {
-                    height = remainedHeight
-                    base = startTop
+                // 如果剩余空间已经不足以再添加一行，就换成下一页
+                if (height < config.contentTextSize + config.contentPaddingBottom) {
+                    height = remainedBodyHeight
+                    base = bodyStartTop + config.contentPaddingTop
                     chap.pages.add(page)
                     curPageIndex++
                     page = PageData(curPageIndex)
                 }
                 base += config.contentTextSize
-                if (j == 0) {       // 处理段落首行缩进
-                    line.apply {
-                        this@apply.base = base
-                        this@apply.left = left + measureText("缩进", config.contentTextSize)
-                    }
-                } else {
-                    line.apply {
-                        this@apply.base = base
-                        this@apply.left = left
-                    }
+                line.apply {
+                    this@apply.base = base
+                    // 处理段落首行缩进
+                    this@apply.left = left + config.contentPaddingLeft + if (j == 0) config.firstParaIndent else 0F
                 }
                 page.lines.add(line)
-                base += config.lineMargin
-                height -= (config.contentTextSize + config.lineMargin).toInt()
+                base += config.contentLineMargin
+                height -= (config.contentTextSize + config.contentLineMargin).toInt()
             }
-            base += config.paraMargin - config.lineMargin
-            height -= config.paraMargin - config.lineMargin      // 处理段落的额外间距
+            base += config.contentParaMargin - config.contentLineMargin
+            height -= config.contentParaMargin - config.contentLineMargin      // 处理段落的额外间距
         }
         chap.pages.add(page)
     }

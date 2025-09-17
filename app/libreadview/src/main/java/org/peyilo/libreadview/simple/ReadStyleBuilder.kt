@@ -1,5 +1,6 @@
 package org.peyilo.libreadview.simple
 
+import android.R.attr.titleMargin
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import androidx.core.graphics.drawable.toDrawable
@@ -23,7 +24,6 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
 
     // Text layout parameters
     private var firstParaIndent: Float? = null
-    private var titleMargin: Float? = null
     private var titleTextMargin: Float? = null
     private var contentTextMargin: Float? = null
     private var lineMargin: Float? = null
@@ -45,9 +45,6 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
 
     /** Sets the first paragraph indent in content. */
     fun setFirstParaIndent(indent: Float) = apply { firstParaIndent = indent }
-
-    /** Sets spacing between title and content. */
-    fun setTitleMargin(margin: Float) = apply { titleMargin = margin }
 
     /** Sets margin around title text blocks. */
     fun setTitleTextMargin(margin: Float) = apply { titleTextMargin = margin }
@@ -107,7 +104,7 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
                 mPageBackground?.let { bg -> page.background = bg }
                 if (page is ReadPage) {
                     if (titleTextColor != null || contentTextColor != null) {
-                        page.content.invalidate()
+                        page.body.invalidate()
                     }
                     headerAndFooterTextColor?.let { color ->
                         page.chapTitle.setTextColor(color)
@@ -119,16 +116,15 @@ class ReadStyleBuilder(private val readView: SimpleReadView) {
         }
 
         // Apply layout-related parameters and trigger re-layout if needed
-        if (firstParaIndent != null || titleMargin != null || contentTextMargin != null
+        if (firstParaIndent != null || contentTextMargin != null
             || lineMargin != null || paraMargin != null
             || titleTextSize != null || contentTextSize != null) {
 
             firstParaIndent?.let { readView.mReadStyle.firstParaIndent = DisplayUtil.dpToPx(readView.context, it) }
-            titleMargin?.let { readView.mReadStyle.titleMargin = DisplayUtil.dpToPx(readView.context, it) }
             titleTextMargin?.let { readView.mReadStyle.titleTextMargin = DisplayUtil.dpToPx(readView.context, it) }
             contentTextMargin?.let { readView.mReadStyle.contentTextMargin = DisplayUtil.dpToPx(readView.context, it) }
-            lineMargin?.let { readView.mReadStyle.lineMargin = DisplayUtil.dpToPx(readView.context, it) }
-            paraMargin?.let { readView.mReadStyle.paraMargin = DisplayUtil.dpToPx(readView.context, it) }
+            lineMargin?.let { readView.mReadStyle.contentLineMargin = DisplayUtil.dpToPx(readView.context, it) }
+            paraMargin?.let { readView.mReadStyle.contentParaMargin = DisplayUtil.dpToPx(readView.context, it) }
 
             titleTextSize?.let { readView.mReadStyle.titlePaint.textSize = DisplayUtil.spToPx(readView.context, it) }
             contentTextSize?.let { readView.mReadStyle.contentPaint.textSize = DisplayUtil.spToPx(readView.context, it) }

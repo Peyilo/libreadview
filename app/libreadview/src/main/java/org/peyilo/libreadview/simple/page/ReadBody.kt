@@ -11,7 +11,7 @@ import org.peyilo.libreadview.provider.PageContentProvider
 /**
  * 正文显示视图
  */
-class ReadContent(
+class ReadBody(
     context: Context, attrs: AttributeSet? = null
 ): View(context, attrs) {
 
@@ -24,7 +24,7 @@ class ReadContent(
     }
 
     companion object {
-        private const val TAG = "ReadContent"
+        private const val TAG = "ReadBody"
     }
 
     override fun onDraw(canvas: Canvas) {

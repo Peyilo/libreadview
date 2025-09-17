@@ -9,7 +9,7 @@ interface PageContentProvider {
     /**
      * 将章节切分为多个Page
      */
-    fun split(chap: ReadChapter)
+    fun paginate(chap: ReadChapter)
 
     fun drawPage(page: PageData, canvas: Canvas)
 

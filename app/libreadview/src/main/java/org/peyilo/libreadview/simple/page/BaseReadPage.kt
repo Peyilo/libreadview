@@ -17,7 +17,7 @@ open class BaseReadPage(
 
     lateinit var root: View               // 填充的布局
         private set
-    lateinit var content: ReadContent       // 正文显示视图
+    lateinit var body: ReadBody          // 正文显示视图
         private set
     lateinit var header: View                // 页眉视图
         private set
@@ -58,23 +58,6 @@ open class BaseReadPage(
             footer.setPadding(footerPaddingLeft, footerPaddingTop, value, footerPaddingBottom)
         }
 
-    var contentPaddingTop get() = content.paddingTop
-        set(value) {
-            content.setPadding(contentPaddingLeft, value, contentPaddingRight, contentPaddingBottom)
-        }
-    var contentPaddingBottom get() = content.paddingBottom
-        set(value) {
-            content.setPadding(contentPaddingLeft, contentPaddingTop, contentPaddingRight, value)
-        }
-    var contentPaddingLeft get() = content.paddingLeft
-        set(value) {
-            content.setPadding(value, contentPaddingTop, contentPaddingRight, contentPaddingBottom)
-        }
-    var contentPaddingRight get() = content.paddingRight
-        set(value) {
-            content.setPadding(contentPaddingLeft, contentPaddingTop, value, contentPaddingBottom)
-        }
-
 
     /**
      * 绑定布局
@@ -89,7 +72,7 @@ open class BaseReadPage(
     ) {
         LayoutInflater.from(context).inflate(layoutId, this)
         root = getChildAt(0)
-        content = root.findViewById(contentId)
+        body = root.findViewById(contentId)
         header = root.findViewById(headerId)
         footer = root.findViewById(footerId)
     }
@@ -122,8 +105,8 @@ open class BaseReadPage(
         root.layout(left, top, right, bottom)
     }
 
-    fun getContentWidth(): Int = content.measuredWidth
+    fun getBodyWidth(): Int = body.measuredWidth
 
-    fun getContentHeight(): Int = content.measuredHeight
+    fun getBodyHeight(): Int = body.measuredHeight
 
 }

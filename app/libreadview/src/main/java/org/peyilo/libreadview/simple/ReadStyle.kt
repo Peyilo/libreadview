@@ -17,35 +17,37 @@ class ReadStyle(
 ) {
 
     private val lock = Object()
-    private var _contentDimenIsInitialized = false
+    private var _bodyDimenIsInitialized = false
 
-    var contentWidth = 0f
-    var contentHeight = 0f
+    // ReadBody的显示宽高
+    // 需要在ReadPage测量完成后，调用initBodyDimen进行初始化
+    var bodyWidth = 0f
+    var bodyHeight = 0f
 
     /**
-     * 初始化ReadContent要显示的宽高
+     * 初始化ReadBody要显示的宽高
      */
-    fun initContentDimen(w: Int, h: Int) {
+    fun initBodyDimen(w: Int, h: Int) {
         synchronized(lock) {
-            contentWidth = w.toFloat()
-            contentHeight = h.toFloat()
-            _contentDimenIsInitialized = true
+            bodyWidth = w.toFloat()
+            bodyHeight = h.toFloat()
+            _bodyDimenIsInitialized = true
             lock.notifyAll()  // 唤醒等待者
         }
     }
 
     /**
-     * 挂起当前线程，直到initContentDimen被调用，非忙等待
+     * 挂起当前线程，直到initBodyDimen被调用，非忙等待
      */
     fun waitForInitialized() {
         synchronized(lock) {
-            while (!_contentDimenIsInitialized) {
+            while (!_bodyDimenIsInitialized) {
                 lock.wait()             // 挂起等待，不消耗 CPU
             }
         }
     }
 
-    fun isContentDimenInitialized() = _contentDimenIsInitialized
+    fun isBodyDimenInitialized() = _bodyDimenIsInitialized
 
     // 页面内边距
     var pagePaddingTop = DisplayUtil.dpToPx(context, 0)
@@ -63,12 +65,22 @@ class ReadStyle(
     var footerPaddingLeft = DisplayUtil.dpToPx(context, 0)
     var footerPaddingRight = DisplayUtil.dpToPx(context, 0)
     // 文字内容内边距
-    var contentPaddingTop = DisplayUtil.dpToPx(context, 10)
-    var contentPaddingBottom = DisplayUtil.dpToPx(context, 10)
+    var bodyPaddingTop = DisplayUtil.dpToPx(context, 10)
+    var bodyPaddingBottom = DisplayUtil.dpToPx(context, 10)
+    var bodyPaddingLeft = DisplayUtil.dpToPx(context, 0)
+    var bodyPaddingRight = DisplayUtil.dpToPx(context, 0)
+    // 标题内边距
+    var titlePaddingTop = DisplayUtil.dpToPx(context, 0)
+    var titlePaddingBottom = DisplayUtil.dpToPx(context, 50)
+    var titlePaddingLeft = DisplayUtil.dpToPx(context, 0)
+    var titlePaddingRight = DisplayUtil.dpToPx(context, 0)
+    // 正文内边距
+    var contentPaddingTop = DisplayUtil.dpToPx(context, 0)
+    var contentPaddingBottom = DisplayUtil.dpToPx(context, 0)
     var contentPaddingLeft = DisplayUtil.dpToPx(context, 0)
     var contentPaddingRight = DisplayUtil.dpToPx(context, 0)
 
-
+    // 标题相关参数
     val titlePaint: Paint = Paint().apply {
         typeface = Typeface.DEFAULT
         textSize = DisplayUtil.spToPx(context, 28F)
@@ -76,6 +88,14 @@ class ReadStyle(
         isAntiAlias = true
     }
 
+    val titleTextColor get() = titlePaint.color
+    val titleTextSize get() = titlePaint.textSize
+
+    var titleTextMargin = DisplayUtil.dpToPx(context, 0F)                                 // 章节标题字符间隔
+    var titleLineMargin = DisplayUtil.dpToPx(context, 16F)                                // 章节标题行间隔
+    var titlePosition = Position.ALIGN_LEFT                                                  // 章节标题对齐方式
+
+    // 正文相关参数
     val contentPaint: Paint = Paint().apply {
         typeface = Typeface.DEFAULT
         textSize = DisplayUtil.spToPx(context, 20F)
@@ -83,20 +103,15 @@ class ReadStyle(
         isAntiAlias = true
     }
 
-    val titleTextColor get() = titlePaint.color
-    val titleTextSize get() = titlePaint.textSize
     val contentTextColor get() = contentPaint.color
     val contentTextSize get() = contentPaint.textSize
 
     var firstParaIndent = contentPaint.measureText("测试") // 段落首行的偏移
-    var titleMargin = DisplayUtil.dpToPx(context, 50F)                                    // 章节标题与章节正文的间距
-
-    var titleTextMargin = DisplayUtil.dpToPx(context, 0F)                                 // 章节标题字符间隔
-
     var contentTextMargin = DisplayUtil.dpToPx(context, 0F)                               // 正文字符间隔
-    var lineMargin = DisplayUtil.dpToPx(context, 16F)                                     // 行间隔
-    var paraMargin = DisplayUtil.dpToPx(context, 30F)                                    // 段落间隔
+    var contentLineMargin = DisplayUtil.dpToPx(context, 16F)                                     // 行间隔
+    var contentParaMargin = DisplayUtil.dpToPx(context, 30F)                                    // 段落间隔
 
+    // Page相关参数
     var mPageBackground: Drawable = Color.WHITE.toDrawable()
     var mHeaderAndFooterTextColor = Color.BLACK
 
@@ -119,7 +134,14 @@ class ReadStyle(
         page.setPadding(pagePaddingLeft, pagePaddingTop, pagePaddingRight, pagePaddingBottom)
         page.header.setPadding(headerPaddingLeft, headerPaddingTop, headerPaddingRight, headerPaddingBottom)
         page.footer.setPadding(footerPaddingLeft, footerPaddingTop, footerPaddingRight, footerPaddingBottom)
-        // content的padding并不是通过View的测量和布局实现的，而是通过在onDraw进行偏移实现的
-        // 因此，这里无需调用page.content.setPadding
+        // body的padding并不是通过View的测量和布局实现的，而是通过在onDraw进行偏移实现的
+        // 因此，这里无需调用page.body.setPadding
+    }
+
+    /**
+     * 文字对齐方式
+     */
+    enum class Position {
+        ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT
     }
 }
