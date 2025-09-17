@@ -480,6 +480,8 @@ class BasicReadView(
         this.mPageDelegate = pageDelegate
     }
 
+    fun getTitleTextSize(): Float = DisplayUtil.pxToSp(context, mReadStyle.titleTextSize)
+
     /**
      * 获取章节正文文字大小（单位：sp）
      */

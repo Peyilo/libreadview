@@ -3,8 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
-    android:paddingHorizontal="10dp"
-    android:paddingVertical="10dp"
+
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <TextView
@@ -14,7 +13,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:paddingBottom="15dp"
         android:textColor="@color/black"
-        android:text="边距设置"
+        android:text="边距"
         tools:ignore="HardcodedText" />
 
     <org.peyilo.readview.demo.view.SegmentedControl

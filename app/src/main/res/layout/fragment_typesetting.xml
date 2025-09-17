@@ -7,14 +7,17 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="#F6F6F6"
-    android:paddingBottom="15dp"
-    android:paddingTop="16dp"
-    android:layout_marginHorizontal="15dp">
+    android:paddingHorizontal="20dp"
+    android:paddingVertical="15dp">
 
     <org.peyilo.readview.demo.view.PaddingControll
         android:id="@+id/typesetting_padding_controll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"/>
+        android:layout_height="wrap_content" />
+
+    <org.peyilo.readview.demo.view.TextSizeControll
+        android:id="@+id/typesetting_textsize_controll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </LinearLayout>

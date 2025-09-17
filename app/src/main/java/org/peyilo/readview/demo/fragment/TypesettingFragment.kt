@@ -8,6 +8,7 @@ import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.R
 import org.peyilo.readview.demo.view.DualThumbProgressBar
 import org.peyilo.readview.demo.view.PaddingControll
+import org.peyilo.readview.demo.view.TextSizeControll
 
 class TypesettingFragment(
     private val readview: BasicReadView
@@ -78,6 +79,17 @@ class TypesettingFragment(
                 else -> throw IllegalStateException()
             }
         }
+        val textsizeControll = view.findViewById<TextSizeControll>(R.id.typesetting_textsize_controll)
+        textsizeControll.contentProgressBar.configDualThumbProgressBar(
+            10, 60,
+            { readview.getContentTextSize().toInt() },
+            { readview.setContentTextSize(it.toFloat()) }
+        )
+        textsizeControll.titleProgressBar.configDualThumbProgressBar(
+            10, 60,
+            { readview.getTitleTextSize().toInt() },
+            { readview.setTitleTextSize(it.toFloat()) }
+        )
     }
 
     private fun DualThumbProgressBar.configDualThumbProgressBar(
