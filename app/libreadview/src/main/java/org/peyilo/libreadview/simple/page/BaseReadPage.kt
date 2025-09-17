@@ -8,6 +8,9 @@ import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 
+/**
+ * 一个用展示小说内容的页面，并且定义该页面需要包含三个部分：页眉、正文、页脚
+ */
 open class BaseReadPage(
     context: Context, attrs: AttributeSet? = null
 ): ViewGroup(context, attrs) {

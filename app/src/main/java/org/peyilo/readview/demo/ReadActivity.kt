@@ -1,22 +1,14 @@
 package org.peyilo.readview.demo
 
 import android.os.Bundle
-import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import org.peyilo.libreadview.manager.CoverLayoutManager
-import org.peyilo.libreadview.manager.IBookCurlLayoutManager
 import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.libreadview.simple.SimpleReadView
-import org.peyilo.libreadview.simple.page.ReadPage
-import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
 import org.peyilo.readview.demo.fragment.SettingsFragment
-import org.peyilo.readview.demo.fragment.UiFragment
+import org.peyilo.readview.demo.fragment.TypesettingFragment
 
 open class ReadActivity: AppCompatActivity() {
 
@@ -130,12 +122,15 @@ open class ReadActivity: AppCompatActivity() {
         }
     }
 
-    fun showUiPanel() {
-        val tag = "UiFragment"
+    /**
+     * 显示排版设置面板
+     */
+    fun showTypesettingPanel() {
+        val tag = "TypesettingFragment"
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            UiFragment(readview).show(fm, tag)
+            TypesettingFragment(readview).show(fm, tag)
         }
     }
 

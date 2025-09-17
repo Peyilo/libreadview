@@ -12,7 +12,7 @@ import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.manager.LayoutManagerFactory
 import org.peyilo.readview.R
 import org.peyilo.readview.databinding.ActivityPageChangeBinding
-import org.peyilo.readview.demo.fragment.SettingsFragment
+import org.peyilo.readview.demo.fragment.PageTurnChangeFragment
 import org.peyilo.readview.demo.view.GridPage
 import kotlin.random.Random
 
@@ -108,11 +108,11 @@ class PageChangeActivity : AppCompatActivity() {
      * 显示设置面板
      */
     fun showSettings() {
-        val tag = "SettingsFragment"
+        val tag = "PageTurnChangeFragment"
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            SettingsFragment(pageContainer).show(fm, tag)
+            PageTurnChangeFragment(pageContainer).show(fm, tag)
         }
     }
 

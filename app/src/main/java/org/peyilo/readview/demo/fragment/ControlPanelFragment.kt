@@ -1,15 +1,9 @@
 package org.peyilo.readview.demo.fragment
 
-import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import androidx.core.view.ViewCompat
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.peyilo.libreadview.simple.SimpleReadView
 import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.R
@@ -19,7 +13,7 @@ import org.peyilo.readview.demo.view.DualThumbProgressBar
 class ControlPanelFragment(
     private val readview: SimpleReadView,
     private val readActivity: ReadActivity,
-) : BottomSheetDialogFragment() {
+) : BaseBottomFragment() {
 
     companion object {
         private const val TAG = "ControlPanelFragment"
@@ -46,9 +40,9 @@ class ControlPanelFragment(
                 if (res) progressBar!!.setProgress(chapIndex - 1)
             }
         }
-        view.findViewById<View>(R.id.menu_theme).setOnClickListener {
+        view.findViewById<View>(R.id.menu_typesetting).setOnClickListener {
             readActivity.showControlPanel(false)
-            readActivity.showUiPanel()
+            readActivity.showTypesettingPanel()
         }
         view.findViewById<View>(R.id.menu_settings).setOnClickListener {
             readActivity.showControlPanel(false)
@@ -75,29 +69,6 @@ class ControlPanelFragment(
                 }
             }
         }
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.window?.setDimAmount(0f)              // 设置阴影程度
-        LogHelper.d(TAG, "onCreateDialog")
-        return dialog
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        // 使得 BottomSheetDialog 显示的区域可以包含导航栏,避免总是被design_bottom_sheet设置一个24dp的paddingBottom
-        val bottomSheet = dialog!!.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)!!
-        bottomSheet.post {
-            bottomSheet.let {
-                ViewCompat.setOnApplyWindowInsetsListener(it) { v, insets ->
-                    // 不调用 super，不加 padding
-                    insets
-                }
-            }
-        }
-        LogHelper.d(TAG, "onViewCreated")
     }
 
 }

@@ -9,14 +9,14 @@ import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.R as materialR
 import org.peyilo.readview.R
 import org.peyilo.readview.demo.adapter.TocListAdapter
 
 class ChapListFragment(
     private val chapters: List<String>,
     private val onChapterSelected: (Int) -> Unit
-) : BottomSheetDialogFragment() {
+) : BaseBottomFragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,11 +44,9 @@ class ChapListFragment(
         return R.style.BottomSheetDialogTheme  // 自定义圆角样式
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
+    override fun processContainer() {
         // 使得 BottomSheetDialog 显示的区域可以包含导航栏,避免总是被design_bottom_sheet设置一个24dp的paddingBottom
-        val container = dialog!!.findViewById<FrameLayout>(com.google.android.material.R.id.container)!!
+        val container = dialog!!.findViewById<FrameLayout>(materialR.id.container)!!
         container.let {
             ViewCompat.setOnApplyWindowInsetsListener(it) { v, insets -> insets }
             it.post {

@@ -71,14 +71,14 @@
             tools:ignore="HardcodedText" />
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/menu_theme"
+            android:id="@+id/menu_typesetting"
             style="?android:attr/buttonBarButtonStyle"
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="界面"
+            android:text="排版"
             android:textColor="@color/black"
-            android:drawableTop="@drawable/ui"
+            android:drawableTop="@drawable/typesetting"
             tools:ignore="HardcodedText" />
 
         <androidx.appcompat.widget.AppCompatButton

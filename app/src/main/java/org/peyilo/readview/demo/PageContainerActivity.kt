@@ -8,14 +8,9 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
-import org.peyilo.libreadview.manager.CoverLayoutManager
 import org.peyilo.libreadview.manager.IBookCurlLayoutManager
-import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SimpleCurlLayoutManager
-import org.peyilo.libreadview.manager.SlideLayoutManager
 import org.peyilo.readview.databinding.ActivityPageContainerBinding
-import org.peyilo.readview.demo.fragment.SettingsFragment
+import org.peyilo.readview.demo.fragment.PageTurnChangeFragment
 import org.peyilo.readview.demo.view.GridPage
 import kotlin.random.Random
 
@@ -84,11 +79,11 @@ class PageContainerActivity : AppCompatActivity() {
      * 显示设置面板
      */
     fun showSettings() {
-        val tag = "SettingsFragment"
+        val tag = "PageTurnChangeFragment"
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            SettingsFragment(pageContainer).show(fm, tag)
+            PageTurnChangeFragment(pageContainer).show(fm, tag)
         }
     }
 }

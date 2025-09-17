@@ -36,7 +36,7 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
     }
     private val primaryThumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = "#FFFFFF".toColorInt() // 当前进度游标
-        setShadowLayer(10f, 0f, 0f, "#D1D1D1".toColorInt())
+        setShadowLayer(20f, 0f, 0f, "#D1D1D1".toColorInt())
     }
     private val secondaryThumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = "#BCBCBC".toColorInt() // 参考进度游标
@@ -63,7 +63,7 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
             requestLayout()
         }
 
-    private val primaryThumbRadius get() = barHeight / 1.5f
+    private val primaryThumbRadius get() = barHeight / 1.8f
     private val secondaryThumbRadius get() = barHeight / 2.0f
 
     private val barCornerRadius get() = barHeight / 2f
