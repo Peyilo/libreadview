@@ -3,6 +3,7 @@ package org.peyilo.readview.demo.view
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.RectF
@@ -76,6 +77,13 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
     private val rectCompleted = RectF()
     private val rectRemaining = RectF()
 
+    private var primaryThumbText: String? = null
+
+    private val primaryThumbTextPaint = Paint().apply {
+        color = Color.BLACK
+        isAntiAlias = true
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         // 宽度：交给父布局决定
         val width = MeasureSpec.getSize(widthMeasureSpec)
@@ -126,6 +134,24 @@ class DualThumbProgressBar(context: Context, attrs: AttributeSet? = null) : View
 
         // primaryProgress 游标
         canvas.drawCircle(currX, barTop + barHeight / 2f, primaryThumbRadius, primaryThumbPaint)
+
+        // primaryProgress 游标上的文字
+        primaryThumbText?.let {
+            primaryThumbTextPaint.textSize = primaryThumbRadius
+            val textWidth = primaryThumbTextPaint.measureText(it)
+            val textHeight = primaryThumbTextPaint.fontMetrics.run { descent - ascent }
+            canvas.drawText(
+                it,
+                currX - textWidth / 2f,
+                barTop + barHeight / 2f + textHeight / 4f,
+                primaryThumbTextPaint
+            )
+        }
+    }
+
+    fun setPrimaryThumbText(text: String?) {
+        primaryThumbText = text
+        invalidate()
     }
 
     private var isPrimaryThumb = true

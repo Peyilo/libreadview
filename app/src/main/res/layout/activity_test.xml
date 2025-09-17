@@ -5,13 +5,14 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FFDDDD"
     tools:context=".test.TestActivity">
 
-    <org.peyilo.readview.demo.view.DualThumbProgressBar
-        android:paddingHorizontal="20dp"
+    <org.peyilo.readview.demo.view.PaddingControll
+        android:layout_marginTop="200dp"
+        android:layout_marginHorizontal="20dp"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        app:layout_constraintTop_toTopOf="parent"
-        android:paddingTop="100dp"/>
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

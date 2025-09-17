@@ -4,15 +4,56 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SeekBar
-import android.widget.TextView
-import androidx.appcompat.widget.AppCompatSeekBar
 import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.R
+import org.peyilo.readview.demo.view.DualThumbProgressBar
+import org.peyilo.readview.demo.view.PaddingControll
 
 class TypesettingFragment(
     private val readview: BasicReadView
 ): BaseBottomFragment() {
+
+    private val pagePaddingRange = listOf(
+        0..100, // 上边距
+        0..100, // 下边距
+        0..100, // 左边距
+        0..100, // 右边距
+    )
+
+    private val headerPaddingRange = listOf(
+        0..100, // 上边距
+        0..100, // 下边距
+        0..100, // 左边距
+        0..100, // 右边距
+    )
+
+    private val footerPaddingRange = listOf(
+        0..100, // 上边距
+        0..100, // 下边距
+        0..100, // 左边距
+        0..100, // 右边距
+    )
+
+    private val bodyPaddingRange = listOf(
+        0..100, // 上边距
+        0..100, // 下边距
+        0..100, // 左边距
+        0..100, // 右边距
+    )
+
+    private val titlePaddingRange = listOf(
+        0..100, // 上边距
+        0..300, // 下边距
+        0..100, // 左边距
+        0..100, // 右边距
+    )
+
+    private val contentPaddingRange = listOf(
+        0..100, // 上边距
+        0..100, // 下边距
+        0..100, // 左边距
+        0..100, // 右边距
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -24,239 +65,173 @@ class TypesettingFragment(
     }
 
     private fun initView(view: View) {
-        // 调节字体大小
-        val uiFontSizeNum = view.findViewById<TextView>(R.id.typesetting_font_size_num)
-        val uiFontSizeProgress = view.findViewById<AppCompatSeekBar>(R.id.typesetting_font_size_progress_bar)
-        uiFontSizeNum.text = readview.getContentTextSize().toInt().toString()
-        view.findViewById<View>(R.id.typesetting_font_size_plus).setOnClickListener {
-            val curSize = readview.getContentTextSize()
-            val newSize = (curSize + 2F).coerceIn(0F, 100F)
-            readview.setContentTextSize(newSize)
-            uiFontSizeNum.text = newSize.toInt().toString()
-            uiFontSizeProgress.progress = newSize.toInt()
+        val paddingControll = view.findViewById<PaddingControll>(R.id.typesetting_padding_controll)
+        paddingControll.forPage()
+        paddingControll.segmented.setOnOptionSelectedListener { index ->
+            when (index) {
+                0 -> paddingControll.forPage()
+                1 -> paddingControll.forHeader()
+                2 -> paddingControll.forFooter()
+                3 -> paddingControll.forBody()
+                4 -> paddingControll.forTitle()
+                5 -> paddingControll.forContent()
+                else -> throw IllegalStateException()
+            }
         }
-        view.findViewById<View>(R.id.typesetting_font_size_minus).setOnClickListener {
-            val curSize = readview.getContentTextSize()
-            val newSize = (curSize - 2F).coerceIn(0F, 100F)
-            readview.setContentTextSize(newSize)
-            uiFontSizeNum.text = newSize.toInt().toString()
-            uiFontSizeProgress.progress = newSize.toInt()
-        }
-        uiFontSizeProgress.apply {
-            max = 100
-            progress = readview.getContentTextSize().toInt()
-            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        uiFontSizeNum.text = progress.toString()
-                        readview.setContentTextSize(progress.toFloat())
-                    }
-                }
+    }
 
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+    private fun DualThumbProgressBar.configDualThumbProgressBar(
+        start: Int, end: Int,
+        get: () -> Int, set: (Int) -> Unit
+        ) {
+        max = 100
+        val value = get()
+        val progress = ((value - start).toFloat() / (end - start) * max).toInt()
+        setProgress(progress, needJoin = true)
+        onProgressChanged = { progress, fromUser ->
+            if (fromUser) {
+                val newValue = start + (end - start) * progress / max
+                set(newValue)
+            }
+        }
+    }
 
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
+    private fun PaddingControll.forPage() {
+        topProgressBar.configDualThumbProgressBar(
+            pagePaddingRange[0].first, pagePaddingRange[0].last,
+            { readview.getPagePaddingTop() },
+            { readview.setPagePaddingTop(it) }
+        )
+        bottomProgressBar.configDualThumbProgressBar(
+            pagePaddingRange[1].first, pagePaddingRange[1].last,
+            { readview.getPagePaddingBottom() },
+            { readview.setPagePaddingBottom(it) }
+        )
+        leftProgressBar.configDualThumbProgressBar(
+            pagePaddingRange[2].first, pagePaddingRange[2].last,
+            { readview.getPagePaddingLeft() },
+            { readview.setPagePaddingLeft(it) }
+        )
+        rightProgressBar.configDualThumbProgressBar(
+            pagePaddingRange[3].first, pagePaddingRange[3].last,
+            { readview.getPagePaddingRight() },
+            { readview.setPagePaddingRight(it) }
+        )
+    }
 
-        // 调整字体间距
-        val uiFontSpaceNum = view.findViewById<TextView>(R.id.typesetting_font_space_num)
-        val uiFontSpaceProgress = view.findViewById<AppCompatSeekBar>(R.id.typesetting_font_space_progress_bar)
-        uiFontSpaceNum.text = readview.getTextMargin().toInt().toString()
-        view.findViewById<View>(R.id.typesetting_font_space_plus).setOnClickListener {
-            val curSpace = readview.getTextMargin()
-            val newSpace = (curSpace + 2F).coerceIn(0F, 100F)
-            readview.setContentTextMargin(newSpace)
-            uiFontSpaceNum.text = newSpace.toInt().toString()
-            uiFontSpaceProgress.progress = newSpace.toInt()
-        }
-        view.findViewById<View>(R.id.typesetting_font_space_minus).setOnClickListener {
-            val curSpace = readview.getTextMargin()
-            val newSpace = (curSpace - 2F).coerceIn(0F, 100F)
-            readview.setContentTextMargin(newSpace)
-            uiFontSpaceNum.text = newSpace.toInt().toString()
-            uiFontSpaceProgress.progress = newSpace.toInt()
-        }
-        uiFontSpaceProgress.apply {
-            max = 100
-            progress = readview.getTextMargin().toInt()
-            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        // 仅在用户拖动时才更新，避免和加减按钮的点击事件冲突
-                        uiFontSpaceNum.text = progress.toString()
-                        readview.setContentTextMargin(progress.toFloat())
-                    }
-                }
+    private fun PaddingControll.forHeader() {
+        topProgressBar.configDualThumbProgressBar(
+            headerPaddingRange[0].first, headerPaddingRange[0].last,
+            { readview.getHeaderPaddingTop() },
+            { readview.setHeaderPaddingTop(it) }
+        )
+        bottomProgressBar.configDualThumbProgressBar(
+            headerPaddingRange[1].first, headerPaddingRange[1].last,
+            { readview.getHeaderPaddingBottom() },
+            { readview.setHeaderPaddingBottom(it) }
+        )
+        leftProgressBar.configDualThumbProgressBar(
+            headerPaddingRange[2].first, headerPaddingRange[2].last,
+            { readview.getHeaderPaddingLeft() },
+            { readview.setHeaderPaddingLeft(it) }
+        )
+        rightProgressBar.configDualThumbProgressBar(
+            headerPaddingRange[3].first, headerPaddingRange[3].last,
+            { readview.getHeaderPaddingRight() },
+            { readview.setHeaderPaddingRight(it) }
+        )
+    }
 
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+    private fun PaddingControll.forFooter() {
+        topProgressBar.configDualThumbProgressBar(
+            footerPaddingRange[0].first, footerPaddingRange[0].last,
+            { readview.getFooterPaddingTop() },
+            { readview.setFooterPaddingTop(it) }
+        )
+        bottomProgressBar.configDualThumbProgressBar(
+            footerPaddingRange[1].first, footerPaddingRange[1].last,
+            { readview.getFooterPaddingBottom() },
+            { readview.setFooterPaddingBottom(it) }
+        )
+        leftProgressBar.configDualThumbProgressBar(
+            footerPaddingRange[2].first, footerPaddingRange[2].last,
+            { readview.getFooterPaddingLeft() },
+            { readview.setFooterPaddingLeft(it) }
+        )
+        rightProgressBar.configDualThumbProgressBar(
+            footerPaddingRange[3].first, footerPaddingRange[3].last,
+            { readview.getFooterPaddingRight() },
+            { readview.setFooterPaddingRight(it) }
+        )
+    }
 
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
+    private fun PaddingControll.forBody() {
+        topProgressBar.configDualThumbProgressBar(
+            bodyPaddingRange[0].first, bodyPaddingRange[0].last,
+            { readview.getBodyPaddingTop() },
+            { readview.setBodyPaddingTop(it) }
+        )
+        bottomProgressBar.configDualThumbProgressBar(
+            bodyPaddingRange[1].first, bodyPaddingRange[1].last,
+            { readview.getBodyPaddingBottom() },
+            { readview.setBodyPaddingBottom(it) }
+        )
+        leftProgressBar.configDualThumbProgressBar(
+            bodyPaddingRange[2].first, bodyPaddingRange[2].last,
+            { readview.getBodyPaddingLeft() },
+            { readview.setBodyPaddingLeft(it) }
+        )
+        rightProgressBar.configDualThumbProgressBar(
+            bodyPaddingRange[3].first, bodyPaddingRange[3].last,
+            { readview.getBodyPaddingRight() },
+            { readview.setBodyPaddingRight(it) }
+        )
+    }
 
-        // 调整行间距
-        val uiLineSpaceNum = view.findViewById<TextView>(R.id.typesetting_line_space_num)
-        val uiLineSpaceProgress = view.findViewById<AppCompatSeekBar>(R.id.typesetting_line_space_progress_bar)
-        uiLineSpaceNum.text = readview.getLineMargin().toInt().toString()
-        view.findViewById<View>(R.id.typesetting_line_space_plus).setOnClickListener {
-            val curSpace = readview.getLineMargin()
-            val newSpace = (curSpace + 2F).coerceIn(0F, 100F)
-            readview.setLineMargin(newSpace)
-            uiLineSpaceNum.text = newSpace.toInt().toString()
-            uiLineSpaceProgress.progress = newSpace.toInt()
-        }
-        view.findViewById<View>(R.id.typesetting_line_space_minus).setOnClickListener {
-            val curSpace = readview.getLineMargin()
-            val newSpace = (curSpace - 2F).coerceIn(0F, 100F)
-            readview.setLineMargin(newSpace)
-            uiLineSpaceNum.text = newSpace.toInt().toString()
-            uiLineSpaceProgress.progress = newSpace.toInt()
-        }
-        uiLineSpaceProgress.apply {
-            max = 100
-            progress = readview.getLineMargin().toInt()
-            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        uiLineSpaceNum.text = progress.toString()
-                        readview.setLineMargin(progress.toFloat())
-                    }
-                }
+    private fun PaddingControll.forTitle() {
+        topProgressBar.configDualThumbProgressBar(
+            titlePaddingRange[0].first, titlePaddingRange[0].last,
+            { readview.getTitlePaddingTop() },
+            { readview.setTitlePaddingTop(it) }
+        )
+        bottomProgressBar.configDualThumbProgressBar(
+            titlePaddingRange[1].first, titlePaddingRange[1].last,
+            { readview.getTitlePaddingBottom() },
+            { readview.setTitlePaddingBottom(it) }
+        )
+        leftProgressBar.configDualThumbProgressBar(
+            titlePaddingRange[2].first, titlePaddingRange[2].last,
+            { readview.getTitlePaddingLeft() },
+            { readview.setTitlePaddingLeft(it) }
+        )
+        rightProgressBar.configDualThumbProgressBar(
+            titlePaddingRange[3].first, titlePaddingRange[3].last,
+            { readview.getTitlePaddingRight() },
+            { readview.setTitlePaddingRight(it) }
+        )
+    }
 
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
-
-        // 调节段间距
-        val uiParaSpaceNum = view.findViewById<TextView>(R.id.typesetting_para_space_num)
-        val uiParaSpaceProgress = view.findViewById<AppCompatSeekBar>(R.id.typesetting_para_space_progress_bar)
-        uiParaSpaceNum.text = readview.getParaMargin().toInt().toString()
-        view.findViewById<View>(R.id.typesetting_para_space_plus).setOnClickListener {
-            val curSpace = readview.getParaMargin()
-            val newSpace = (curSpace + 2F).coerceIn(0F, 100F)
-            readview.setParaMargin(newSpace)
-            uiParaSpaceNum.text = newSpace.toInt().toString()
-            uiParaSpaceProgress.progress = newSpace.toInt()
-        }
-        view.findViewById<View>(R.id.typesetting_para_space_minus).setOnClickListener {
-            val curSpace = readview.getParaMargin()
-            val newSpace = (curSpace - 2F).coerceIn(0F, 100F)
-            readview.setParaMargin(newSpace)
-            uiParaSpaceNum.text = newSpace.toInt().toString()
-            uiParaSpaceProgress.progress = newSpace.toInt()
-        }
-        uiParaSpaceProgress.apply {
-            max = 100
-            progress = readview.getParaMargin().toInt()
-            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        uiParaSpaceNum.text = progress.toString()
-                        readview.setParaMargin(progress.toFloat())
-                    }
-                }
-
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
-
-        // 调整页面左间距
-        val uiPagePaddingLeftNum = view.findViewById<TextView>(R.id.typesetting_page_padding_left_num)
-        val uiPagePaddingLeftProgress = view.findViewById<AppCompatSeekBar>(R.id.typesetting_page_padding_left_progress_bar)
-        uiPagePaddingLeftNum.text = readview.getPagePaddingLeft().toString()
-        view.findViewById<View>(R.id.typesetting_page_padding_left_plus).setOnClickListener {
-            val curPadding = readview.getPagePaddingLeft()
-            val newPadding = (curPadding + 2).coerceIn(0, 200)
-            readview.setPagePaddingLeft(newPadding)
-            uiPagePaddingLeftNum.text = newPadding.toString()
-            uiPagePaddingLeftProgress.progress = newPadding
-        }
-        view.findViewById<View>(R.id.typesetting_page_padding_left_minus).setOnClickListener {
-            val curPadding = readview.getPagePaddingLeft()
-            val newPadding = (curPadding - 2).coerceIn(0, 200)
-            readview.setPagePaddingLeft(newPadding)
-            uiPagePaddingLeftNum.text = newPadding.toString()
-            uiPagePaddingLeftProgress.progress = newPadding
-        }
-        uiPagePaddingLeftProgress.apply {
-            max = 200
-            progress = readview.getPagePaddingLeft()
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        uiPagePaddingLeftNum.text = progress.toString()
-                        readview.setPagePaddingLeft(progress)
-                    }
-                }
-
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
-
-        // 调整页面右间距
-        val uiPagePaddingRightNum = view.findViewById<TextView>(R.id.typesetting_page_padding_right_num)
-        val uiPagePaddingRightProgress = view.findViewById<AppCompatSeekBar>(R.id.typesetting_page_padding_right_progress_bar)
-        uiPagePaddingRightNum.text = readview.getPagePaddingRight().toString()
-        view.findViewById<View>(R.id.typesetting_page_padding_right_plus).setOnClickListener {
-            val curPadding = readview.getPagePaddingRight()
-            val newPadding = (curPadding + 2).coerceIn(0, 200)
-            readview.setPagePaddingRight(newPadding)
-            uiPagePaddingRightNum.text = newPadding.toString()
-            uiPagePaddingRightProgress.progress = newPadding
-        }
-        view.findViewById<View>(R.id.typesetting_page_padding_right_minus).setOnClickListener {
-            val curPadding = readview.getPagePaddingRight()
-            val newPadding = (curPadding - 2).coerceIn(0, 200)
-            readview.setPagePaddingRight(newPadding)
-            uiPagePaddingRightNum.text = newPadding.toString()
-            uiPagePaddingRightProgress.progress = newPadding
-        }
-        uiPagePaddingRightProgress.apply {
-            max = 200
-            progress = readview.getPagePaddingRight()
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(
-                    seekBar: SeekBar?,
-                    progress: Int,
-                    fromUser: Boolean
-                ) {
-                    if (fromUser) {
-                        uiPagePaddingRightNum.text = progress.toString()
-                        readview.setPagePaddingRight(progress)
-                    }
-                }
-
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
+    private fun PaddingControll.forContent() {
+        topProgressBar.configDualThumbProgressBar(
+            contentPaddingRange[0].first, contentPaddingRange[0].last,
+            { readview.getContentPaddingTop() },
+            { readview.setContentPaddingTop(it) }
+        )
+        bottomProgressBar.configDualThumbProgressBar(
+            contentPaddingRange[1].first, contentPaddingRange[1].last,
+            { readview.getContentPaddingBottom() },
+            { readview.setContentPaddingBottom(it) }
+        )
+        leftProgressBar.configDualThumbProgressBar(
+            contentPaddingRange[2].first, contentPaddingRange[2].last,
+            { readview.getContentPaddingLeft() },
+            { readview.setContentPaddingLeft(it) }
+        )
+        rightProgressBar.configDualThumbProgressBar(
+            contentPaddingRange[3].first, contentPaddingRange[3].last,
+            { readview.getContentPaddingRight() },
+            { readview.setContentPaddingRight(it) }
+        )
     }
 
 }
