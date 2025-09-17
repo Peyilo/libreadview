@@ -9,7 +9,7 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
-import org.peyilo.libreadview.manager.LayoutManagerFactory
+import org.peyilo.libreadview.turning.EffectFactory
 import org.peyilo.readview.R
 import org.peyilo.readview.databinding.ActivityPageChangeBinding
 import org.peyilo.readview.demo.fragment.PageTurnChangeFragment
@@ -44,7 +44,7 @@ class PageChangeActivity : AppCompatActivity() {
         }
 
         pageContainer.initPageIndex(1)
-        pageContainer.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.IBOOK_SLIDE)
+        pageContainer.pageEffect = EffectFactory.create(EffectFactory.IBOOK_SLIDE)
         pageContainer.adapter = ColorAdapter(colors)
 
 

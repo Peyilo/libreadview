@@ -4,14 +4,14 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.readview.R
 import org.peyilo.readview.demo.ReadActivity
 import org.peyilo.readview.demo.view.DualThumbProgressBar
 
 class ControlPanelFragment(
-    private val readview: SimpleReadView,
+    private val readview: BasicReadView,
     private val readActivity: ReadActivity,
 ) : BaseBottomFragment() {
 

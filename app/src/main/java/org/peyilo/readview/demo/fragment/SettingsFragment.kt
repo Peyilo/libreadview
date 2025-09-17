@@ -4,17 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import org.peyilo.libreadview.manager.CoverLayoutManager
-import org.peyilo.libreadview.manager.IBookCurlLayoutManager
-import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SlideLayoutManager
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.turning.CoverEffect
+import org.peyilo.libreadview.turning.IBookCurlEffect
+import org.peyilo.libreadview.turning.IBookSlideEffect
+import org.peyilo.libreadview.turning.ScrollEffect
+import org.peyilo.libreadview.turning.SlideEffect
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.R
 import org.peyilo.readview.demo.setReadViewTheme
 
 class SettingsFragment(
-    private val readview: SimpleReadView
+    private val readview: BasicReadView
 ): BaseBottomFragment() {
 
     override fun onCreateView(
@@ -28,24 +28,24 @@ class SettingsFragment(
 
     private fun initView(view: View) {
         view.findViewById<View>(R.id.pageturn_cover).setOnClickListener {
-            if (readview.layoutManager is CoverLayoutManager) return@setOnClickListener
-            readview.layoutManager = CoverLayoutManager()
+            if (readview.pageEffect is CoverEffect) return@setOnClickListener
+            readview.pageEffect = CoverEffect()
         }
         view.findViewById<View>(R.id.pageturn_slide).setOnClickListener {
-            if (readview.layoutManager is SlideLayoutManager) return@setOnClickListener
-            readview.layoutManager = SlideLayoutManager()
+            if (readview.pageEffect is SlideEffect) return@setOnClickListener
+            readview.pageEffect = SlideEffect()
         }
         view.findViewById<View>(R.id.pageturn_simulation).setOnClickListener {
-            if (readview.layoutManager is IBookCurlLayoutManager) return@setOnClickListener
-            readview.layoutManager = IBookCurlLayoutManager()
+            if (readview.pageEffect is IBookCurlEffect) return@setOnClickListener
+            readview.pageEffect = IBookCurlEffect()
         }
         view.findViewById<View>(R.id.pageturn_scroll).setOnClickListener {
-            if (readview.layoutManager is ScrollLayoutManager) return@setOnClickListener
-            readview.layoutManager = ScrollLayoutManager()
+            if (readview.pageEffect is ScrollEffect) return@setOnClickListener
+            readview.pageEffect = ScrollEffect()
         }
         view.findViewById<View>(R.id.pageturn_ibook_slide).setOnClickListener {
-            if (readview.layoutManager is IBookSlideLayoutManager) return@setOnClickListener
-            readview.layoutManager = IBookSlideLayoutManager()
+            if (readview.pageEffect is IBookSlideEffect) return@setOnClickListener
+            readview.pageEffect = IBookSlideEffect()
         }
 
         view.findViewById<View>(R.id.theme_1).setOnClickListener {

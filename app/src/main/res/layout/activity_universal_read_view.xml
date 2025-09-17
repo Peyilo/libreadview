@@ -1,4 +1,4 @@
-<org.peyilo.libreadview.simple.SimpleReadView
+<org.peyilo.libreadview.basic.BasicReadView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/readview"
     android:layout_width="match_parent"

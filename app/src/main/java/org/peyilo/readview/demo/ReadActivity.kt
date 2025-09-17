@@ -2,8 +2,8 @@ package org.peyilo.readview.demo
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.turning.IBookSlideEffect
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
@@ -14,7 +14,7 @@ open class ReadActivity: AppCompatActivity() {
 
     protected lateinit var binding: ActivityUniversalReadViewBinding
 
-    protected val readview: SimpleReadView get() = binding.readview
+    protected val readview: BasicReadView get() = binding.readview
 
     protected val chapTitleList: MutableList<String> = mutableListOf()
 
@@ -26,12 +26,12 @@ open class ReadActivity: AppCompatActivity() {
         initReadView(readview)
     }
 
-    protected open fun initReadView(readview: SimpleReadView) {
+    protected open fun initReadView(readview: BasicReadView) {
         // 设置翻页模式
-        readview.layoutManager = IBookSlideLayoutManager()
+        readview.pageEffect = IBookSlideEffect()
 
         // 当目录完成初始化后，获取章节标题列表
-        readview.setCallback(object : SimpleReadView.Callback {
+        readview.setCallback(object : BasicReadView.Callback {
             override fun onInitTocResult(success: Boolean) {
                 if (!success) return
                 for (i in 1..readview.getChapCount()) {

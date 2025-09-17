@@ -80,7 +80,7 @@ class ReadViewActivity : AppCompatActivity() {
         val selectedFile = File(filePath)
         
         readview = findViewById(R.id.readview)
-        readview.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.COVER)      // Set the page turning mode to cover page turning
+        readview.pageEffect = LayoutManagerFactory.create(LayoutManagerFactory.COVER)      // Set the page turning mode to cover page turning
            
         readview.openBook(
             SimpleNativeLoader(selectedFile).apply {
@@ -106,7 +106,7 @@ class ReadViewActivity : AppCompatActivity() {
 ### 翻页模式的切换
 
 ```kotlin
-readview.layoutManager = LayoutManagerFactory.create(LayoutManagerFactory.COVER)
+readview.pageEffect = LayoutManagerFactory.create(LayoutManagerFactory.COVER)
 ```
 
 你可以通过调用LayoutManagerFactory.create()来获取不同的LayoutManager，并且设置给readview，从而切换翻页模式。

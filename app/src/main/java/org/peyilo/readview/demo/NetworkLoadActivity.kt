@@ -1,13 +1,13 @@
 package org.peyilo.readview.demo
 
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.demo.extensions.customChapLoadPage
 import org.peyilo.readview.demo.loader.BiqugeBookLoader
 
 // 一个用于打开网络小说的阅读页面
 class NetworkLoadActivity : ReadActivity() {
 
-    override fun initReadView(readview: SimpleReadView) {
+    override fun initReadView(readview: BasicReadView) {
         super.initReadView(readview)
         readview.customChapLoadPage()
 

@@ -5,8 +5,8 @@ import android.graphics.drawable.Drawable
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
-import org.peyilo.libreadview.simple.ReadStyleBuilder
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.basic.ReadStyleBuilder
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.App
 import org.peyilo.readview.R
 
@@ -53,7 +53,7 @@ class ReadViewTheme(
 
 }
 
-fun SimpleReadView.setReadViewTheme(idx: Int = 0) {
+fun BasicReadView.setReadViewTheme(idx: Int = 0) {
     val curTheme = ReadViewTheme.allThemes[idx]
     ReadStyleBuilder(this).apply {
         setContentTextColor(curTheme.contentColor)

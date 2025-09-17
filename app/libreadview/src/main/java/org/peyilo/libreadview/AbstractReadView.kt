@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.annotation.IntRange
 import org.peyilo.libreadview.data.RangeData
-import org.peyilo.libreadview.loader.BookLoader
+import org.peyilo.libreadview.load.BookLoader
 import org.peyilo.libreadview.util.DirectMapChapIndexer
 import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.libreadview.util.newLifoFixedThreadPool

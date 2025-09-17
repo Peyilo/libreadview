@@ -1,8 +1,8 @@
 package org.peyilo.readview.demo
 
 import org.mozilla.universalchardet.UniversalDetector
-import org.peyilo.libreadview.loader.TxtFileLoader
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.load.TxtFileLoader
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.demo.extensions.customChapLoadPage
 import java.io.File
@@ -21,7 +21,7 @@ class TxtReadActivity : ReadActivity() {
         return encoding ?: "UTF-8"
     }
 
-    override fun initReadView(readview: SimpleReadView) {
+    override fun initReadView(readview: BasicReadView) {
         super.initReadView(readview)
 
         // 从 Intent 获取文件路径

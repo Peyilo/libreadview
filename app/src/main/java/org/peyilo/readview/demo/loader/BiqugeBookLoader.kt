@@ -4,7 +4,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.peyilo.libreadview.data.Book
 import org.peyilo.libreadview.data.Chapter
-import org.peyilo.libreadview.loader.BookLoader
+import org.peyilo.libreadview.load.BookLoader
 
 class BiqugeBookLoader(val bookId: Long): BookLoader {
 

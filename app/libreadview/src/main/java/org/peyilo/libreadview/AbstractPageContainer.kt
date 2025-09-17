@@ -21,7 +21,7 @@ import kotlin.math.min
 
 /**
  *
- * TODO: 对于水平翻页的PageManager，考虑支持向上或向下的手势，以实现类似于起点阅读、番茄小说类似的书签、段评功能
+ * TODO: 对于水平翻页的PageEffect，考虑支持向上或向下的手势，以实现类似于起点阅读、番茄小说类似的书签、段评功能
  * TODO：横屏、竖屏状态改变时，需要保存状态、并恢复状态
  */
 abstract class AbstractPageContainer(
@@ -43,17 +43,17 @@ abstract class AbstractPageContainer(
     constructor(context: Context): this(context, null)
 
     /**
-     * 这么设计，是因为需要对外提供pageContainer.pageManager = CoverPageManager()的简单操作
-     * 同时，保证PageContainer内部获取pageManager时不必总是pageManager!!
+     * 这么设计，是因为需要对外提供pageContainer.PageEffect = CoverPageEffect()的简单操作
+     * 同时，保证PageContainer内部获取PageEffect时不必总是PageEffect!!
      */
-    private var _layoutManager: LayoutManager? = null
-    var layoutManager: LayoutManager
+    private var _pageEffect: PageEffect? = null
+    var pageEffect: PageEffect
         set(value) {
-            _layoutManager?.apply {
+            _pageEffect?.apply {
                 forceNotInLayoutOrScroll()
                 destory()
             }
-            _layoutManager = value        // 清除pageManager中包含的PageContainer引用
+            _pageEffect = value        // 清除PageEffect中包含的PageContainer引用
             value.setPageContainer(this)
             resetPagePosition()
             val renderer = value.createRenderer()
@@ -64,8 +64,8 @@ abstract class AbstractPageContainer(
             value.requestReInitPagePosition()
             requestLayout()
         }
-        get() = _layoutManager
-            ?: throw IllegalStateException("LayoutManager is not initialized. Did you forget to set it?")
+        get() = _pageEffect
+            ?: throw IllegalStateException("PageEffect is not initialized. Did you forget to set it?")
 
     private var innerAdapter: Adapter<out ViewHolder>? = null
     @Suppress("UNCHECKED_CAST")
@@ -213,9 +213,9 @@ abstract class AbstractPageContainer(
      */
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        _layoutManager?.apply {
+        _pageEffect?.apply {
             destory()
-            _layoutManager = null
+            _pageEffect = null
         }
         mPageCache.destroy()
     }
@@ -297,8 +297,8 @@ abstract class AbstractPageContainer(
                 child.layout(left, top, right, bottom)
             }
         }
-        if (layoutManager.needInitPagePosition) {
-            layoutManager.initPagePosition()
+        if (pageEffect.needInitPagePosition) {
+            pageEffect.initPagePosition()
         }
     }
 
@@ -415,16 +415,16 @@ abstract class AbstractPageContainer(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        return layoutManager.onTouchEvent(event)
+        return pageEffect.onTouchEvent(event)
     }
 
     /**
      * 负责实现各种翻页模式
      */
-    abstract class LayoutManager {
+    abstract class PageEffect {
 
         /**
-         * 注意及时清除PageManager中的pageContainer引用，避免内存泄露
+         * 注意及时清除PageEffect中的pageContainer引用，避免内存泄露
          */
         private var _pageContainer: AbstractPageContainer? = null
         protected val pageContainer: AbstractPageContainer
@@ -446,7 +446,7 @@ abstract class AbstractPageContainer(
             private set
 
         /**
-         * 销毁LayoutManager
+         * 销毁PageEffect
          */
         fun destory() {
             _pageContainer?.let {
@@ -497,8 +497,8 @@ abstract class AbstractPageContainer(
         abstract fun flipToPrevPage(limited: Boolean = true): Boolean
 
         /**
-         * force the state of layoutmanager is not in layout or scroll.
-         * this method will abort the animation of layoutmanager and enture the view not in layout.
+         * force the state of PageEffect is not in layout or scroll.
+         * this method will abort the animation of PageEffect and enture the view not in layout.
          */
         abstract fun forceNotInLayoutOrScroll()
 
@@ -956,7 +956,7 @@ abstract class AbstractPageContainer(
         }
         super.addView(child, index, params)
         // index - pageViewStart 是因为glView占据了index=0的位置
-        layoutManager.onAddPage(child!!, index - pageViewStart)
+        pageEffect.onAddPage(child!!, index - pageViewStart)
     }
 
     private fun addGlViewToBottom() {
@@ -1096,8 +1096,8 @@ abstract class AbstractPageContainer(
          * 当确定，某个操作会影响当前attachedPages发生改变（不是内容，而是View实例）时，需要调用这个函数保证更新当前attachedPages时，所有的attachedPage不应该不处于滚动或布局中央状态
          */
         private fun forceNotInLayoutOrScroll() {
-            if (_layoutManager == null) return
-            layoutManager.forceNotInLayoutOrScroll()
+            if (_pageEffect == null) return
+            pageEffect.forceNotInLayoutOrScroll()
         }
 
         /**
@@ -1404,7 +1404,7 @@ abstract class AbstractPageContainer(
     }
 
     override fun computeScroll() {
-        layoutManager.computeScroll()
+        pageEffect.computeScroll()
     }
 
     /**
@@ -1483,7 +1483,7 @@ abstract class AbstractPageContainer(
      */
     fun flipToNextPage(limited: Boolean = true): Boolean {
         if (hasNextPage()) {
-            return layoutManager.flipToNextPage(limited)
+            return pageEffect.flipToNextPage(limited)
         }
         return false
     }
@@ -1494,7 +1494,7 @@ abstract class AbstractPageContainer(
      */
     fun flipToPrevPage(limited: Boolean = true): Boolean {
         if (hasPrevPage()) {
-            return layoutManager.flipToPrevPage(limited)
+            return pageEffect.flipToPrevPage(limited)
         }
         return false
     }
@@ -1533,10 +1533,10 @@ abstract class AbstractPageContainer(
     override fun navigateToPrevPage(): Boolean = flipToPrevPage(false)
 
     override fun dispatchDraw(canvas: Canvas) {
-        if (layoutManager.needDrawChild()) {
+        if (pageEffect.needDrawChild()) {
             super.dispatchDraw(canvas)
         }
-        layoutManager.dispatchDraw(canvas)
+        pageEffect.dispatchDraw(canvas)
     }
 
     /**
@@ -1697,7 +1697,7 @@ abstract class AbstractPageContainer(
 
     /**
      * 保存状态
-     * TODO：尽可能保存所有能影响PageContainer行为的状态，如PageManager、Adapter
+     * TODO：尽可能保存所有能影响PageContainer行为的状态，如PageEffect、Adapter
      * TODO: 无需处理子View的状态，子View的状态应该交由它自己处理
      */
     override fun onSaveInstanceState(): Parcelable? {

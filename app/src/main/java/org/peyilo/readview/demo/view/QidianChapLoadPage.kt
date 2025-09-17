@@ -8,7 +8,7 @@ import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import androidx.annotation.IntRange
 import androidx.core.content.ContextCompat
-import org.peyilo.libreadview.simple.page.DecoratedPage
+import org.peyilo.libreadview.basic.page.DecoratedPage
 import org.peyilo.readview.R
 
 /**

@@ -5,11 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import org.peyilo.libreadview.AbstractPageContainer
-import org.peyilo.libreadview.manager.CoverLayoutManager
-import org.peyilo.libreadview.manager.IBookCurlLayoutManager
-import org.peyilo.libreadview.manager.IBookSlideLayoutManager
-import org.peyilo.libreadview.manager.ScrollLayoutManager
-import org.peyilo.libreadview.manager.SlideLayoutManager
+import org.peyilo.libreadview.turning.CoverEffect
+import org.peyilo.libreadview.turning.IBookCurlEffect
+import org.peyilo.libreadview.turning.IBookSlideEffect
+import org.peyilo.libreadview.turning.ScrollEffect
+import org.peyilo.libreadview.turning.SlideEffect
 import org.peyilo.readview.R
 
 class PageTurnChangeFragment(
@@ -27,24 +27,24 @@ class PageTurnChangeFragment(
 
     private fun initView(view: View) {
         view.findViewById<View>(R.id.pageturn_cover).setOnClickListener {
-            if (pageContainer.layoutManager is CoverLayoutManager) return@setOnClickListener
-            pageContainer.layoutManager = CoverLayoutManager()
+            if (pageContainer.pageEffect is CoverEffect) return@setOnClickListener
+            pageContainer.pageEffect = CoverEffect()
         }
         view.findViewById<View>(R.id.pageturn_slide).setOnClickListener {
-            if (pageContainer.layoutManager is SlideLayoutManager) return@setOnClickListener
-            pageContainer.layoutManager = SlideLayoutManager()
+            if (pageContainer.pageEffect is SlideEffect) return@setOnClickListener
+            pageContainer.pageEffect = SlideEffect()
         }
         view.findViewById<View>(R.id.pageturn_simulation).setOnClickListener {
-            if (pageContainer.layoutManager is IBookCurlLayoutManager) return@setOnClickListener
-            pageContainer.layoutManager = IBookCurlLayoutManager()
+            if (pageContainer.pageEffect is IBookCurlEffect) return@setOnClickListener
+            pageContainer.pageEffect = IBookCurlEffect()
         }
         view.findViewById<View>(R.id.pageturn_scroll).setOnClickListener {
-            if (pageContainer.layoutManager is ScrollLayoutManager) return@setOnClickListener
-            pageContainer.layoutManager = ScrollLayoutManager()
+            if (pageContainer.pageEffect is ScrollEffect) return@setOnClickListener
+            pageContainer.pageEffect = ScrollEffect()
         }
         view.findViewById<View>(R.id.pageturn_ibook_slide).setOnClickListener {
-            if (pageContainer.layoutManager is IBookSlideLayoutManager) return@setOnClickListener
-            pageContainer.layoutManager = IBookSlideLayoutManager()
+            if (pageContainer.pageEffect is IBookSlideEffect) return@setOnClickListener
+            pageContainer.pageEffect = IBookSlideEffect()
         }
 
     }

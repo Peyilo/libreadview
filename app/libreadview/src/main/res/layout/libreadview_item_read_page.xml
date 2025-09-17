@@ -32,7 +32,7 @@
 
     </LinearLayout>
 
-    <org.peyilo.libreadview.simple.page.ReadBody
+    <org.peyilo.libreadview.basic.page.ReadBody
         android:id="@+id/page_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

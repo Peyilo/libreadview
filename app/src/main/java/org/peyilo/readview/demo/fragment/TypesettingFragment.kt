@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatSeekBar
-import org.peyilo.libreadview.simple.SimpleReadView
+import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.readview.R
 
 class TypesettingFragment(
-    private val readview: SimpleReadView
+    private val readview: BasicReadView
 ): BaseBottomFragment() {
 
     override fun onCreateView(
