@@ -2,8 +2,8 @@ package org.peyilo.readview.demo
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import org.peyilo.libreadview.turning.IBookSlideEffect
 import org.peyilo.libreadview.basic.BasicReadView
+import org.peyilo.libreadview.turning.IBookSlideEffect
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
@@ -133,5 +133,9 @@ open class ReadActivity: AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        readview.clearReadViewThemeCache()
+    }
 
 }

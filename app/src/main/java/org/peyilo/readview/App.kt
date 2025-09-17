@@ -14,7 +14,9 @@ class App: Application() {
     override fun onCreate() {
         super.onCreate()
         App.applicationContext = applicationContext
-        LogHelper.ENABLE_LOG = true            // 内部的日志开关
+        if (BuildConfig.DEBUG) {
+            LogHelper.ENABLE_LOG = true            // 内部的日志开关
+        }
     }
 
 }

@@ -6,156 +6,19 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="#F6F6F6"
+    android:paddingHorizontal="20dp"
     android:paddingBottom="24dp"
     android:paddingTop="16dp">
 
-    <TextView
+    <org.peyilo.readview.demo.view.SegmentedLabelControll
+        android:id="@+id/setting_turning_controll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/black"
-        android:text="翻页动画"
-        android:paddingStart="5dp"
-        android:textSize="12sp"
-        tools:ignore="HardcodedText" />
+        android:layout_marginBottom="20dp"/>
 
-    <LinearLayout
+    <org.peyilo.readview.demo.view.SegmentedLabelControll
+        android:id="@+id/setting_theme_controll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_horizontal"
-        tools:ignore="RtlSymmetry">
-
-        <Button
-            android:id="@+id/pageturn_cover"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="覆盖"
-            android:gravity="center"
-            android:textColor="@color/black"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/pageturn_slide"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="左右"
-            android:textColor="@color/black"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/pageturn_simulation"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="仿真"
-            android:textColor="@color/black"
-            tools:ignore="ContentDescription,HardcodedText" />
-
-        <Button
-            android:id="@+id/pageturn_scroll"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="滚动"
-            android:textColor="@color/black"
-            tools:ignore="ContentDescription,HardcodedText" />
-
-        <Button
-            android:id="@+id/pageturn_ibook_slide"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="iBook"
-            android:textAllCaps="false"
-            android:gravity="center"
-            android:textColor="@color/black"
-            tools:ignore="HardcodedText" />
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_marginVertical="8dp"
-        android:layout_marginHorizontal="15dp"
-        android:layout_height="2dp"
-        android:background="@color/split_line"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@color/black"
-        android:text="文字颜色和背景"
-        android:paddingStart="5dp"
-        android:textSize="12sp"
-        tools:ignore="HardcodedText" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_horizontal"
-        tools:ignore="RtlSymmetry">
-
-        <Button
-            android:id="@+id/theme_1"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="主题1"
-            android:gravity="center"
-            android:textColor="@color/black"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/theme_2"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="主题2"
-            android:textColor="@color/black"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/theme_3"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="主题3"
-            android:textColor="@color/black"
-            tools:ignore="ContentDescription,HardcodedText" />
-
-        <Button
-            android:id="@+id/theme_4"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="主题4"
-            android:textColor="@color/black"
-            tools:ignore="ContentDescription,HardcodedText" />
-
-        <Button
-            android:id="@+id/theme_5"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="主题5"
-            android:textAllCaps="false"
-            android:gravity="center"
-            android:textColor="@color/black"
-            tools:ignore="HardcodedText" />
-
-    </LinearLayout>
+        android:layout_height="wrap_content" />
 
 </LinearLayout>

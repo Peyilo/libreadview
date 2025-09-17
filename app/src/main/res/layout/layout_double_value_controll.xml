@@ -7,7 +7,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <TextView
-        android:id="@+id/textsize_controll_label"
+        android:id="@+id/double_value_controll_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
@@ -20,10 +20,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="2"
-        app:layout_constraintTop_toBottomOf="@id/textsize_controll_label">
+        app:layout_constraintTop_toBottomOf="@id/double_value_controll_label">
 
         <org.peyilo.readview.demo.view.DualThumbProgressBar
-            android:id="@+id/textsize_controll_title"
+            android:id="@+id/double_value_controll_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
@@ -34,7 +34,7 @@
             tools:ignore="NestedWeights" />
 
         <org.peyilo.readview.demo.view.DualThumbProgressBar
-            android:id="@+id/textsize_controll_content"
+            android:id="@+id/double_value_controll_content"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"

@@ -11,20 +11,20 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.annotation.IntRange
 import org.peyilo.libreadview.AbstractReadView
-import org.peyilo.libreadview.data.Book
-import org.peyilo.libreadview.data.page.PageData
-import org.peyilo.libreadview.load.BookLoader
-import org.peyilo.libreadview.load.TextLoader
-import org.peyilo.libreadview.load.TxtFileLoader
-import org.peyilo.libreadview.content.ContentParser
-import org.peyilo.libreadview.content.DefaultContentParser
-import org.peyilo.libreadview.content.ReadChapter
-import org.peyilo.libreadview.layout.Alignment
-import org.peyilo.libreadview.layout.DefaultPageContentProvider
-import org.peyilo.libreadview.layout.PageContentProvider
 import org.peyilo.libreadview.basic.page.ChapLoadPage
 import org.peyilo.libreadview.basic.page.MessagePage
 import org.peyilo.libreadview.basic.page.ReadPage
+import org.peyilo.libreadview.content.ContentParser
+import org.peyilo.libreadview.content.DefaultContentParser
+import org.peyilo.libreadview.content.ReadChapter
+import org.peyilo.libreadview.data.Book
+import org.peyilo.libreadview.data.page.PageData
+import org.peyilo.libreadview.layout.Alignment
+import org.peyilo.libreadview.layout.DefaultPageContentProvider
+import org.peyilo.libreadview.layout.PageContentProvider
+import org.peyilo.libreadview.load.BookLoader
+import org.peyilo.libreadview.load.TextLoader
+import org.peyilo.libreadview.load.TxtFileLoader
 import org.peyilo.libreadview.util.DisplayUtil
 import org.peyilo.libreadview.util.LogHelper
 import java.io.File
@@ -495,17 +495,24 @@ class BasicReadView(
     /**
      * 获取正文文字的边距
      */
-    fun getTextMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentTextMargin)
+    fun getContentTextMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentTextMargin)
 
     /**
      * 获取正文文字的行间距
      */
-    fun getLineMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentLineMargin)
+    fun getContentLineMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentLineMargin)
 
     /**
      * 获取段落间距
      */
-    fun getParaMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentParaMargin)
+    fun getContentParaMargin() = DisplayUtil.pxToDp(context, mReadStyle.contentParaMargin)
+
+    /**
+     * 获取标题的行间距
+     */
+    fun getTitleLineMargin() = DisplayUtil.pxToDp(context, mReadStyle.titleLineMargin)
+
+    fun getTitleTextMargin() = DisplayUtil.pxToDp(context, mReadStyle.titleTextMargin)
 
 
     /**
@@ -594,7 +601,7 @@ class BasicReadView(
     /**
      * 设置行间距 (请在ui线程调用)
      */
-    fun setLineMargin(margin: Float) {
+    fun setContentLineMargin(margin: Float) {
         mReadStyle.contentLineMargin = DisplayUtil.dpToPx(context, margin)
         invalidateReadLayout()
     }
@@ -602,7 +609,7 @@ class BasicReadView(
     /**
      * 设置段落间距 (请在ui线程调用)
      */
-    fun setParaMargin(margin: Float) {
+    fun setContentParaMargin(margin: Float) {
         mReadStyle.contentParaMargin = DisplayUtil.dpToPx(context, margin)
         invalidateReadLayout()
     }
@@ -742,9 +749,7 @@ class BasicReadView(
         invalidateReadLayout(true)
     }
 
-    fun setPagePadding(
-        left: Int, top: Int, right: Int, bottom: Int
-    ) {
+    fun setPagePadding(left: Int, top: Int, right: Int, bottom: Int) {
         mReadStyle.pagePaddingLeft = DisplayUtil.dpToPx(context, left)
         mReadStyle.pagePaddingTop = DisplayUtil.dpToPx(context, top)
         mReadStyle.pagePaddingRight = DisplayUtil.dpToPx(context, right)
@@ -817,9 +822,7 @@ class BasicReadView(
         invalidateReadLayout(true)
     }
 
-    fun setHeaderPadding(
-        left: Int, top: Int, right: Int, bottom: Int
-    ) {
+    fun setHeaderPadding(left: Int, top: Int, right: Int, bottom: Int) {
         mReadStyle.headerPaddingLeft = DisplayUtil.dpToPx(context, left)
         mReadStyle.headerPaddingTop = DisplayUtil.dpToPx(context, top)
         mReadStyle.headerPaddingRight = DisplayUtil.dpToPx(context, right)
@@ -893,9 +896,7 @@ class BasicReadView(
         invalidateReadLayout(true)
     }
 
-    fun setFooterPadding(
-        left: Int, top: Int, right: Int, bottom: Int
-    ) {
+    fun setFooterPadding(left: Int, top: Int, right: Int, bottom: Int) {
         mReadStyle.footerPaddingLeft = DisplayUtil.dpToPx(context, left)
         mReadStyle.footerPaddingTop = DisplayUtil.dpToPx(context, top)
         mReadStyle.footerPaddingRight = DisplayUtil.dpToPx(context, right)
@@ -1102,8 +1103,11 @@ class BasicReadView(
     /**
      * 设置章节标题对齐方式 (请在ui线程调用)
      */
-    fun setTtitleAlignment(align: Alignment) {
+    fun setTitleAlignment(align: Alignment) {
         mReadStyle.titleAlignment = align
         invalidateReadLayout()
     }
+
+    fun getTitleAlignment(): Alignment = mReadStyle.titleAlignment
+
 }

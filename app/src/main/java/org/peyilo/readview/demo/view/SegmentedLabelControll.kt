@@ -7,23 +7,16 @@ import android.view.ViewGroup
 import android.widget.TextView
 import org.peyilo.readview.R
 
-class TextSizeControll(
+class SegmentedLabelControll(
     context: Context, attrs: AttributeSet? = null
-) : ViewGroup(context, attrs) {
+): ViewGroup(context, attrs) {
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.layout_textsize_controll, this, true)
+        LayoutInflater.from(context).inflate(R.layout.layout_segmented_label_controll, this, true)
     }
 
-
-    val label: TextView = findViewById(R.id.textsize_controll_label)
-
-    val titleProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.textsize_controll_title).apply {
-//        setPrimaryThumbText("上")
-    }
-    val contentProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.textsize_controll_content).apply {
-//        setPrimaryThumbText("下")
-    }
+    val label: TextView = findViewById(R.id.segmented_label_controll_label)
+    val segmented: SegmentedControl = findViewById(R.id.segmented_label_controll_segmented)
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         var maxChildWidth = 0
@@ -76,6 +69,5 @@ class TextSizeControll(
             }
         }
     }
-
 
 }

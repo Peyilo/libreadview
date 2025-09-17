@@ -5,10 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import org.peyilo.libreadview.basic.BasicReadView
+import org.peyilo.libreadview.layout.Alignment
 import org.peyilo.readview.R
+import org.peyilo.readview.demo.view.DoubleValueControll
 import org.peyilo.readview.demo.view.DualThumbProgressBar
 import org.peyilo.readview.demo.view.PaddingControll
-import org.peyilo.readview.demo.view.TextSizeControll
+import org.peyilo.readview.demo.view.SegmentedLabelControll
 
 class TypesettingFragment(
     private val readview: BasicReadView
@@ -79,17 +81,81 @@ class TypesettingFragment(
                 else -> throw IllegalStateException()
             }
         }
-        val textsizeControll = view.findViewById<TextSizeControll>(R.id.typesetting_textsize_controll)
-        textsizeControll.contentProgressBar.configDualThumbProgressBar(
-            10, 60,
-            { readview.getContentTextSize().toInt() },
-            { readview.setContentTextSize(it.toFloat()) }
-        )
-        textsizeControll.titleProgressBar.configDualThumbProgressBar(
+        val textsizeControll = view.findViewById<DoubleValueControll>(R.id.typesetting_textsize_controll)
+        textsizeControll.label.text = "文字大小"
+        textsizeControll.firstProgressBar.apply {
+            setPrimaryThumbText("标题")
+        }
+        textsizeControll.firstProgressBar.configDualThumbProgressBar(
             10, 60,
             { readview.getTitleTextSize().toInt() },
             { readview.setTitleTextSize(it.toFloat()) }
         )
+        textsizeControll.secondProgressBar.apply {
+            setPrimaryThumbText("正文")
+        }
+        textsizeControll.secondProgressBar.configDualThumbProgressBar(
+            10, 60,
+            { readview.getContentTextSize().toInt() },
+            { readview.setContentTextSize(it.toFloat()) }
+        )
+
+        val lineParaControll = view.findViewById<DoubleValueControll>(R.id.typesetting_linepara_controll)
+        lineParaControll.label.text = "行间距"
+        lineParaControll.firstProgressBar.apply {
+            setPrimaryThumbText("行距")
+        }
+        lineParaControll.firstProgressBar.configDualThumbProgressBar(
+            0, 100,
+            { readview.getContentLineMargin().toInt() },
+            { readview.setContentLineMargin(it.toFloat())}
+        )
+        lineParaControll.secondProgressBar.apply {
+            setPrimaryThumbText("段距")
+        }
+        lineParaControll.secondProgressBar.configDualThumbProgressBar(
+            0, 100,
+            { readview.getContentParaMargin().toInt() },
+            { readview.setContentParaMargin(it.toFloat()) }
+        )
+
+        val textMarginControll = view.findViewById<DoubleValueControll>(R.id.typesetting_textmargin_controll)
+        textMarginControll.label.text = "文字间距"
+        textMarginControll.firstProgressBar.apply {
+            setPrimaryThumbText("标题")
+        }
+        textMarginControll.firstProgressBar.configDualThumbProgressBar(
+            0, 20,
+            { readview.getTitleTextMargin().toInt() },
+            { readview.setTitleTextMargin(it.toFloat())}
+        )
+        textMarginControll.secondProgressBar.apply {
+            setPrimaryThumbText("正文")
+        }
+        textMarginControll.secondProgressBar.configDualThumbProgressBar(
+            0, 20,
+            { readview.getContentTextMargin().toInt() },
+            { readview.setContentTextMargin(it.toFloat()) }
+        )
+
+        val titleAlignControll = view.findViewById<SegmentedLabelControll>(R.id.typesetting_title_align_controll)
+        titleAlignControll.label.text = "标题对齐"
+        titleAlignControll.segmented.setOptions(listOf("左对齐", "居中", "右对齐"))
+        titleAlignControll.segmented.setSelectedIndex(
+            when (readview.getTitleAlignment()) {
+                Alignment.LEFT -> 0
+                Alignment.CENTER -> 1
+                Alignment.RIGHT -> 2
+            }
+        )
+        titleAlignControll.segmented.setOnOptionSelectedListener { index ->
+            when (index) {
+                0 -> readview.setTitleAlignment(Alignment.LEFT)
+                1 -> readview.setTitleAlignment(Alignment.CENTER)
+                2 -> readview.setTitleAlignment(Alignment.RIGHT)
+                else -> throw IllegalStateException()
+            }
+        }
     }
 
     private fun DualThumbProgressBar.configDualThumbProgressBar(

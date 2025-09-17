@@ -10,12 +10,11 @@ An Android library designed specifically for eBook and novel reader apps, suppor
 
 To quickly see the page turning animations and layout in action, you can download the demo app:
 
- [Download demo.apk](https://github.com/Peyilo/libreadview/releases/download/0.0.2/demo.apk)
+ [Download demo.apk](https://github.com/Peyilo/libreadview/releases/download/0.0.3/demo.apk)
 
 ## Features
 
 - Multiple page-turning animations, including cover page turn, horizontal slide, simulation, scrolling, and more.
-- Page container layout to manage reading flow
 - Optimized for performance and customization
 
 ![readview_page_turning](./images/readview_page_turning.png)
@@ -34,7 +33,7 @@ Or use Gradle:
 
 ```kotlin
 dependencies {
-    implementation("io.github.peyilo:libreadview:0.0.2")
+    implementation("io.github.peyilo:libreadview:0.0.3")
 }
 ```
 <details> <summary><b>Via Maven</b></summary></details>
@@ -45,7 +44,7 @@ Or Maven:
 <dependency>
     <groupId>io.github.peyilo</groupId>
     <artifactId>libreadview</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 
@@ -53,10 +52,10 @@ Or Maven:
 
 ### ReadView
 
-#### 1. Add `SimpleReadView` in XML
+#### 1. Add `BasicReadView` in XML
 
 ```xml
-<org.peyilo.libreadview.simple.SimpleReadView
+<org.peyilo.libreadview.basic.BasicReadView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/readview"
     android:layout_width="match_parent"
@@ -68,7 +67,7 @@ Or Maven:
 ```kotlin
 class ReadViewActivity : AppCompatActivity() {
 
-    private lateinit var readview: SimpleReadView
+    private lateinit var readview: BasicReadView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,13 +79,17 @@ class ReadViewActivity : AppCompatActivity() {
         val selectedFile = File(filePath)
         
         readview = findViewById(R.id.readview)
-        readview.pageEffect = LayoutManagerFactory.create(LayoutManagerFactory.COVER)      // Set the page turning mode to cover page turning
+        readview.pageEffect = EffectFactory.create(EffectFactory.COVER)      // Set the page turning mode to cover page turning
            
+        // 加载本地txt文件作为内容
         readview.openBook(
-            SimpleNativeLoader(selectedFile).apply {
-                addTitleRegex("第\\d+章 .*")       // Set the regular expression to match chapter titles
+            TxtFileLoader(
+                selectedFile, encoding = "UTF-8"
+            ).apply {
+                // 如果有需要可以指定章节标题正则表达式,用来分割章节
+                // addTitleRegex("第\\d+章 .*")
             },
-            chapIndex = 100,
+            chapIndex = 1,
             pageIndex = 1,
         )
         readview.setOnClickRegionListener { xPercent, yPercent ->
@@ -106,20 +109,20 @@ class ReadViewActivity : AppCompatActivity() {
 ### 翻页模式的切换
 
 ```kotlin
-readview.pageEffect = LayoutManagerFactory.create(LayoutManagerFactory.COVER)
+readview.pageEffect = EffectFactory.create(EffectFactory.COVER)
 ```
 
-你可以通过调用LayoutManagerFactory.create()来获取不同的LayoutManager，并且设置给readview，从而切换翻页模式。
+你可以通过调用EffectFactory.create()来获取不同的PageEffect，并且设置给readview，从而切换翻页模式。
 
 支持的翻页模式有：
 
-- LayoutManagerFactory.NO_ANIMATION：无动画翻页
-- LayoutManagerFactory.CURL：模拟纸张的仿真翻页
-- LayoutManagerFactory.COVER：覆盖翻页
-- LayoutManagerFactory.SLIDE：左右翻页
-- LayoutManagerFactory.SCROLL：滚动翻页
-- LayoutManagerFactory.IBOOK_CURL：模仿Apple iBook的仿真翻页
-- LayoutManagerFactory.IBOOK_SLIDE：模仿Apple iBook的左右翻页
+- EffectFactory.NO_ANIMATION：无动画翻页
+- EffectFactory.CURL：模拟纸张的仿真翻页
+- EffectFactory.COVER：覆盖翻页
+- EffectFactory.SLIDE：左右翻页
+- EffectFactory.SCROLL：滚动翻页
+- EffectFactory.IBOOK_CURL：模仿Apple iBook的仿真翻页
+- EffectFactory.IBOOK_SLIDE：模仿Apple iBook的左右翻页
 
 ### 关于小说内容的加载
 
@@ -348,16 +351,18 @@ interface BookNavigator {
 
 ##### 各种间距的设置
 
-- setPageLeftPadding(left: Float)：设置页面的左边距
-- setPageRightPadding(right: Float)： 设置页面的右边距
-- setPageTopPadding(top: Float)：设置页面的上边距
-- setPageBottomPadding(bottom: Float)：设置页面的下边距
+- setPagePadding(left: Int, top: Int, right: Int, bottom: Int)：设置页面的边距
+- setHeaderPadding(left: Int, top: Int, right: Int, bottom: Int)：设置页眉的边距
+- setFooterPadding(left: Int, top: Int, right: Int, bottom: Int) ：设置页脚的边距
+- setBodyPadding(left: Int, top: Int, right: Int, bottom: Int) ：设置主体内容的边距
+- setTitlePadding(left: Int, top: Int, right: Int, bottom: Int) ：设置标题部分的边距
+- setContentPadding(left: Int, top: Int, right: Int, bottom: Int) ：设置正文部分的边距
+
 - setFirstParaIndent(indent: Float)：设置段落首行缩进 (请在ui线程调用)
-- setTitleMargin(margin: Float)：设置标题与正文的间距 (请在ui线程调用)
 - setContentTextMargin(margin: Float)： 设置正文文字的边距 (请在ui线程调用)
 - setTitleTextMargin(margin: Float)：设置标题文字间距 (请在ui线程调用)
-- setLineMargin(margin: Float)：设置行间距 (请在ui线程调用)
-- setParaMargin(margin: Float)：设置段落间距 (请在ui线程调用)
+- setContentLineMargin(margin: Float)：设置行间距 (请在ui线程调用)
+- setContentParaMargin(margin: Float)：设置段落间距 (请在ui线程调用)
 
 ### TODO
 

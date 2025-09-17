@@ -7,30 +7,20 @@ import android.view.ViewGroup
 import android.widget.TextView
 import org.peyilo.readview.R
 
-class PaddingControll(
+class DoubleValueControll(
     context: Context, attrs: AttributeSet? = null
 ) : ViewGroup(context, attrs) {
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.layout_padding_controll, this, true)
+        LayoutInflater.from(context).inflate(R.layout.layout_double_value_controll, this, true)
     }
 
-    val label: TextView = findViewById(R.id.padding_controll_label)
-    val segmented: SegmentedControl = findViewById(R.id.padding_controll_segmented)
-    val topProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.padding_controll_top).apply {
-        setPrimaryThumbText("上")
+    val label: TextView = findViewById(R.id.double_value_controll_label)
+
+    val firstProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.double_value_controll_title).apply {
         useDual = false
     }
-    val bottomProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.padding_controll_bottom).apply {
-        setPrimaryThumbText("下")
-        useDual = false
-    }
-    val leftProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.padding_controll_left).apply {
-        setPrimaryThumbText("左")
-        useDual = false
-    }
-    val rightProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.padding_controll_right).apply {
-        setPrimaryThumbText("右")
+    val secondProgressBar: DualThumbProgressBar = findViewById<DualThumbProgressBar>(R.id.double_value_controll_content).apply {
         useDual = false
     }
 
@@ -85,4 +75,6 @@ class PaddingControll(
             }
         }
     }
+
+
 }

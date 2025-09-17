@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     style="?android:attr/buttonBarStyle"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -10,13 +8,32 @@
     android:paddingHorizontal="20dp"
     android:paddingVertical="15dp">
 
+    <org.peyilo.readview.demo.view.SegmentedLabelControll
+        android:id="@+id/typesetting_title_align_controll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"/>
+
+    <org.peyilo.readview.demo.view.DoubleValueControll
+        android:id="@+id/typesetting_textsize_controll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"/>
+
+    <org.peyilo.readview.demo.view.DoubleValueControll
+        android:id="@+id/typesetting_textmargin_controll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"/>
+
+    <org.peyilo.readview.demo.view.DoubleValueControll
+        android:id="@+id/typesetting_linepara_controll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"/>
+
     <org.peyilo.readview.demo.view.PaddingControll
         android:id="@+id/typesetting_padding_controll"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <org.peyilo.readview.demo.view.TextSizeControll
-        android:id="@+id/typesetting_textsize_controll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
