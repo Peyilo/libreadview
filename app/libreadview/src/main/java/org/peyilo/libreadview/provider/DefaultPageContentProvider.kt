@@ -8,6 +8,7 @@ import org.peyilo.libreadview.data.page.StringLineData
 import org.peyilo.libreadview.parser.ParagraphContent
 import org.peyilo.libreadview.parser.ReadChapter
 import org.peyilo.libreadview.parser.TitleContent
+import org.peyilo.libreadview.provider.Alignment
 import org.peyilo.libreadview.simple.ReadStyle
 
 /**
@@ -22,11 +23,18 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
 
     private val remainedBodyWidth get() = config.bodyWidth - config.bodyPaddingRight - config.bodyPaddingLeft
     private val remainedBodyHeight get() = config.bodyHeight - config.bodyPaddingTop - config.bodyPaddingBottom
-    private val bodyStartLeft get() = config.bodyPaddingLeft.toFloat()
-    private val bodyStartTop get() = config.bodyPaddingTop.toFloat()
+    private val bodyLeft get() = config.bodyPaddingLeft.toFloat()
+    private val bodyTop get() = config.bodyPaddingTop.toFloat()
+    private val bodyRight get() = config.bodyWidth - config.bodyPaddingRight
+    private val bodyBottom get()  = config.bodyHeight - config.bodyPaddingBottom
 
     private val remainedTitleWidth get() = remainedBodyWidth - config.titlePaddingLeft - config.titlePaddingRight
     private val remainedTitleHeight get() = remainedBodyHeight - config.titlePaddingTop - config.titlePaddingBottom
+
+    private val titleLeft get() = bodyLeft + config.titlePaddingLeft
+    private val titleTop get() = bodyTop + config.titlePaddingTop
+    private val titleRight get() = bodyRight - config.titlePaddingRight
+    private val titleBottom get() = bodyBottom - config.titlePaddingBottom
 
     private val remainedContentWidth get() = remainedBodyWidth - config.contentPaddingLeft - config.contentPaddingRight
     private val remainedContentHeight get() = remainedBodyHeight - config.contentPaddingTop - config.contentPaddingBottom
@@ -86,8 +94,8 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         chap.pages.clear()           // 清空pageData
         val width = remainedBodyWidth
         var height = remainedBodyHeight
-        var base = bodyStartTop
-        val left = bodyStartLeft
+        var base = bodyTop
+        val left = bodyLeft
         var curPageIndex = 1
         var page = PageData(curPageIndex)
 
@@ -95,17 +103,20 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         val firstContent = chap.content[0]
         val hasTitle = firstContent is TitleContent
         if (hasTitle) {
-            // 剩余的空间为width - config.titlePaddingLeft - config.titlePaddingRight
             val titleLines = breakLines(firstContent.text,
-                width - config.titlePaddingLeft - config.titlePaddingRight,
-                config.titleTextSize, config.titleTextMargin, 0F)
+                remainedTitleWidth, config.titleTextSize, config.titleTextMargin, 0F)
             base += config.titlePaddingTop
             val titleLeft = left + config.titlePaddingLeft
             titleLines.forEach {
                 base += config.titleTextSize
                 it.apply {                  // 设置TextLine的base、left
+                    val lineWidth = computeWidth(config.titleTextMargin)
                     this@apply.base = base
-                    this@apply.left = titleLeft
+                    this@apply.left = when (config.titleAlignment) {
+                        Alignment.LEFT -> titleLeft
+                        Alignment.CENTER -> titleLeft + (remainedTitleWidth - lineWidth) / 2
+                        Alignment.RIGHT -> titleRight - lineWidth
+                    }
                     it.isTitleLine = true
                 }
                 page.lines.add(it)
@@ -127,7 +138,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         // 如果剩余空间已经不足以再添加一行，就换成下一页
         if (height < config.contentTextSize + config.contentPaddingBottom) {
             height = remainedBodyHeight
-            base = bodyStartTop
+            base = bodyTop
             chap.pages.add(page)
             curPageIndex++
             page = PageData(curPageIndex)
@@ -137,7 +148,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         for (i in parasStartIndex until chap.content.size) {
             val para = chap.content[i] as ParagraphContent
             val paraLines = breakLines(para.text,
-                width - config.contentPaddingLeft - config.contentPaddingRight,
+                remainedContentWidth,
                 config.contentTextSize,
                 config.contentTextMargin, config.firstParaIndent)
             for (j in paraLines.indices) {
@@ -145,7 +156,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
                 // 如果剩余空间已经不足以再添加一行，就换成下一页
                 if (height < config.contentTextSize + config.contentPaddingBottom) {
                     height = remainedBodyHeight
-                    base = bodyStartTop + config.contentPaddingTop
+                    base = bodyTop + config.contentPaddingTop
                     chap.pages.add(page)
                     curPageIndex++
                     page = PageData(curPageIndex)

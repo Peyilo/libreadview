@@ -9,6 +9,7 @@ import android.view.View
 import android.view.View.OnClickListener
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.toColorInt
+import org.peyilo.libreadview.provider.Alignment
 import org.peyilo.libreadview.simple.page.ReadPage
 import org.peyilo.libreadview.util.DisplayUtil
 
@@ -71,7 +72,7 @@ class ReadStyle(
     var bodyPaddingRight = DisplayUtil.dpToPx(context, 0)
     // 标题内边距
     var titlePaddingTop = DisplayUtil.dpToPx(context, 0)
-    var titlePaddingBottom = DisplayUtil.dpToPx(context, 50)
+    var titlePaddingBottom = DisplayUtil.dpToPx(context, 72)
     var titlePaddingLeft = DisplayUtil.dpToPx(context, 0)
     var titlePaddingRight = DisplayUtil.dpToPx(context, 0)
     // 正文内边距
@@ -93,7 +94,7 @@ class ReadStyle(
 
     var titleTextMargin = DisplayUtil.dpToPx(context, 0F)                                 // 章节标题字符间隔
     var titleLineMargin = DisplayUtil.dpToPx(context, 16F)                                // 章节标题行间隔
-    var titlePosition = Position.ALIGN_LEFT                                                  // 章节标题对齐方式
+    var titleAlignment = Alignment.LEFT                                                  // 章节标题对齐方式
 
     // 正文相关参数
     val contentPaint: Paint = Paint().apply {
@@ -138,10 +139,4 @@ class ReadStyle(
         // 因此，这里无需调用page.body.setPadding
     }
 
-    /**
-     * 文字对齐方式
-     */
-    enum class Position {
-        ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT
-    }
 }

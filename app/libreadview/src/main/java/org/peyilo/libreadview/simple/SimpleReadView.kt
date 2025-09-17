@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.text.Layout
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +20,7 @@ import org.peyilo.libreadview.loader.TxtFileLoader
 import org.peyilo.libreadview.parser.ContentParser
 import org.peyilo.libreadview.parser.DefaultContentParser
 import org.peyilo.libreadview.parser.ReadChapter
+import org.peyilo.libreadview.provider.Alignment
 import org.peyilo.libreadview.provider.DefaultPageContentProvider
 import org.peyilo.libreadview.provider.PageContentProvider
 import org.peyilo.libreadview.simple.page.ChapLoadPage
@@ -1096,4 +1098,11 @@ class SimpleReadView(
     fun getContentPaddingLeft() = DisplayUtil.pxToDp(context, mReadStyle.contentPaddingLeft)
     fun getContentPaddingRight() = DisplayUtil.pxToDp(context, mReadStyle.contentPaddingRight)
 
+    /**
+     * 设置章节标题对齐方式 (请在ui线程调用)
+     */
+    fun setTtitleAlignment(align: Alignment) {
+        mReadStyle.titleAlignment = align
+        invalidateReadLayout()
+    }
 }

@@ -32,4 +32,19 @@ class StringLineData: LineData() {
         return "{base = $base, left = $left} $builder"
     }
 
+    /**
+     * 给定文字间距，计算该行文字的宽度
+     * @param textMargin 文字间距
+     * @return 该行文字的宽度
+     */
+    fun computeWidth(textMargin: Float): Float {
+        var w = 0F
+        text.forEach {
+            w += it.width + textMargin
+        }
+        if (w > 0) {
+            w -= textMargin
+        }
+        return w
+    }
 }

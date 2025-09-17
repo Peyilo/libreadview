@@ -57,10 +57,9 @@ open class ReadActivity: AppCompatActivity() {
         readview.preprocessBefore = 1
         readview.preprocessBehind = 1
 
-        // 设置正文字体
-        readview.setContentTypeface(FontManager.getTypeface("linja-waso")!!)
-        // 设置标题字体
-        readview.setTitleTypeface(FontManager.getTypeface("Written-Regular")!!)
+        // 设置标题、正文字体
+         readview.setTitleTypeface(FontManager.getTypeface("linja-waso-Bold"))
+         readview.setContentTypeface(FontManager.getTypeface("linja-waso"))
 
         // 设置主题
         readview.setReadViewTheme()
