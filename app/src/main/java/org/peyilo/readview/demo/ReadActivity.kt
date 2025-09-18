@@ -1,9 +1,9 @@
 package org.peyilo.readview.demo
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.libreadview.turning.IBookSlideEffect
+import org.peyilo.readview.BaseActivity
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.extensions.clearReadViewThemeCache
 import org.peyilo.readview.demo.extensions.setReadViewTheme
@@ -12,11 +12,11 @@ import org.peyilo.readview.demo.fragment.ControlPanelFragment
 import org.peyilo.readview.demo.fragment.SettingsFragment
 import org.peyilo.readview.demo.fragment.TypesettingFragment
 
-open class ReadActivity: AppCompatActivity() {
+open class ReadActivity: BaseActivity() {
 
     protected lateinit var binding: ActivityUniversalReadViewBinding
 
-    protected val readview: BasicReadView get() = binding.readview
+    val readview: BasicReadView get() = binding.readview
 
     protected val chapTitleList: MutableList<String> = mutableListOf()
 
@@ -119,7 +119,7 @@ open class ReadActivity: AppCompatActivity() {
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)
         if (existing == null) {
-            SettingsFragment(readview).show(fm, tag)
+            SettingsFragment(this).show(fm, tag)
         }
     }
 

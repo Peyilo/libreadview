@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.readview.databinding.ActivityMainBinding
 import org.peyilo.readview.demo.NetworkLoadActivity
 import org.peyilo.readview.demo.PageChangeActivity
@@ -16,7 +15,7 @@ import org.peyilo.readview.test.TestActivity
 import java.io.File
 import java.io.FileOutputStream
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
 

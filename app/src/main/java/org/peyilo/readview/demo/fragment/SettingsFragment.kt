@@ -12,13 +12,16 @@ import org.peyilo.libreadview.turning.NoAnimEffects
 import org.peyilo.libreadview.turning.ScrollEffect
 import org.peyilo.libreadview.turning.SlideEffect
 import org.peyilo.readview.R
+import org.peyilo.readview.demo.ReadActivity
 import org.peyilo.readview.demo.extensions.getCurrentThemeIndex
 import org.peyilo.readview.demo.extensions.setReadViewTheme
 import org.peyilo.readview.demo.view.SegmentedLabelControll
 
 class SettingsFragment(
-    private val readview: BasicReadView,
+    private val activity: ReadActivity
 ): BaseBottomFragment() {
+
+    private val readview: BasicReadView get() =  activity.readview
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -65,6 +68,11 @@ class SettingsFragment(
             // 这里的主题索引和 ReadView 里的主题索引是一致的
             setSelectedIndex(readview.getCurrentThemeIndex())
             setOnOptionSelectedListener { index ->
+                if (index == 1 || index == 4) {     // 深色模式
+                    activity.setBarAppearance(false)
+                } else {                            // 浅色模式
+                    activity.setBarAppearance(true)
+                }
                 readview.setReadViewTheme(index)
             }
         }
