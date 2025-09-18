@@ -324,7 +324,7 @@ interface BookNavigator {
 }
 ```
 
-### SimpeReadView各种间距、字体、字体大小、字体颜色、背景的设置
+### BasicReadView各种间距、字体、字体大小、字体颜色、背景的设置
 
 ##### 设置背景
 

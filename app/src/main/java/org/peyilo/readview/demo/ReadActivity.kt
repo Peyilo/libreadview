@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.basic.BasicReadView
 import org.peyilo.libreadview.turning.IBookSlideEffect
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
+import org.peyilo.readview.demo.extensions.clearReadViewThemeCache
+import org.peyilo.readview.demo.extensions.setReadViewTheme
 import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
 import org.peyilo.readview.demo.fragment.SettingsFragment

@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.graphics.toColorInt
+import org.peyilo.libreadview.util.DisplayUtil
 
 class SegmentedControl @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -21,7 +22,7 @@ class SegmentedControl @JvmOverloads constructor(
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK
-        textSize = 36f
+        textSize = DisplayUtil.spToPx(context, 14F)
         textAlign = Paint.Align.CENTER
     }
     private val selectedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

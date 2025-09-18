@@ -12,8 +12,8 @@ import org.peyilo.libreadview.turning.NoAnimEffects
 import org.peyilo.libreadview.turning.ScrollEffect
 import org.peyilo.libreadview.turning.SlideEffect
 import org.peyilo.readview.R
-import org.peyilo.readview.demo.getCurrentThemeIndex
-import org.peyilo.readview.demo.setReadViewTheme
+import org.peyilo.readview.demo.extensions.getCurrentThemeIndex
+import org.peyilo.readview.demo.extensions.setReadViewTheme
 import org.peyilo.readview.demo.view.SegmentedLabelControll
 
 class SettingsFragment(

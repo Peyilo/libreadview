@@ -94,7 +94,9 @@ tasks.register("downloadTxtFiles") {
     doLast {
         if (!outputDir.exists()) outputDir.mkdirs()
 
-        val client = HttpClient.newBuilder().build()
+        val client = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.ALWAYS) // 关键！
+            .build()
 
         urls.forEach { (url, fileName) ->
             val outputFile = File(outputDir, fileName)
@@ -105,13 +107,19 @@ tasks.register("downloadTxtFiles") {
                     .build()
 
                 val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
-                Files.copy(response.body(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                if (response.statusCode() == 200) {
+                    Files.copy(response.body(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    println("Done: ${outputFile.name} (${outputFile.length()} bytes)")
+                } else {
+                    println("Failed: ${response.statusCode()} $url")
+                }
             } else {
                 println("Already exists: $outputFile")
             }
         }
     }
 }
+
 
 tasks.named("preBuild") {
     dependsOn("downloadTxtFiles")
