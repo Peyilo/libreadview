@@ -18,35 +18,51 @@ class ReadViewTheme(
     val headerAndFooterTextColor: Int = Color.BLACK,
 ) {
     companion object {
-        val whiteTheme = ReadViewTheme()
+        val whiteTheme by lazy { ReadViewTheme() }
 
-        val paperTheme = ReadViewTheme(
-            background = AppCompatResources.getDrawable(
-                App.Companion.applicationContext,
-                R.drawable.read_page_bg_1)!!,
-        )
+        val paperTheme by lazy {
+            ReadViewTheme(
+                background = AppCompatResources.getDrawable(
+                    App.Companion.applicationContext,
+                    R.drawable.read_page_bg_1)!!,
+            )
+        }
 
-        val nightTheme = ReadViewTheme(
-            titleColor = "#F2F2F0".toColorInt(),
-            contentColor = "#F2F2F0".toColorInt(),
-            background = AppCompatResources.getDrawable(
-                App.Companion.applicationContext,
-                R.drawable.read_page_bg_2)!!,
-            headerAndFooterTextColor = "#808085".toColorInt(),
-        )
+        val nightTheme by lazy {
+            ReadViewTheme(
+                titleColor = "#F2F2F0".toColorInt(),
+                contentColor = "#F2F2F0".toColorInt(),
+                background = AppCompatResources.getDrawable(
+                    App.Companion.applicationContext,
+                    R.drawable.read_page_bg_2)!!,
+                headerAndFooterTextColor = "#808085".toColorInt(),
+            )
+        }
 
-        val eyeCareTheme = ReadViewTheme(
-            background = "#D2E4D2".toColorInt().toDrawable(),
-        )
+        val eyeCareTheme by lazy {
+            ReadViewTheme(
+                background = "#D2E4D2".toColorInt().toDrawable(),
+            )
+        }
 
-        val blackTheme = ReadViewTheme(
-            titleColor = "#F2F2F0".toColorInt(),
-            contentColor = "#F2F2F0".toColorInt(),
-            background = "#1C1C1E".toColorInt().toDrawable(),
-            headerAndFooterTextColor = "#808085".toColorInt(),
-        )
+        val blackTheme by lazy {
+            ReadViewTheme(
+                titleColor = "#F2F2F0".toColorInt(),
+                contentColor = "#F2F2F0".toColorInt(),
+                background = "#1C1C1E".toColorInt().toDrawable(),
+                headerAndFooterTextColor = "#808085".toColorInt(),
+            )
+        }
 
-        val allThemes = listOf(whiteTheme, nightTheme, paperTheme, eyeCareTheme, blackTheme)
+
+        fun getTheme(idx: Int): ReadViewTheme = when (idx) {
+            0 -> whiteTheme
+            1 -> nightTheme
+            2 -> paperTheme
+            3 -> eyeCareTheme
+            4 -> blackTheme
+            else -> throw IllegalArgumentException("Invalid theme index: $idx")
+        }
     }
 
 }

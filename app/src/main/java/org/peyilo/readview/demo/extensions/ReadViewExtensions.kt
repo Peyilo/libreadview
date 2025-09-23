@@ -28,7 +28,7 @@ fun BasicReadView.customChapLoadPage() {
 private val curThemeIndex = mutableMapOf<BasicReadView, Int>()
 
 fun BasicReadView.setReadViewTheme(idx: Int = 0) {
-    val curTheme = ReadViewTheme.allThemes[idx]
+    val curTheme = ReadViewTheme.getTheme(idx)
     ReadStyleBuilder(this).apply {
         setContentTextColor(curTheme.contentColor)
         setTitleTextColor(curTheme.titleColor)
