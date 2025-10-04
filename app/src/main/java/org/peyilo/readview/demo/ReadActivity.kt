@@ -11,6 +11,7 @@ import org.peyilo.readview.demo.fragment.ChapListFragment
 import org.peyilo.readview.demo.fragment.ControlPanelFragment
 import org.peyilo.readview.demo.fragment.SettingsFragment
 import org.peyilo.readview.demo.fragment.TypesettingFragment
+import java.util.concurrent.atomic.AtomicBoolean
 
 open class ReadActivity: BaseActivity() {
 
@@ -19,6 +20,8 @@ open class ReadActivity: BaseActivity() {
     val readview: BasicReadView get() = binding.readview
 
     protected val chapTitleList: MutableList<String> = mutableListOf()
+
+    protected val tocInitStatus = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +43,7 @@ open class ReadActivity: BaseActivity() {
                     val chapTitle = readview.getChapTitle(i)
                     chapTitleList.add(chapTitle)
                 }
+                tocInitStatus.set(true)
             }
         })
 
@@ -80,6 +84,7 @@ open class ReadActivity: BaseActivity() {
      * 控制底部菜单栏的显示
      */
     fun showControlPanel(visible: Boolean) {
+        if (!tocInitStatus.get()) return            // 目录未初始化完成前，不显示菜单
         val tag = "ControlPanelFragment"
         val fm = supportFragmentManager
         val existing = fm.findFragmentByTag(tag)

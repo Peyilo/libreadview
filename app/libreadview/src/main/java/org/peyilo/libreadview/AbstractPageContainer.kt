@@ -498,7 +498,7 @@ abstract class AbstractPageContainer(
 
         /**
          * force the state of PageEffect is not in layout or scroll.
-         * this method will abort the animation of PageEffect and enture the view not in layout.
+         * this method will abort the animation of PageEffect and ensure the view not in layout.
          */
         abstract fun forceNotInLayoutOrScroll()
 
@@ -510,7 +510,7 @@ abstract class AbstractPageContainer(
 
         /**
          * @param view the view be initialized
-         * @param position the view will be added to this position thro ViewGroup.addView(view, position)
+         * @param position the view will be added to this position through ViewGroup.addView(view, position)
          */
         abstract fun onAddPage(view: View, position: Int)
 
