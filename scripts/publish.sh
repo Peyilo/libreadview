@@ -1,0 +1,3 @@
+# rem MavenCentral Publishing
+
+./gradlew publishAllPublicationsToMavenCentralRepository -PenablePublishing
