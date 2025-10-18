@@ -20,6 +20,12 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
 
     private val measuredPaint = Paint()
 
+    private val hitghlightPaint by lazy {
+        Paint().apply {
+            style = Paint.Style.FILL
+        }
+    }
+
     private val remainedBodyWidth get() = config.bodyWidth - config.bodyPaddingRight - config.bodyPaddingLeft
     private val remainedBodyHeight get() = config.bodyHeight - config.bodyPaddingTop - config.bodyPaddingBottom
     private val bodyLeft get() = config.bodyPaddingLeft.toFloat()
@@ -64,14 +70,14 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         textMargin: Float, offset: Float
     ): List<StringLineData> {
         val lineList = ArrayList<StringLineData>()
-        var line = StringLineData().apply { textSize = size }
+        var line = StringLineData()
         var w = width - offset
         var dimen: Float
         text.forEach {
             dimen = measureText(it, size)
             if (w < dimen) {    // 剩余宽度已经不足以留给该字符
                 lineList.add(line)
-                line = StringLineData().apply { textSize = size }
+                line = StringLineData()
                 w = width
             }
             w -= dimen + textMargin
@@ -113,22 +119,26 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
                 base += -titleFontMetrics.top
                 it.apply {                  // 设置TextLine的base、left
                     val lineWidth = computeWidth(config.titleTextMargin)
-                    this@apply.base = base
                     this@apply.left = when (config.titleAlignment) {
                         Alignment.LEFT -> titleLeft
                         Alignment.CENTER -> titleLeft + (remainedTitleWidth - lineWidth) / 2
                         Alignment.RIGHT -> titleRight - lineWidth
                     }
                     it.isTitleLine = true
-                    val charBase = this@apply.base
+                    val charBase = base
                     var charLeft = this@apply.left
                     this@apply.text.forEach { charData ->
-                        charData.base = charBase
+                        charData.baseline = charBase
                         charData.left = charLeft
+                        charData.right = charData.width + charData.left
+                        charData.bottom = charBase + titleFontMetrics.bottom
+                        charData.top = charBase + titleFontMetrics.top
+                        charData.ascent = charBase + titleFontMetrics.ascent
+                        charData.descent = charBase + titleFontMetrics.descent
                         charLeft += charData.width + config.titleTextMargin
                     }
                 }
-                page.lines.add(it)
+                page.elements.add(it)
                 base += titleFontMetrics.bottom
                 base += config.titleLineMargin
             }
@@ -176,19 +186,33 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
                 }
                 base += -contentFontMetrics.top
                 line.apply {
-                    this@apply.base = base
                     // 处理段落首行缩进
-                    this@apply.left = left + config.contentPaddingLeft + if (j == 0) config.firstParaIndent else 0F
+                    val lineOffset = if (j == 0) {
+                        this@apply.isFirstLineOfParagraph = true
+                        config.firstParaIndent
+                    } else {
+                        0F
+                    }
+                    this@apply.left = left + config.contentPaddingLeft + lineOffset
+                    this@apply.top = base + contentFontMetrics.top
+                    val lineWidth = computeWidth(config.contentTextMargin)
+                    this@apply.right = this@apply.left + lineWidth
+                    this@apply.bottom = base + contentFontMetrics.bottom
 
-                    val charBase = this@apply.base
+                    val charBase = base
                     var charLeft = this@apply.left
                     this@apply.text.forEach { charData ->
-                        charData.base = charBase
+                        charData.baseline = charBase
                         charData.left = charLeft
+                        charData.right = charData.width + charData.left
+                        charData.bottom = charBase + contentFontMetrics.bottom
+                        charData.top = charBase + contentFontMetrics.top
+                        charData.ascent = charBase + contentFontMetrics.ascent
+                        charData.descent = charBase + contentFontMetrics.descent
                         charLeft += charData.width + config.contentTextMargin
                     }
                 }
-                page.lines.add(line)
+                page.elements.add(line)
                 base += contentFontMetrics.bottom
                 base += config.contentLineMargin
                 height -= -contentFontMetrics.top + contentFontMetrics.bottom + config.contentLineMargin
@@ -199,9 +223,33 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         chap.pages.add(page)
     }
 
-    private val hitghlightPaint by lazy {
-        Paint().apply {
-            style = Paint.Style.FILL
+    // 绘制一行文字
+    private fun drawStringLine(line: StringLineData, canvas: Canvas) {
+        val textMargin = if (line.isTitleLine) config.titleTextMargin else config.contentTextMargin
+        val textPaint = if (line.isTitleLine) config.titlePaint else config.contentPaint
+        var lastCharIsHighlighted = false
+        line.text.forEach { charData ->
+            // 绘制高亮背景
+            if (charData.isHighlighted) {
+                canvas.drawRect(
+                    charData.left - if (lastCharIsHighlighted) textMargin else 0F,
+                    charData.ascent,
+                    charData.right,
+                    charData.descent,
+                    hitghlightPaint.apply {
+                        color = charData.highlightColor
+                    }
+                )
+                lastCharIsHighlighted = true
+            } else {
+                lastCharIsHighlighted = false
+            }
+            canvas.drawText(
+                charData.char.toString(),
+                charData.left,
+                charData.baseline,
+                textPaint
+            )
         }
     }
 
@@ -210,37 +258,9 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
      * 但是在绘制高亮背景时，需要使用 fontMetrics.ascent 和 fontMetrics.descent 来确定背景的上下边界
      */
     override fun drawPage(page: PageData, canvas: Canvas) {
-
-        page.lines.forEach {line ->
-            if (line is StringLineData) {
-                val textMargin = if (line.isTitleLine) config.titleTextMargin else config.contentTextMargin
-                val textPaint = if (line.isTitleLine) config.titlePaint else config.contentPaint
-                val fm = textPaint.fontMetrics
-                var lastCharIsHighlighted = false
-                line.text.forEach { charData ->
-                    // 绘制高亮背景
-                    if (charData.isHighlighted) {
-                        canvas.drawRect(
-                            charData.left - if (lastCharIsHighlighted) textMargin else 0F,
-                            charData.base + fm.ascent,
-                            charData.left + charData.width,
-                            charData.base + fm.descent,
-                            hitghlightPaint.apply {
-                                color = charData.highlightColor
-                            }
-                        )
-                        lastCharIsHighlighted = true
-                    } else {
-                        lastCharIsHighlighted = false
-                    }
-
-                    canvas.drawText(
-                        charData.char.toString(),
-                        charData.left,
-                        charData.base,
-                        textPaint
-                    )
-                }
+        page.elements.forEach { line ->
+            when (line) {
+                is StringLineData -> drawStringLine(line, canvas)
             }
         }
     }
