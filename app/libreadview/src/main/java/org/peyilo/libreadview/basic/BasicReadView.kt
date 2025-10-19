@@ -363,13 +363,12 @@ class BasicReadView(
                     val page = holder.itemView as ReadPage
                     val pageData = mAdapterData.getPageContent(position) as PageData
                     val indexPair = findChapByPosition(position)
-                    val title = getChapTitle(indexPair.first)
-                    mPageDelegate?.bindReadPage(holder.itemView, pageData, title,
+                    // 如果是章节的第一页，就使用book的title作为页眉显示的标题
+                    val title = if (indexPair.second != 1) getChapTitle(indexPair.first) else book!!.title
+                    val pageDelegate = mPageDelegate ?: mDefaultPageDelegate
+                    pageDelegate.bindReadPage(holder.itemView, pageData, title,
                         indexPair.first, indexPair.second,
                         getChapPageCount(indexPair.first), mPageContentProvider)
-                        ?: mDefaultPageDelegate.bindReadPage(holder.itemView, pageData, title,
-                            indexPair.first, indexPair.second,
-                            getChapPageCount(indexPair.first), mPageContentProvider)
 
                     LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.chapTitle.text}, ${page.progress.text}")
                 }

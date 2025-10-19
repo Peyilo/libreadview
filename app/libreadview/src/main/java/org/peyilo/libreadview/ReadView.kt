@@ -13,6 +13,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toDrawable
+import org.peyilo.libreadview.basic.HandlePopup
 import org.peyilo.libreadview.basic.page.ReadPage
 import org.peyilo.libreadview.data.page.ContentElement
 import org.peyilo.libreadview.data.page.PageData
@@ -91,7 +92,12 @@ abstract class ReadView(
         getCurPage()?.let {
             if (it is ReadPage) {
                 it.body.content?.apply {
-                    highlighPara(this, downPos, it)
+                    // 坐标转换：由于ReadPage的大小实际上和ReadView大小一致，因此downPos可以视作相对于ReadPage左上角的坐标
+                    // 只需减去body的偏移即可得到相对于body的坐标
+                    downPos.x = downPos.x - it.body.left
+                    downPos.y = downPos.y - it.body.top
+
+                    highlighPara(this, downPos)
                 }
                 it.body.invalidate()
             }
@@ -160,11 +166,7 @@ abstract class ReadView(
     /**
      * 根据给定的页面数据和按下位置，高亮对应的段落
      */
-    private fun highlighPara(pageData: PageData, downPos: PointF, readPage: ReadPage) {
-        // 坐标转换：由于ReadPage的大小实际上和ReadView大小一致，因此downPos可以视作相对于ReadPage左上角的坐标
-        // 只需减去body的偏移即可得到相对于body的坐标
-        downPos.x = downPos.x - readPage.body.left
-        downPos.y = downPos.y - readPage.body.top
+    private fun highlighPara(pageData: PageData, downPos: PointF) {
         // 根据长按位置的y确定哪一行被高亮
         val touchedLine = findClosestOrContainingLine(pageData.elements, downPos.y)
         if (touchedLine != null && touchedLine is StringLineData) {

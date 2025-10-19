@@ -93,7 +93,7 @@ class ReadStyle(
     val titleTextSize get() = titlePaint.textSize
 
     var titleTextMargin = DisplayUtil.dpToPx(context, 0F)                                 // 章节标题字符间隔
-    var titleLineMargin = DisplayUtil.dpToPx(context, 12F)                                // 章节标题行间隔
+    var titleLineMargin = DisplayUtil.dpToPx(context, 10F)                                // 章节标题行间隔
     var titleAlignment = Alignment.LEFT                                                  // 章节标题对齐方式
 
     // 正文相关参数
@@ -109,8 +109,8 @@ class ReadStyle(
 
     var firstParaIndent = contentPaint.measureText("测试") // 段落首行的偏移
     var contentTextMargin = DisplayUtil.dpToPx(context, 0F)                               // 正文字符间隔
-    var contentLineMargin = DisplayUtil.dpToPx(context, 12F)                                     // 行间隔
-    var contentParaMargin = DisplayUtil.dpToPx(context, 24F)                                    // 段落间隔
+    var contentLineMargin = DisplayUtil.dpToPx(context, 10F)                                     // 行间隔
+    var contentParaMargin = DisplayUtil.dpToPx(context, 18F)                                    // 段落间隔
 
     // Page相关参数
     var mPageBackground: Drawable = Color.WHITE.toDrawable()
