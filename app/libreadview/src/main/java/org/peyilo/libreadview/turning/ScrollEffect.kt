@@ -130,7 +130,7 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
      * 滚动page
      */
     private fun scrollBy(dy: Float) {
-        var moveDis = dy
+        var moveDis = dy.toInt().toFloat()      // 确保moveDis为整数，避免出现缝隙
         when {
             moveDis > 0 -> {
                 val topTranslationY = getTopTranslationY()

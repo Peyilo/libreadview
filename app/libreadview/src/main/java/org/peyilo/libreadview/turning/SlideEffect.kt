@@ -50,14 +50,18 @@ class SlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
     }
 
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
+        // 虽然translationX赋值为float类型，但是实际上显示时是以int类型进行显示的，因此这里需要转换为int类型
+        // 如果不这样，两个page之间会出现很小的缝隙
         when (initDire) {
             PageDirection.NEXT -> {
-                primaryView!!.translationX = min(dx, 0F)
-                followedView!!.translationX = min(dx, 0F) + pageContainer.width
+                val dx = min(dx, 0F).toInt()
+                primaryView!!.translationX = dx.toFloat()
+                followedView!!.translationX = dx.toFloat() + pageContainer.width
             }
             PageDirection.PREV -> {
-                primaryView!!.translationX = max(dx, 0F)
-                followedView!!.translationX = max(dx, 0F) - pageContainer.width
+                val dx = max(dx, 0F).toInt()
+                primaryView!!.translationX = dx.toFloat()
+                followedView!!.translationX = dx.toFloat() - pageContainer.width
             }
             else -> throw IllegalStateException()
         }
@@ -69,6 +73,7 @@ class SlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
      * @param x primaryView的偏移量
      */
     private fun scrollTogether(x: Float) {
+        val x = x.toInt().toFloat()     // 确保x为整数，避免出现缝隙
         primaryView!!.translationX = x
         // 处理followedView的滑动
         val followedTransX: Float = when (curAnimDire) {

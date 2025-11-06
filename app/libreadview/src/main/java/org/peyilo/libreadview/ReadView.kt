@@ -13,7 +13,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toDrawable
-import org.peyilo.libreadview.basic.HandlePopup
 import org.peyilo.libreadview.basic.page.ReadPage
 import org.peyilo.libreadview.data.page.ContentElement
 import org.peyilo.libreadview.data.page.PageData
@@ -94,6 +93,7 @@ abstract class ReadView(
                 it.body.content?.apply {
                     // 坐标转换：由于ReadPage的大小实际上和ReadView大小一致，因此downPos可以视作相对于ReadPage左上角的坐标
                     // 只需减去body的偏移即可得到相对于body的坐标
+                    // TODO:处理滚动翻页下的坐标转换
                     downPos.x = downPos.x - it.body.left
                     downPos.y = downPos.y - it.body.top
 

@@ -1024,13 +1024,11 @@ abstract class AbstractPageContainer(
     }
 
     fun getPageChildAt(index: Int): View {
-        if (index < 0 || index >= maxPageChildCount) {
+        if (index !in 0..<maxPageChildCount) {
             throw IllegalArgumentException("index out of range: $index")
         }
         val child = getChildAt(index + pageViewStart)
-        if (child == null) {
-            throw IllegalStateException("no child at index: $index")
-        }
+            ?: throw IllegalStateException("no child at index: $index")
         return child
     }
 
@@ -1198,10 +1196,11 @@ abstract class AbstractPageContainer(
             when {
                 // 插入之前，不存在任何item
                 attachedPagesPosition.isEmpty() -> {
-                    val count = itemCount
                     // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
-                    mCurContainerPageIndex = mCurContainerPageIndex.coerceIn(1, count)
-                    val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage, count)
+                    mCurContainerPageIndex = mCurContainerPageIndex.coerceIn(1, itemCount)
+                    val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage,
+                        itemCount
+                    )
                     pageRange.reversed().forEachIndexed { i,  pageIndex ->
                         val position = pageIndex - 1            // 页码转position
                         val holder = mPageCache.getViewHolder(position)
@@ -1510,7 +1509,7 @@ abstract class AbstractPageContainer(
 
     override fun navigatePage(pageIndex: Int): Boolean {
         val pageCount = getContainerPageCount()
-        if (pageIndex > pageCount || pageIndex <= 0) {
+        if (pageIndex !in 1..pageCount) {
             return false
         }
         val oldPageIndex = mCurContainerPageIndex
