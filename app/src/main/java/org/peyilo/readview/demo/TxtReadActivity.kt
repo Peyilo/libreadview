@@ -1,8 +1,8 @@
 package org.peyilo.readview.demo
 
 import org.mozilla.universalchardet.UniversalDetector
-import org.peyilo.libreadview.load.TxtFileLoader
 import org.peyilo.libreadview.basic.BasicReadView
+import org.peyilo.libreadview.load.TxtFileLoader
 import org.peyilo.readview.copyAssetToInternalStorage
 import org.peyilo.readview.demo.extensions.customChapLoadPage
 import java.io.File
@@ -50,6 +50,7 @@ class TxtReadActivity : ReadActivity() {
             ).apply {
                 // 如果有需要可以指定章节标题正则表达式,用来分割章节
                 // addTitleRegex("第\\d+章 .*")
+                networkLagFlag = true
             },
             chapIndex = 1,
             pageIndex = 1,

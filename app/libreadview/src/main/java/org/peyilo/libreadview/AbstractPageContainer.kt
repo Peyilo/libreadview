@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import androidx.annotation.IntRange
+import androidx.core.view.isGone
 import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.max
 import kotlin.math.min
@@ -26,7 +27,7 @@ import kotlin.math.min
  */
 abstract class AbstractPageContainer(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
-): ViewGroup(context, attrs, defStyleAttr, defStyleRes), PageNavigator {
+) : ViewGroup(context, attrs, defStyleAttr, defStyleRes), PageNavigator {
 
     /**
      * 区分点击和滑动的界限，默认为24
@@ -38,9 +39,15 @@ abstract class AbstractPageContainer(
      */
     var flipTouchSlop = 40
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int): this(context, attrs, defStyleAttr, 0)
-    constructor(context: Context, attrs: AttributeSet?): this(context, attrs, 0)
-    constructor(context: Context): this(context, null)
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : this(
+        context,
+        attrs,
+        defStyleAttr,
+        0
+    )
+
+    constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
+    constructor(context: Context) : this(context, null)
 
     /**
      * 这么设计，是因为需要对外提供pageContainer.PageEffect = CoverPageEffect()的简单操作
@@ -68,6 +75,7 @@ abstract class AbstractPageContainer(
             ?: throw IllegalStateException("PageEffect is not initialized. Did you forget to set it?")
 
     private var innerAdapter: Adapter<out ViewHolder>? = null
+
     @Suppress("UNCHECKED_CAST")
     private val mViewHolderAdapter: Adapter<ViewHolder> get() = (innerAdapter!! as Adapter<ViewHolder>)
 
@@ -302,6 +310,62 @@ abstract class AbstractPageContainer(
         }
     }
 
+    private fun measureAndLayoutChild(child: View) {
+        if (child.isGone) return
+
+        // 1. 父容器的宽高（假设已经测量完成）
+        val parentWidth = measuredWidth
+        val parentHeight = measuredHeight
+
+        // 父容器的 padding
+        val paddingLeft = paddingLeft
+        val paddingRight = paddingRight
+        val paddingTop = paddingTop
+        val paddingBottom = paddingBottom
+
+        // 可用空间（去掉 padding）
+        var availableWidth = parentWidth - paddingLeft - paddingRight
+        var availableHeight = parentHeight - paddingTop - paddingBottom
+
+        // 2. 考虑 margin
+        val lp = child.layoutParams
+        if (lp is MarginLayoutParams) {
+            availableWidth -= lp.leftMargin + lp.rightMargin
+            availableHeight -= lp.topMargin + lp.bottomMargin
+        }
+
+        availableWidth = max(0, availableWidth)
+        availableHeight = max(0, availableHeight)
+
+        // 3. 测量 child
+        val childWidthSpec = MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.EXACTLY)
+        val childHeightSpec = MeasureSpec.makeMeasureSpec(availableHeight, MeasureSpec.EXACTLY)
+        child.measure(childWidthSpec, childHeightSpec)
+
+        // 4. 计算布局坐标（与 onLayout 相同逻辑）
+        var left = paddingLeft
+        var top = paddingTop
+        var right = parentWidth - paddingRight
+        var bottom = parentHeight - paddingBottom
+
+        if (lp is MarginLayoutParams) {
+            left += lp.leftMargin
+            top += lp.topMargin
+            right -= lp.rightMargin
+            bottom -= lp.bottomMargin
+        }
+
+        // 5. 执行布局
+        child.layout(left, top, right, bottom)
+    }
+
+    private fun measureAndLayoutAllChildren() {
+        for (i in 0 until getPageChildCount()) {
+            val child = getPageChildAt(i)
+            measureAndLayoutChild(child)
+        }
+    }
+
     /**
      * 事件分发策略：
      * 1) DOWN 命中某个 child：
@@ -354,7 +418,8 @@ abstract class AbstractPageContainer(
                 targetChild?.let { child ->
                     dispatchToChild(child, ev)
                     if (ev.actionMasked == MotionEvent.ACTION_UP ||
-                        ev.actionMasked == MotionEvent.ACTION_CANCEL) {
+                        ev.actionMasked == MotionEvent.ACTION_CANCEL
+                    ) {
                         targetChild = null
                         selfHandling = false
                     }
@@ -366,7 +431,8 @@ abstract class AbstractPageContainer(
                 if (selfHandling) {
                     val res = onTouchEvent(ev)
                     if (ev.actionMasked == MotionEvent.ACTION_UP ||
-                        ev.actionMasked == MotionEvent.ACTION_CANCEL) {
+                        ev.actionMasked == MotionEvent.ACTION_CANCEL
+                    ) {
                         selfHandling = false
                     }
                     return res
@@ -428,12 +494,14 @@ abstract class AbstractPageContainer(
          */
         private var _pageContainer: AbstractPageContainer? = null
         protected val pageContainer: AbstractPageContainer
-            get() = _pageContainer ?: throw IllegalStateException("AbstractPageContainer is not initialized. Did you forget to call setPageContainer()?")
+            get() = _pageContainer
+                ?: throw IllegalStateException("AbstractPageContainer is not initialized. Did you forget to call setPageContainer()?")
 
         /**
          * 最小翻页时间间隔: 限制翻页速度，取值为0时，表示不限制
          */
-        @IntRange(from = 0) var minPageTurnInterval = 250
+        @IntRange(from = 0)
+        var minPageTurnInterval = 250
 
         internal fun setPageContainer(pageContainer: AbstractPageContainer) {
             _pageContainer = pageContainer
@@ -501,6 +569,46 @@ abstract class AbstractPageContainer(
          * this method will abort the animation of PageEffect and ensure the view not in layout.
          */
         abstract fun forceNotInLayoutOrScroll()
+
+        protected val statusList = mutableListOf<Any>()
+
+        fun storeStatus() {
+            statusList.clear()
+            val oldAttachedCount = pageContainer.getPageChildCount()
+            for (i in 0 until oldAttachedCount) {
+                val child = pageContainer.getPageChildAt(i)
+                val status = mutableMapOf<String, Any>()
+                status["translationX"] = child.translationX
+                status["translationY"] = child.translationY
+                status["scrollX"] = child.scrollX
+                status["scrollY"] = child.scrollY
+                status["visibility"] = child.visibility
+                statusList.add(status)
+            }
+            onStoreStatus()
+        }
+
+        fun restoreStatus() {
+            val newAttachedCount = pageContainer.getPageChildCount()
+            // 如果数量没用变化，一次对应恢复状态
+            if (newAttachedCount == statusList.size) {
+                for (i in 0 until newAttachedCount) {
+                    val child = pageContainer.getPageChildAt(i)
+                    val status = statusList[i] as Map<String, Any>
+                    child.translationX = status["translationX"] as Float
+                    child.translationY = status["translationY"] as Float
+                    child.scrollX = status["scrollX"] as Int
+                    child.scrollY = status["scrollY"] as Int
+                    child.visibility = status["visibility"] as Int
+                }
+                onRestoreStatus()
+                LogHelper.d(TAG, "restoreStatus: recovery status.")
+            }
+            statusList.clear()
+        }
+
+        open fun onStoreStatus() = Unit
+        open fun onRestoreStatus() = Unit
 
         /**
          * 可以在这里进行绘制阴影、动画
@@ -579,6 +687,7 @@ abstract class AbstractPageContainer(
                 MotionEvent.ACTION_DOWN -> {
                     down.set(event.x, event.y)
                 }
+
                 MotionEvent.ACTION_UP -> {
                     up.set(event.x, event.y)
                 }
@@ -589,7 +698,7 @@ abstract class AbstractPageContainer(
     /**
      * Page的缓存池
      */
-    class PageCache<VH: ViewHolder>(
+    class PageCache<VH : ViewHolder>(
         viewGroup: ViewGroup
     ) {
         private var _viewGroup: ViewGroup? = viewGroup
@@ -597,7 +706,9 @@ abstract class AbstractPageContainer(
 
         @Suppress("UNCHECKED_CAST")
         private val adapter: Adapter<ViewHolder> get() = (_adapter!! as Adapter<ViewHolder>)
-        private val viewGroup: ViewGroup get() = _viewGroup ?: throw IllegalStateException("viewGroup is already clear, are you calling PageCache.destroy?")
+        private val viewGroup: ViewGroup
+            get() = _viewGroup
+                ?: throw IllegalStateException("viewGroup is already clear, are you calling PageCache.destroy?")
 
         @IntRange(from = 0)
         var maxCachedPage = 8
@@ -776,7 +887,7 @@ abstract class AbstractPageContainer(
      * 观察者模式：观察者
      */
     abstract class AdapterDataObserver {
-        open fun onDatasetChanged() {
+        open fun onDatasetChanged(force: Boolean = true) {
             // Do nothing
         }
 
@@ -801,7 +912,7 @@ abstract class AbstractPageContainer(
     /**
      * 观察者模式：被观察者
      */
-    class AdapterDataObservable: Observable<AdapterDataObserver>() {
+    class AdapterDataObservable : Observable<AdapterDataObserver>() {
 
         fun hasObservers(): Boolean {
             return !mObservers.isEmpty()
@@ -1102,26 +1213,30 @@ abstract class AbstractPageContainer(
          * 这会移除PageContainer中的全部child，并且为pageCache设置新的adapter，这会导致pageCache中的缓存全部被清空。
          * 同时，还会根据设置的adapter，往pageContainer中添加新的child
          */
-        override fun onDatasetChanged() {
+        override fun onDatasetChanged(force: Boolean) {
             for (i in 0 until getPageChildCount()) {
                 val child = getPageChildAt(i)
                 mPageCache.recycleAttachedView(child)
             }
             removeAllViews()
-            forceNotInLayoutOrScroll()
+            if (force) forceNotInLayoutOrScroll()
 
             val oldPageIndex = mCurContainerPageIndex
 
             val containerPageCount = getContainerPageCount()
-            val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage, containerPageCount)
-            pageRange.reversed().forEachIndexed { i,  pageIndex ->
+            val pageRange =
+                getPageRange(mCurContainerPageIndex, mMaxAttachedPage, containerPageCount)
+            pageRange.reversed().forEach { pageIndex ->
                 val position = pageIndex - 1            // 页码转position
                 val holder = mPageCache.getViewHolder(position)
                 addPageChild(holder.itemView)
                 mPageCache.attachView(holder)
             }
 
-            LogHelper.d(TAG, "onDatasetChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex")
+            LogHelper.d(
+                TAG,
+                "onDatasetChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex"
+            )
         }
 
         /**
@@ -1134,7 +1249,8 @@ abstract class AbstractPageContainer(
             val oldPageIndex = mCurContainerPageIndex
 
             // 先根据curPageIndex获取目前处于attach状态下的page的indices
-            val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage, getContainerPageCount())
+            val pageRange =
+                getPageRange(mCurContainerPageIndex, mMaxAttachedPage, getContainerPageCount())
             val attachedPages = mutableSetOf<Int>()
             pageRange.forEach {
                 attachedPages.add(it - 1)
@@ -1172,7 +1288,10 @@ abstract class AbstractPageContainer(
                 }
             }
 
-            LogHelper.d(TAG, "onItemRangeChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex")
+            LogHelper.d(
+                TAG,
+                "onItemRangeChanged: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex"
+            )
         }
 
         /**
@@ -1198,10 +1317,11 @@ abstract class AbstractPageContainer(
                 attachedPagesPosition.isEmpty() -> {
                     // 约束curPageIndex在有效取值范围内, 如果count=0，将curPageIndex也约束到1
                     mCurContainerPageIndex = mCurContainerPageIndex.coerceIn(1, itemCount)
-                    val pageRange = getPageRange(mCurContainerPageIndex, mMaxAttachedPage,
+                    val pageRange = getPageRange(
+                        mCurContainerPageIndex, mMaxAttachedPage,
                         itemCount
                     )
-                    pageRange.reversed().forEachIndexed { i,  pageIndex ->
+                    pageRange.reversed().forEachIndexed { i, pageIndex ->
                         val position = pageIndex - 1            // 页码转position
                         val holder = mPageCache.getViewHolder(position)
                         addPageChild(holder.itemView)
@@ -1280,9 +1400,13 @@ abstract class AbstractPageContainer(
                 positionStart == mCurContainerPageIndex - 1 -> {
                     onDatasetChanged()
                 }
+
                 else -> throw IllegalStateException()
             }
-            LogHelper.d(TAG, "onItemRangeInserted: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex")
+            LogHelper.d(
+                TAG,
+                "onItemRangeInserted: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex"
+            )
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
@@ -1315,7 +1439,7 @@ abstract class AbstractPageContainer(
                     // do nothing
                 }
                 // 删除的item和attachedPages有重合，且删除的item都位于curPage之前，未触及curPage
-                positionStart + itemCount <= mCurContainerPageIndex -1 -> {
+                positionStart + itemCount <= mCurContainerPageIndex - 1 -> {
                     mCurContainerPageIndex -= itemCount
                     onDatasetChanged()
                 }
@@ -1331,7 +1455,10 @@ abstract class AbstractPageContainer(
                     onDatasetChanged()
                 }
             }
-            LogHelper.d(TAG, "onItemRangeRemoved: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex")
+            LogHelper.d(
+                TAG,
+                "onItemRangeRemoved: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex"
+            )
         }
 
         override fun onItemRangeReplaced(positionStart: Int, oldItemCount: Int, newItemCount: Int) {
@@ -1340,9 +1467,6 @@ abstract class AbstractPageContainer(
             if (newItemCount == 0) onItemRangeRemoved(positionStart, oldItemCount)
 
             val oldPageIndex = mCurContainerPageIndex
-
-            // replace之前的itemCount
-            val prevItemCount = getContainerPageCount() - oldItemCount + newItemCount
 
             // 获取目前处于attach状态下的page的position
             val attachedPagesPosition = mutableListOf<Int>()
@@ -1359,14 +1483,6 @@ abstract class AbstractPageContainer(
                         it.itemView.invalidate()
                     }
                 }
-                // 所有删除、再插入的pages，都在curPage之后
-                mCurContainerPageIndex - 1 < positionStart -> {
-                    onDatasetChanged()
-                }
-                // 被替换的第一个就是curPage
-                mCurContainerPageIndex - 1 == positionStart -> {
-                    onDatasetChanged()
-                }
                 // 所有删除、再插入的pages，都在attachedPages之前
                 positionStart + oldItemCount <= attachedPagesPosition[0] -> {
                     mCurContainerPageIndex += newItemCount - oldItemCount
@@ -1376,14 +1492,23 @@ abstract class AbstractPageContainer(
                         it.itemView.invalidate()
                     }
                 }
-                // 所有删除、再插入的pages，都在curPage之前
-                positionStart < mCurContainerPageIndex - 1 -> {
-                    mCurContainerPageIndex += newItemCount - oldItemCount
-                    onDatasetChanged()
+
+                else -> {
+                    pageEffect.storeStatus()
+                    if (positionStart < mCurContainerPageIndex - 1) {
+                        mCurContainerPageIndex += newItemCount - oldItemCount       // 替代的page在当前page之前，可能会影响当前page的位置
+                    }
+                    // 当前替代直接影响到了attachedPages
+                    onDatasetChanged(force = false)
+                    measureAndLayoutAllChildren()
+                    pageEffect.restoreStatus()
                 }
             }
 
-            LogHelper.d(TAG, "onItemRangeReplaced: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex")
+            LogHelper.d(
+                TAG,
+                "onItemRangeReplaced: oldPageIndex = $oldPageIndex, curPageIndex = $mCurContainerPageIndex"
+            )
         }
 
     }
@@ -1393,8 +1518,10 @@ abstract class AbstractPageContainer(
      * @param oldPageIndex 变更之前的页码，范围[1, getContainerPageCount()]
      * @param newPageIndex 变更之后的页码，范围[1, getContainerPageCount()]
      */
-    protected open fun onPageChanged(@IntRange(from = 1) oldPageIndex: Int,
-                                     @IntRange(from = 1) newPageIndex: Int) {
+    protected open fun onPageChanged(
+        @IntRange(from = 1) oldPageIndex: Int,
+        @IntRange(from = 1) newPageIndex: Int
+    ) {
         mOnPageChangeListener?.onPageChanged(oldPageIndex, newPageIndex)
     }
 
@@ -1662,7 +1789,8 @@ abstract class AbstractPageContainer(
      */
     fun setOnClickRegionListener(listener: (xPercent: Int, yPercent: Int) -> Boolean) {
         this.mOnClickRegionListener = object : OnClickRegionListener {
-            override fun onClickRegion(xPercent: Int, yPercent: Int): Boolean = listener(xPercent, yPercent)
+            override fun onClickRegion(xPercent: Int, yPercent: Int): Boolean =
+                listener(xPercent, yPercent)
         }
     }
 
@@ -1678,8 +1806,10 @@ abstract class AbstractPageContainer(
      */
     fun setOnPageChangeListener(listener: (oldPageIndex: Int, newPageIndex: Int) -> Unit) {
         this.mOnPageChangeListener = object : OnPageChangeListener {
-            override fun onPageChanged(@IntRange(from = 1) oldPageIndex: Int, @IntRange(from = 1) newPageIndex: Int)
-            = listener(oldPageIndex, newPageIndex)
+            override fun onPageChanged(
+                @IntRange(from = 1) oldPageIndex: Int,
+                @IntRange(from = 1) newPageIndex: Int
+            ) = listener(oldPageIndex, newPageIndex)
         }
     }
 

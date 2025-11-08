@@ -23,7 +23,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
     /**
      * 动画持续时间
      */
-    protected var animDuration = 400
+    protected var animDuration = 1400
         private set
 
     override fun setAnimDuration(animDuration: Int) {
@@ -63,6 +63,39 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         curlRenderer.setPages(pageBitmapCache.topBitmap!!, pageBitmapCache.bottomBitmap!!)
     }
 
+    override fun prepareAnimAfterCarousel(initDire: AbstractPageContainer.PageDirection) {
+        // 创建动画所需的bitmap
+        when (initDire) {
+            AbstractPageContainer.PageDirection.NEXT -> {
+                if (pageBitmapCache.topBitmap != null) {
+                    pageContainer.getPrevPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
+                } else {
+                    pageBitmapCache.topBitmap = pageContainer.getPrevPage()!!.screenshot()
+                }
+                if (pageBitmapCache.bottomBitmap != null) {
+                    pageContainer.getCurPage()!!.screenshotInto(pageBitmapCache.bottomBitmap!!)
+                } else {
+                    pageBitmapCache.bottomBitmap = pageContainer.getCurPage()!!.screenshot()
+                }
+            }
+            AbstractPageContainer.PageDirection.PREV -> {
+                if (pageBitmapCache.topBitmap != null) {
+                    pageContainer.getCurPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
+                } else {
+                    pageBitmapCache.topBitmap = pageContainer.getCurPage()!!.screenshot()
+                }
+                if (pageBitmapCache.bottomBitmap != null) {
+                    pageContainer.getNextPage()!!.screenshotInto(pageBitmapCache.bottomBitmap!!)
+                } else {
+                    pageBitmapCache.bottomBitmap = pageContainer.getNextPage()!!.screenshot()
+                }
+            }
+            else -> throw IllegalStateException()
+        }
+        curlRenderer.setPageSize(pageContainer.width.toFloat(), pageContainer.height.toFloat())
+        curlRenderer.setPages(pageBitmapCache.topBitmap!!, pageBitmapCache.bottomBitmap!!)
+    }
+
     override fun startNextAnim() {
         curlRenderer.flipToNextPage(scroller, animDuration)
         isAnimRuning = true
@@ -92,6 +125,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         isAnimRuning = false
         scroller.forceFinished(true)
         curlRenderer.release()
+        onAnimEnd()
     }
 
     override fun onNextCarouselLayout() {

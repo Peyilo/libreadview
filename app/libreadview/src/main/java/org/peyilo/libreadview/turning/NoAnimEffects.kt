@@ -28,6 +28,14 @@ class NoAnimEffects private constructor() {
             }
         }
 
+        override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+            draggedView = when(initDire) {
+                PageDirection.NEXT -> pageContainer.getPrevPage()!!
+                PageDirection.PREV -> pageContainer.getCurPage()!!
+                else -> throw IllegalStateException()
+            }
+        }
+
         override fun startNextAnim() {
             draggedView!!.translationX = -pageContainer.width.toFloat()
         }
@@ -76,6 +84,14 @@ class NoAnimEffects private constructor() {
             draggedView = when(initDire) {
                 PageDirection.NEXT -> pageContainer.getCurPage()!!
                 PageDirection.PREV -> pageContainer.getPrevPage()!!
+                else -> throw IllegalStateException()
+            }
+        }
+
+        override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+            draggedView = when(initDire) {
+                PageDirection.NEXT -> pageContainer.getPrevPage()!!
+                PageDirection.PREV -> pageContainer.getCurPage()!!
                 else -> throw IllegalStateException()
             }
         }

@@ -217,7 +217,13 @@ class BasicReadView(
                 splitNearbyChapters(chapIndex)
                 post {
                     val chapRange = getChapPageRange(chapIndex)
-                    val needJumpPage = getCurContainerPageIndex() - 1 == chapRange.from
+                    var needJumpPage = false
+                    // initContainerPageIndex(chapIndex)将当前的page置位到章节的第一页，接下来需要跳转到指定的pageIndex
+                    // 但是如果在跳转到指定pageIndex之前，用户滑动了页面，这样pageIndex就变了，就不需要跳转了
+                    // 此外，如果需要跳转的pageIndex本身就是第一页，也无需再继续跳转
+                    if (getCurChapIndex() == chapIndex && getCurChapPageIndex() == 1 && pageIndex != 1) {
+                        needJumpPage = true
+                    }
                     inflateNearbyChapters(chapIndex)
                     // 如果在目录完成初始化之后，章节内容加载之前，滑动了页面，这就会造成pageIndex改变
                     // 这样也就没必要，跳转到指定pageIndex了

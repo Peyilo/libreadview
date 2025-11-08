@@ -63,6 +63,21 @@ class IBookSlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         }
     }
 
+    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+        when(initDire) {
+            PageDirection.NEXT -> {
+                primaryView = pageContainer.getPrevPage()
+                followedView = pageContainer.getCurPage()
+            }
+            PageDirection.PREV -> {
+                primaryView = pageContainer.getCurPage()
+                followedView = pageContainer.getNextPage()
+            }
+            else -> throw IllegalStateException()
+        }
+    }
+
+
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
         when (initDire) {
             PageDirection.NEXT -> {
@@ -88,10 +103,7 @@ class IBookSlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
             }
             if (scroller.currX == scroller.finalX) {
                 scroller.forceFinished(true)
-                isAnimRuning = false
-                primaryView = null
-                followedView = null
-                curAnimDire = PageDirection.NONE
+                onAnimEnd()
             }
             pageContainer.invalidate()
         }
@@ -137,6 +149,11 @@ class IBookSlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         followedView!!.apply {
             translationX = (pageContainer.width + scroller.finalX) * slideRadio
         }
+        onAnimEnd()
+    }
+
+    override fun onAnimEnd() {
+        super.onAnimEnd()
         primaryView = null
         followedView = null
         isAnimRuning = false

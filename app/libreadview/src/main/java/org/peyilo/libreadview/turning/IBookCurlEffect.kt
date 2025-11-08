@@ -29,6 +29,21 @@ class IBookCurlEffect: CurlEffect() {
         setBackTintColor(backTintColor)
     }
 
+    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+        super.prepareAnimAfterCarousel(initDire)
+        curlRenderer.initControllPosition(gesture.down.x, gesture.down.y)
+        val backTintColor = when (initDire) {
+            PageDirection.NEXT -> {
+                getAverageBackgroundColor(pageContainer.getPrevPage()!!)
+            }
+            PageDirection.PREV -> {
+                getAverageBackgroundColor(pageContainer.getCurPage()!!)
+            }
+            else -> throw IllegalStateException()
+        }
+        setBackTintColor(backTintColor)
+    }
+
     // 取Bitmap的平均颜色，默认采样4x4的网格
     private fun getAverageColor(bitmap: Bitmap, sampleGridSize: Int = 4): Int {
         val width = bitmap.width
@@ -98,6 +113,7 @@ class IBookCurlEffect: CurlEffect() {
                 scroller.forceFinished(true)
                 isAnimRuning = false
                 curlRenderer.release()
+                onAnimEnd()
             }
         }
     }

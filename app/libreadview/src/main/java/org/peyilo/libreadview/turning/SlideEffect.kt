@@ -49,6 +49,20 @@ class SlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         }
     }
 
+    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+        when(initDire) {
+            PageDirection.NEXT -> {
+                primaryView = pageContainer.getPrevPage()
+                followedView = pageContainer.getCurPage()
+            }
+            PageDirection.PREV -> {
+                primaryView = pageContainer.getNextPage()
+                followedView = pageContainer.getCurPage()
+            }
+            else -> throw IllegalStateException()
+        }
+    }
+
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
         // 虽然translationX赋值为float类型，但是实际上显示时是以int类型进行显示的，因此这里需要转换为int类型
         // 如果不这样，两个page之间会出现很小的缝隙
@@ -90,10 +104,7 @@ class SlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
             // 滑动结束，做一些清理工作
             if (scroller.currX == scroller.finalX) {
                 scroller.forceFinished(true)
-                isAnimRuning = false
-                primaryView = null
-                followedView = null
-                curAnimDire = PageDirection.NONE
+                onAnimEnd()
             }
             pageContainer.invalidate()
         }
@@ -130,6 +141,11 @@ class SlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         super.abortAnim()
         scroller.forceFinished(true)
         scrollTogether(scroller.finalX.toFloat())
+        onAnimEnd()
+    }
+
+    override fun onAnimEnd() {
+        super.onAnimEnd()
         isAnimRuning = false
         primaryView = null
         followedView = null

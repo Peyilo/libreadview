@@ -31,6 +31,15 @@ class CoverEffect: CoverShadowEffect(), AnimatedEffect {
         }
     }
 
+    // 当initDire完成初始化且有开启动画的需要，PageContainer就会调用该函数
+    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+        draggedView = when(initDire) {
+            PageDirection.NEXT -> pageContainer.getPrevPage()!!
+            PageDirection.PREV -> pageContainer.getCurPage()!!
+            else -> throw IllegalStateException()
+        }
+    }
+
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
         when (initDire) {
             PageDirection.NEXT -> {
@@ -51,8 +60,7 @@ class CoverEffect: CoverShadowEffect(), AnimatedEffect {
             }
             if (scroller.currX == scroller.finalX) {
                 scroller.forceFinished(true)
-                isAnimRuning = false
-                draggedView = null
+                onAnimEnd()
             }
             pageContainer.invalidate()
         }
@@ -92,6 +100,11 @@ class CoverEffect: CoverShadowEffect(), AnimatedEffect {
         draggedView!!.apply {
             translationX = scroller.finalX.toFloat()
         }
+        onAnimEnd()
+    }
+
+    override fun onAnimEnd() {
+        super.onAnimEnd()
         draggedView = null
         isAnimRuning = false
     }

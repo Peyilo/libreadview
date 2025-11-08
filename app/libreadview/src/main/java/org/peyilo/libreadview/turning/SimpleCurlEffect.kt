@@ -96,6 +96,7 @@ class SimpleCurlEffect: CurlEffect() {
                 scroller.forceFinished(true)
                 isAnimRuning = false
                 curlRenderer.release()
+                onAnimEnd()
             }
         }
     }

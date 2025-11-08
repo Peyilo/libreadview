@@ -5,8 +5,11 @@ import android.view.animation.LinearInterpolator
 import android.widget.Scroller
 import org.peyilo.libreadview.AbstractPageContainer.Gesture
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
+import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.abs
 import kotlin.math.hypot
+
+private const val TAG = "FlipOnReleaseEffect"
 
 /**
  * FlipOnReleasePageEffect定义了这么一种翻页模式：所有的page都会在手指抬起的时候，执行翻页，翻页结束以后，到达page该在的位置。
@@ -28,6 +31,12 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
     private var needStartAnim = false                       // 此次手势是否需要触发滑动动画
     private var initDire = PageDirection.NONE               // 初始滑动方向，其确定了要滑动的page
     private var realTimeDire = PageDirection.NONE
+
+    private var carouselLayoutCalled = false
+        set(value) {
+            field = value
+            LogHelper.d(TAG, "carouselLayoutCalled set to $value")
+        }
 
     /**
      * 如果被强行置为非滚动或布局中央，该标记位就会被置为true。这个标记位只为实现唯一一个作用：当处于拖动状态下，pages被强行置为非滚动或布局中央，
@@ -51,7 +60,6 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
      */
     protected var isDragging = false
         private set
-
 
     private fun getDefaultScroller() = Scroller(pageContainer.context, LinearInterpolator())
 
@@ -91,6 +99,25 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
             abortAnim()
         }
     }
+
+    open fun onAnimEnd() {
+        isDragging = false
+        isSwipeGesture = false
+        needStartAnim = false
+        isAnimRuning = false
+        initDire = PageDirection.NONE
+        realTimeDire = PageDirection.NONE
+    }
+
+    override fun onRestoreStatus() {
+        super.onRestoreStatus()
+        LogHelper.d(TAG, "onRestoreStatus: initDire=$initDire, carouselLayoutCalled=$carouselLayoutCalled")
+        if (initDire != PageDirection.NONE) {
+            if (carouselLayoutCalled) prepareAnimAfterCarousel(initDire) else prepareAnim(initDire)
+        }
+    }
+
+    open fun prepareAnimAfterCarousel(initDire: PageDirection) = Unit
 
     /**
      * 开启翻向下一页的动画
@@ -137,11 +164,13 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
             PageDirection.NEXT -> {
                 startNextAnim()
                 nextCarouselLayout()
+                carouselLayoutCalled = true
                 onNextCarouselLayout()
             }
             PageDirection.PREV -> {
                 startPrevAnim()
                 prevCarouselLayout()
+                carouselLayoutCalled = true
                 onPrevCarouselLayout()
             }
             PageDirection.NONE -> {
@@ -201,6 +230,7 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
         gesture.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                carouselLayoutCalled = false
                 val internal = System.currentTimeMillis() - lastAnimTimestamp
                 // 如果还有动画正在执行、并且翻页动画间隔大于minPageTurnInterval，就结束动画
                 // 如果小于最小翻页时间间隔minPageTurnInterval，就不强制结束动画
@@ -228,7 +258,6 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
                     }
                     isSwipeGesture = false
                     isDragging = false
-                    initDire = PageDirection.NONE
                 } else if (!forceWhenDraggingFlag) {
                     // forceWhenDraggingFlag标记位，会造成当前点击事件不会被执行
                     performClick()
@@ -250,6 +279,8 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
         prepareAnim(PageDirection.NEXT)
         startNextAnim()
         nextCarouselLayout()
+        initDire = PageDirection.NEXT
+        carouselLayoutCalled = true
         onNextCarouselLayout()
     }
 
@@ -260,6 +291,8 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
         prepareAnim(PageDirection.PREV)
         startPrevAnim()
         prevCarouselLayout()
+        initDire = PageDirection.PREV
+        carouselLayoutCalled = true
         onPrevCarouselLayout()
     }
 
