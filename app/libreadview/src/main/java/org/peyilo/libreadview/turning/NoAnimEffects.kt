@@ -28,7 +28,8 @@ class NoAnimEffects private constructor() {
             }
         }
 
-        override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+        override fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) {
+            if (!afterCarousel) return prepareAnim(initDire)
             draggedView = when(initDire) {
                 PageDirection.NEXT -> pageContainer.getPrevPage()!!
                 PageDirection.PREV -> pageContainer.getCurPage()!!
@@ -88,7 +89,8 @@ class NoAnimEffects private constructor() {
             }
         }
 
-        override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+        override fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) {
+            if (!afterCarousel) return prepareAnim(initDire)
             draggedView = when(initDire) {
                 PageDirection.NEXT -> pageContainer.getPrevPage()!!
                 PageDirection.PREV -> pageContainer.getCurPage()!!

@@ -113,11 +113,11 @@ abstract class FlipOnReleaseEffect: DirectionalEffect() {
         super.onRestoreStatus()
         LogHelper.d(TAG, "onRestoreStatus: initDire=$initDire, carouselLayoutCalled=$carouselLayoutCalled")
         if (initDire != PageDirection.NONE) {
-            if (carouselLayoutCalled) prepareAnimAfterCarousel(initDire) else prepareAnim(initDire)
+            prepareAnimForRestore(initDire, carouselLayoutCalled)
         }
     }
 
-    open fun prepareAnimAfterCarousel(initDire: PageDirection) = Unit
+    open fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) = Unit
 
     /**
      * 开启翻向下一页的动画

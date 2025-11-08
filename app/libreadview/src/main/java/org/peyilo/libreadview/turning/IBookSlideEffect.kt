@@ -63,7 +63,8 @@ class IBookSlideEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         }
     }
 
-    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+    override fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) {
+        if (!afterCarousel) return prepareAnim(initDire)
         when(initDire) {
             PageDirection.NEXT -> {
                 primaryView = pageContainer.getPrevPage()

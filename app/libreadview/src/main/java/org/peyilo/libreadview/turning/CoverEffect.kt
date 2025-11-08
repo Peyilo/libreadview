@@ -32,7 +32,8 @@ class CoverEffect: CoverShadowEffect(), AnimatedEffect {
     }
 
     // 当initDire完成初始化且有开启动画的需要，PageContainer就会调用该函数
-    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
+    override fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) {
+        if (!afterCarousel) return prepareAnim(initDire)
         draggedView = when(initDire) {
             PageDirection.NEXT -> pageContainer.getPrevPage()!!
             PageDirection.PREV -> pageContainer.getCurPage()!!

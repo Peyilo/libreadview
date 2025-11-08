@@ -9,6 +9,8 @@ import androidx.core.graphics.get
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.turning.render.CurlRenderer
 import org.peyilo.libreadview.turning.render.IBookCurlRenderer
+import org.peyilo.libreadview.turning.util.screenshot
+import org.peyilo.libreadview.turning.util.screenshotInto
 
 class IBookCurlEffect: CurlEffect() {
 
@@ -29,19 +31,61 @@ class IBookCurlEffect: CurlEffect() {
         setBackTintColor(backTintColor)
     }
 
-    override fun prepareAnimAfterCarousel(initDire: PageDirection) {
-        super.prepareAnimAfterCarousel(initDire)
-        curlRenderer.initControllPosition(gesture.down.x, gesture.down.y)
-        val backTintColor = when (initDire) {
-            PageDirection.NEXT -> {
-                getAverageBackgroundColor(pageContainer.getPrevPage()!!)
+    override fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) {
+        if (!afterCarousel) {
+            super.prepareAnim(initDire)
+            val backTintColor = when (initDire) {
+                PageDirection.NEXT -> {
+                    getAverageBackgroundColor(pageContainer.getCurPage()!!)
+                }
+                PageDirection.PREV -> {
+                    getAverageBackgroundColor(pageContainer.getPrevPage()!!)
+                }
+                else -> throw IllegalStateException()
             }
-            PageDirection.PREV -> {
-                getAverageBackgroundColor(pageContainer.getCurPage()!!)
+            setBackTintColor(backTintColor)
+        } else {
+            when (initDire) {
+                PageDirection.NEXT -> {
+                    if (pageBitmapCache.topBitmap != null) {
+                        pageContainer.getPrevPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
+                    } else {
+                        pageBitmapCache.topBitmap = pageContainer.getPrevPage()!!.screenshot()
+                    }
+                    if (pageBitmapCache.bottomBitmap != null) {
+                        pageContainer.getCurPage()!!.screenshotInto(pageBitmapCache.bottomBitmap!!)
+                    } else {
+                        pageBitmapCache.bottomBitmap = pageContainer.getCurPage()!!.screenshot()
+                    }
+                }
+                PageDirection.PREV -> {
+                    if (pageBitmapCache.topBitmap != null) {
+                        pageContainer.getCurPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
+                    } else {
+                        pageBitmapCache.topBitmap = pageContainer.getCurPage()!!.screenshot()
+                    }
+                    if (pageBitmapCache.bottomBitmap != null) {
+                        pageContainer.getNextPage()!!.screenshotInto(pageBitmapCache.bottomBitmap!!)
+                    } else {
+                        pageBitmapCache.bottomBitmap = pageContainer.getNextPage()!!.screenshot()
+                    }
+                }
+                else -> throw IllegalStateException()
             }
-            else -> throw IllegalStateException()
+            curlRenderer.setPageSize(pageContainer.width.toFloat(), pageContainer.height.toFloat())
+            curlRenderer.setPages(pageBitmapCache.topBitmap!!, pageBitmapCache.bottomBitmap!!)
+
+            val backTintColor = when (initDire) {
+                PageDirection.NEXT -> {
+                    getAverageBackgroundColor(pageContainer.getPrevPage()!!)
+                }
+                PageDirection.PREV -> {
+                    getAverageBackgroundColor(pageContainer.getCurPage()!!)
+                }
+                else -> throw IllegalStateException()
+            }
+            setBackTintColor(backTintColor)
         }
-        setBackTintColor(backTintColor)
     }
 
     // 取Bitmap的平均颜色，默认采样4x4的网格

@@ -218,9 +218,13 @@ class IBookCurlRenderer: CurlRenderer {
         }
     }
 
-    override fun initControllPosition(x: Float, y: Float) {
+    override fun initControllPosition(
+        x: Float, y: Float
+    ) {
         downPos.x = x
         downPos.y = y
+        touchPos.x = x
+        touchPos.y = y
     }
 
     private enum class CornerMode {

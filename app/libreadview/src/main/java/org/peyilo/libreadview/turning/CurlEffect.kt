@@ -3,6 +3,7 @@ package org.peyilo.libreadview.turning
 import android.graphics.Canvas
 import android.view.View
 import org.peyilo.libreadview.AbstractPageContainer
+import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.turning.render.CurlRenderer
 import org.peyilo.libreadview.turning.util.PageBitmapCache
 import org.peyilo.libreadview.turning.util.screenshot
@@ -33,7 +34,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
     override fun prepareAnim(initDire: AbstractPageContainer.PageDirection) {
         // 创建动画所需的bitmap
         when (initDire) {
-            AbstractPageContainer.PageDirection.NEXT -> {
+            PageDirection.NEXT -> {
                 if (pageBitmapCache.topBitmap != null) {
                     pageContainer.getCurPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
                 } else {
@@ -45,7 +46,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
                     pageBitmapCache.bottomBitmap = pageContainer.getNextPage()!!.screenshot()
                 }
             }
-            AbstractPageContainer.PageDirection.PREV -> {
+            PageDirection.PREV -> {
                 if (pageBitmapCache.topBitmap != null) {
                     pageContainer.getPrevPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
                 } else {
@@ -63,10 +64,11 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         curlRenderer.setPages(pageBitmapCache.topBitmap!!, pageBitmapCache.bottomBitmap!!)
     }
 
-    override fun prepareAnimAfterCarousel(initDire: AbstractPageContainer.PageDirection) {
+    override fun prepareAnimForRestore(initDire: PageDirection, afterCarousel: Boolean) {
+        if (!afterCarousel) return prepareAnim(initDire)
         // 创建动画所需的bitmap
         when (initDire) {
-            AbstractPageContainer.PageDirection.NEXT -> {
+            PageDirection.NEXT -> {
                 if (pageBitmapCache.topBitmap != null) {
                     pageContainer.getPrevPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
                 } else {
@@ -78,7 +80,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
                     pageBitmapCache.bottomBitmap = pageContainer.getCurPage()!!.screenshot()
                 }
             }
-            AbstractPageContainer.PageDirection.PREV -> {
+            PageDirection.PREV -> {
                 if (pageBitmapCache.topBitmap != null) {
                     pageContainer.getCurPage()!!.screenshotInto(pageBitmapCache.topBitmap!!)
                 } else {

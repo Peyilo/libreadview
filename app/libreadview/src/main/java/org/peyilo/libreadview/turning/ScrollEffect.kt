@@ -119,6 +119,11 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
         nextPages = pageContainer.getAllNextPages()
     }
 
+    override fun onRestoreStatus() {
+        super.onRestoreStatus()
+        refreshPages()
+    }
+
     override fun prepareAnim(initDire: PageDirection) {
         if (initDire == PageDirection.NONE)
             throw IllegalStateException("prepareAnim: initDire is PageDirection.None")
