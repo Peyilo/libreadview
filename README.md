@@ -33,7 +33,7 @@ Or use Gradle:
 
 ```kotlin
 dependencies {
-    implementation("io.github.peyilo:libreadview:0.0.3")
+    implementation("io.github.peyilo:libreadview:0.0.4")
 }
 ```
 <details> <summary><b>Via Maven</b></summary></details>
@@ -44,7 +44,7 @@ Or Maven:
 <dependency>
     <groupId>io.github.peyilo</groupId>
     <artifactId>libreadview</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
 </dependency>
 ```
 
@@ -366,7 +366,8 @@ interface BookNavigator {
 
 ### TODO
 
-- IBookCurl的装订线实现
+- 现有的仿真翻页实现有两个：SimpleCurlEffect和IBookCurlEffect，前者翻页手势过于别扭，且模拟纸张的效果并不好，考虑之后将其移出。后者虽然与真实的纸张翻页很相似，但是由于控制点与触摸点可能会重合，造成页面显示会出现突变。同时，IBookCurlEffect的装订线实现现在还没有很好的策略做出一个平滑的效果。在之后的开发中，考虑对控制点的位置重新设计，并且实现装订线。
+
 - 关于滚动翻页：由于PageEffect处理的AbstractPageContainer的Child view，也就是一个与AbstractPageContainer大小相同的Page，这会使得整个Page（包括页眉、页脚）都在滚动，考虑一下怎么解决
 - 长按选择文字功能
   - 问题1：高亮相关信息以上面形式的数据保存呢？文本是否高亮是并不依赖于分页状态的，因此需要保证如果布局参数发生改变、需要重新进行分页时，高亮状态需要延续下去。
@@ -374,7 +375,7 @@ interface BookNavigator {
   - 问题3：如何支持笔记功能呢，笔记的内容以什么形式保存呢，并且需要与正文内容建立某种关系。
 - 段评功能：支持章节标题、段落、图片的段评按钮功能。段评按钮绘制方式分为两种，一种是直接绘制一个图标，另一种是作为一个view。另外，段评按钮的位置也分为多种：紧接在段落最后一个字的后面；或者，在x轴方向紧贴在页面的右侧，在y轴方向和段落的最后一行对齐。
 - 过度绘制优化
-- 支持加载epub并显示
+- 支持加载epub并显示：似乎要依赖于WebView实现
 - 网络小说加载的步骤：初始化目录、加载指定章节内容、解析章节内容（章节内容可能包含文字和图片）、
 
 ## License
