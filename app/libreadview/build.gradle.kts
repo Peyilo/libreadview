@@ -8,7 +8,7 @@ plugins {
 // MavenCentral Publishing
 val artifactId = "libreadview"
 val groupId = "io.github.peyilo"
-val versionId = "0.0.3"
+val versionId = "0.0.4"
 val descriptions = "An Android library for customizable page turning animations."
 
 val authorName = "Peyilo"
