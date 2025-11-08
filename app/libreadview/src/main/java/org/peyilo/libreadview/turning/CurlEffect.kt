@@ -24,7 +24,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
     /**
      * 动画持续时间
      */
-    protected var animDuration = 1400
+    protected var animDuration = 400
         private set
 
     override fun setAnimDuration(animDuration: Int) {

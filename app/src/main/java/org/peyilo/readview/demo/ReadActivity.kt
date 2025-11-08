@@ -2,7 +2,7 @@ package org.peyilo.readview.demo
 
 import android.os.Bundle
 import org.peyilo.libreadview.basic.BasicReadView
-import org.peyilo.libreadview.turning.ScrollEffect
+import org.peyilo.libreadview.turning.IBookSlideEffect
 import org.peyilo.readview.BaseActivity
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.extensions.clearReadViewThemeCache
@@ -33,7 +33,7 @@ open class ReadActivity: BaseActivity() {
 
     protected open fun initReadView(readview: BasicReadView) {
         // 设置翻页模式
-        readview.pageEffect = ScrollEffect()
+        readview.pageEffect = IBookSlideEffect()
 
         // 当目录完成初始化后，获取章节标题列表
         readview.setCallback(object : BasicReadView.Callback {
@@ -60,8 +60,8 @@ open class ReadActivity: BaseActivity() {
         }
 
         // 设置预加载章节数，如下设置会产生这样的效果：加载指定章节时，同时预加载前后各1章
-        readview.preprocessBefore = 0
-        readview.preprocessBehind = 0
+        readview.preprocessBefore = 1
+        readview.preprocessBehind = 1
 
         // 设置标题、正文字体
          readview.setTitleTypeface(FontManager.getTypeface("linja-waso-Bold"))

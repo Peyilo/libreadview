@@ -33,7 +33,7 @@ Or use Gradle:
 
 ```kotlin
 dependencies {
-    implementation("io.github.peyilo:libreadview:0.0.4")
+    implementation("io.github.peyilo:libreadview:0.0.5")
 }
 ```
 <details> <summary><b>Via Maven</b></summary></details>
@@ -44,7 +44,7 @@ Or Maven:
 <dependency>
     <groupId>io.github.peyilo</groupId>
     <artifactId>libreadview</artifactId>
-    <version>0.0.4</version>
+    <version>0.0.5</version>
 </dependency>
 ```
 
