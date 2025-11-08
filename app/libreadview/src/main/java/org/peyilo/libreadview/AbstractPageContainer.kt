@@ -1494,6 +1494,10 @@ abstract class AbstractPageContainer(
                 }
 
                 else -> {
+                    // 这里处理的是执行动画过程中，发生了replace的情况
+                    // 有两种处理方式：第一种，先将所有的page置位到默认位置，再执行replace
+                    // 第二种，保存当前的滚动状态，执行replace，再恢复动画中间状态
+                    // 为了保证动画的连续性，采用第二种方式，不再调用forceNotInLayoutOrScroll
                     pageEffect.storeStatus()
                     if (positionStart < mCurContainerPageIndex - 1) {
                         mCurContainerPageIndex += newItemCount - oldItemCount       // 替代的page在当前page之前，可能会影响当前page的位置
