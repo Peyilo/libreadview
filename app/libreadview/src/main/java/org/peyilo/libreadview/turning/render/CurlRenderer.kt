@@ -24,4 +24,6 @@ interface CurlRenderer {
 
     fun destory() = Unit
 
+    fun enableDebugMode(enable: Boolean) = Unit
+
 }

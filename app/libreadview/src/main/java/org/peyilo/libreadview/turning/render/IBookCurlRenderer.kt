@@ -860,4 +860,8 @@ class IBookCurlRenderer: CurlRenderer {
         shadowCurl = null
         shadowB = null
     }
+
+    override fun enableDebugMode(enable: Boolean) {
+        enableDebugMode = enable
+    }
 }

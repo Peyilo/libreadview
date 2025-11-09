@@ -181,4 +181,9 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         pageBitmapCache.clearBitmap()
         curlRenderer.destory()
     }
+
+    fun enableDebugMode(enable: Boolean) {
+        curlRenderer.enableDebugMode(enable)
+    }
+
 }

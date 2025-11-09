@@ -629,4 +629,7 @@ class SimpleCurlRenderer: CurlRenderer {
         canvas.drawLine(m2.x, m2.y, bezierControl2.x, bezierControl2.y, debugLinePaint)
     }
 
+    override fun enableDebugMode(enable: Boolean) {
+        enableDebugMode = enable
+    }
 }
