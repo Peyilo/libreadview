@@ -113,4 +113,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    implementation("nl.siegmann.epublib:epublib-core:3.1") {
+        exclude(group = "org.slf4j")
+        exclude(group = "xmlpull")
+    }
+    implementation("org.slf4j:slf4j-android:1.7.25")
 }

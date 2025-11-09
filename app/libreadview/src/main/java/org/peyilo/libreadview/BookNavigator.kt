@@ -3,7 +3,7 @@ package org.peyilo.libreadview
 import androidx.annotation.IntRange
 
 /**
- * 一个定义了书记导航所需实现的函数的接口
+ * 一个定义了book导航所需实现的函数的接口
  */
 interface BookNavigator {
 
