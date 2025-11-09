@@ -9,11 +9,6 @@ import java.io.File
 // 一个用于打开本地txt文件的阅读页面
 class TxtReadActivity : ReadActivity() {
 
-    /**
-     * isDemo指的是当前打开的是默认的txt文件，而不是通过选择文件传过来的文件
-     */
-    private var isDefault = false
-
     // 检测文件编码格式
     private fun getEncodeing(file: File): String {
         val encoding: String? = UniversalDetector.detectCharset(file)           // 检测编码格式
@@ -25,10 +20,9 @@ class TxtReadActivity : ReadActivity() {
 
         // 从 Intent 获取文件路径
         val selectedFilePath = intent.getStringExtra("SELECTED_FILE_PATH")
-        isDefault = selectedFilePath == null
-        if (isDefault) readview.customChapLoadPage()
-
         if (selectedFilePath == null) {
+            // 对于默认的文本文件，使用自定义的章节加载界面
+            readview.customChapLoadPage()
             // 没有指定文件路径，使用assets 目录下的默认txt文件
             val assetFileName = "txts/妖精之诗 作者：尼希维尔特.txt"
             readview.openAssetFile(
