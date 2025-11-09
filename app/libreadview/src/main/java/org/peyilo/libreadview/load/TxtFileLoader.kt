@@ -30,13 +30,25 @@ open class TxtFileLoader: BookLoader {
 
     private val reader: BufferedReader
 
-    constructor(file: File, encoding: String = "UTF-8"): this(FileInputStream(file), encoding) {
-        bookTitle = file.nameWithoutExtension
-    }
+    constructor(
+        file: File, bookTilte: String? = null,
+        encoding: String = "UTF-8"
+    ): this(
+        FileInputStream(file),
+        bookTilte ?: file.nameWithoutExtension,
+        encoding
+    )
 
-    constructor(inputStream: InputStream, encoding: String = "UTF-8") {
+    constructor(
+        inputStream: InputStream,
+        bookTilte: String? = null,
+        encoding: String = "UTF-8"
+    ) {
         reader = BufferedReader(InputStreamReader(inputStream, encoding))
         this.encoding = encoding
+        bookTilte?.let {
+            this.bookTitle = it
+        }
     }
 
     private val titlePatternList by lazy { mutableListOf<Regex>() }

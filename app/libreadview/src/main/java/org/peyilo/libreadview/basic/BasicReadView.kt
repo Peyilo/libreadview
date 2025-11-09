@@ -28,6 +28,7 @@ import org.peyilo.libreadview.load.TxtFileLoader
 import org.peyilo.libreadview.util.DisplayUtil
 import org.peyilo.libreadview.util.LogHelper
 import java.io.File
+import java.io.InputStream
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 
@@ -48,7 +49,7 @@ class BasicReadView(
     private var bookStatus = AtomicInteger(BOOK_STATUS_INIT)
 
     /**
-     * 不要主动更改book的数据，只能通过openBook()函数
+     * 尽量不要主动更改book的数据，把这个book当做只读数据来使用
      */
     var book: Book? = null
         private set
@@ -69,6 +70,8 @@ class BasicReadView(
         mAdapterData = AdapterData()
         adapter = PageAdapter()
 
+        // 文本内容的分页依赖于当前View的宽高，因此需要等待view测量完成以后，
+        // 获取到view的宽高，之后才能进行分页
         viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
             override fun onPreDraw(): Boolean {
                 // onPreDraw在main线程运行
@@ -83,6 +86,9 @@ class BasicReadView(
         })
     }
 
+    /**
+     * 初始化书籍目录信息
+     */
     private fun initToc(): Boolean {
         val res = try {
             book = mBookLoader.initToc()
@@ -243,7 +249,12 @@ class BasicReadView(
     }
 
     /**
-     * 在Activity.onCreate调用时尽量在readview相关操作中最后调用，否则可能会出现设置的参数不起作用
+     * 打开一本书
+     * 注意：在Activity.onCreate调用时尽量在readview相关操作中最后调用，否则可能会出现设置的参数不起作用
+     *
+     * @param loader  用于加载书籍内容的loader
+     * @param chapIndex 章节索引，范围1..chapCount
+     * @param pageIndex 章节页码，范围1..chapPageCount
      */
     override fun openBook(
         loader: BookLoader,
@@ -265,17 +276,45 @@ class BasicReadView(
      * @param file 必须是一个存在的文件
      * @param chapIndex 章节索引，范围1..chapCount
      * @param pageIndex 章节页码，范围1..chapPageCount
+     * @param encoding 文本编码格式，如"UTF-8"
      */
     fun openFile(
         file: File,
         @IntRange(from = 1) chapIndex: Int = 1,
-        @IntRange(from = 1) pageIndex: Int = 1
+        @IntRange(from = 1) pageIndex: Int = 1,
+        encoding: String = "UTF-8",
     ) {
-        openBook(TxtFileLoader(file), chapIndex, pageIndex)
+        openBook(
+            TxtFileLoader(file, encoding = encoding),
+            chapIndex, pageIndex
+        )
     }
 
     /**
-     * 打开一段文本内容
+     * 打开一个assets目录下的txt文件，e.g. "txts/demo.txt"
+     * @param assetFileName assets目录下的文件路径
+     * @param chapIndex 章节索引，范围1..chapCount
+     * @param pageIndex 章节页码，范围1..chapPageCount
+     * @param encoding 文本编码格式，如"UTF-8"
+     */
+    fun openAssetFile(
+        assetFileName: String,
+        @IntRange(from = 1) chapIndex: Int = 1,
+        @IntRange(from = 1) pageIndex: Int = 1,
+        encoding: String = "UTF-8",
+    ) {
+        val assetManager = context.assets
+        val inputStream: InputStream = assetManager.open(assetFileName)
+        val bookTitle = File(assetFileName).nameWithoutExtension
+        openBook(
+            TxtFileLoader(inputStream, bookTitle, encoding),
+            chapIndex, pageIndex
+        )
+    }
+
+    /**
+     * 打开一段文本内容，并显示
+     * @param text 要显示的文本内容
      */
     fun showText(text: String) {
         openBook(TextLoader(text))
@@ -350,6 +389,8 @@ class BasicReadView(
             return PageViewHolder(page)
         }
 
+        // 根据position绑定数据到ViewHolder，不同position的type可能不同，
+        // 这里有三种不同的PageType，需要分别处理
         override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
             val type = mAdapterData.getPageType(position)
             when (type) {
@@ -389,7 +430,7 @@ class BasicReadView(
     }
 
     /**
-     * 用于保存SimpleReadView.adapter的数据
+     * 用于保存ReadView.adapter的数据
      */
     private class AdapterData {
 
@@ -423,11 +464,18 @@ class BasicReadView(
 
     }
 
+    /**
+     * 设置回调
+     * TODO：添加多种回调函数
+     */
     fun setCallback(callback: Callback) {
         this.mCallback = callback
     }
 
-    override fun getChapTitle(chapIndex: Int): String {
+    /**
+     * 获取指定章节的标题 (chapIndex从1开始)
+     */
+    override fun getChapTitle(@IntRange(from = 1) chapIndex: Int): String {
         if (book == null) {
             throw IllegalStateException("the mBook is not initialized")
         }
@@ -443,31 +491,46 @@ class BasicReadView(
     }
 
     /**
-     * 如果需要自定义TocInitPage、ChapLoadPage、ReadPage，可以通过重写这个类并设置setPageDelegate(
-     * pageDelegate: PageDelegate)以达到一个自定义的效果
+     * 如果需要自定义TocInitPage、ChapLoadPage、ReadPage，可以通过重写这个类并设置
+     * setPageDelegate(pageDelegate: PageDelegate)以达到一个自定义的效果
      */
     open class PageDelegate {
 
+        /**
+         * 创建一个用于显示“加载目录中”信息的View，这个函数返回的View将会在目录完成加载前显示
+         */
         open fun createTocInitPage(context: Context): View = MessagePage(context)
 
+        /**
+         * 对于每个章节来说，在完成内容的加载以及分页之前，会使用一个占位page面来显示“章节xxx加载中”信息,
+         * 直到章节内容加载并分页完成以后，才会将这个page替换为章节的正文内容页面
+         */
         open fun createChapLoadPage(context: Context): View = ChapLoadPage(context)
 
+        /**
+         * 用于显示章节正文内容的View
+         */
         open fun createReadPage(context: Context): ReadPage {
             val res = ReadPage(context)
             return res
         }
 
+        /**
+         * 绑定“加载目录中”页面的数据
+         */
         open fun bindTocInitPage(page: View, text: String) {
             val page = page as MessagePage
             page.text = text
         }
 
+        // 绑定章节加载页面的数据
         open fun bindChapLoadPage(page: View, title: String, chapIndex: Int) {
             val page = page as ChapLoadPage
             page.title = title
             page.chapIndex = chapIndex
         }
 
+        // 绑定章节正文页面的数据
         @SuppressLint("SetTextI18n")
         open fun bindReadPage(page: ReadPage, pageData: PageData, title: String, chapIndex: Int,
                               chapPageIndex: Int, chapPageCount: Int,
@@ -481,10 +544,16 @@ class BasicReadView(
 
     }
 
+    /**
+     * 设置用于创建和绑定各类Page的委托对象，以实现对各类Page的自定义
+     */
     fun setPageDelegate(pageDelegate: PageDelegate) {
         this.mPageDelegate = pageDelegate
     }
 
+    /**
+     * 获取章节标题文字大小（单位：sp）
+     */
     fun getTitleTextSize(): Float = DisplayUtil.pxToSp(context, mReadStyle.titleTextSize)
 
     /**

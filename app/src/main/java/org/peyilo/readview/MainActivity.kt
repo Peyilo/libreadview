@@ -3,6 +3,7 @@ package org.peyilo.readview
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import org.peyilo.readview.databinding.ActivityMainBinding
@@ -23,10 +24,12 @@ class MainActivity : BaseActivity() {
         if (uri != null) {
             // 文件选择成功，读取文件并保存到应用的私有目录
             // 获取输入流
+            val fileName = getFileName(uri)
             val inputStream = contentResolver.openInputStream(uri)
+
             inputStream?.let { input ->
                 // 创建目标文件，在应用的私有目录中
-                val selectedFile = File(filesDir, uri.path!!.split("/").let { it[it.size - 1] })
+                val selectedFile = File(filesDir, fileName)
                 val outputStream = FileOutputStream(selectedFile)
                 input.copyTo(outputStream)
                 input.close()
@@ -82,5 +85,17 @@ class MainActivity : BaseActivity() {
 
     }
 
+    // 获取Uri对应的文件名
+    private fun getFileName(uri: Uri): String {
+        var name = "unknown_file"
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (it.moveToFirst() && nameIndex != -1) {
+                name = it.getString(nameIndex)
+            }
+        }
+        return name
+    }
 
 }

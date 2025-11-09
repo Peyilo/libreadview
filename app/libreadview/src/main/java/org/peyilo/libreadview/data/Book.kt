@@ -59,7 +59,7 @@ open class AdditionalData(): Parcelable {
  *  Component: 所有元素的共同接口
  */
 sealed interface BookContent {
-    val title: String
+    var title: String
     fun formatString(indent: String = ""): String  // 增加缩进参数
 
     fun isTitleEmpty(): Boolean {
@@ -73,7 +73,7 @@ sealed interface BookNode: BookContent, Parcelable
  * Leaf: 叶子节点 - Chapter（章节）
  */
 data class Chapter(
-    override val title: String,
+    override var title: String,
     private val paragraphs: MutableList<String> = mutableListOf()               // 章节中的段落
 ) : BookNode, AdditionalData() {
 
@@ -133,7 +133,7 @@ data class Chapter(
  * Composite: 组合节点 - Volume（卷）
  */
 data class Volume(
-    override val title: String,
+    override var title: String,
     private val chapters: MutableList<Chapter> = mutableListOf()                // 一个卷包含多个章节
 ) : BookNode, AdditionalData() {
     override fun formatString(indent: String): String {
@@ -189,7 +189,7 @@ data class Volume(
  * Composite: 顶层组合节点 - Book（书籍）
  */
 data class Book(
-    override val title: String,
+    override var title: String,
     private val bookNodes: MutableList<BookNode> = mutableListOf()               // 书籍包含多个卷或者章节(卷和章节都可以作为直接子节点)
 ) : BookContent, AdditionalData() {
     private var chapCountDirty = true
@@ -317,7 +317,7 @@ data class Book(
      * 根据给定的 index 获取章节，index 从 0 开始
      */
     fun getChap(index: Int): Chapter {
-        if (index < 0 || index >= chapCount) {
+        if (index !in 0..<chapCount) {
             throw IndexOutOfBoundsException("Chapter at index $index not found, the chapCount of this book is $chapCount")
         }
         return allChapters!![index]
