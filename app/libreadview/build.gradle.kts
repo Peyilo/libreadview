@@ -101,7 +101,7 @@ android {
     sourceSets {
         getByName("main") {
             assets {
-                srcDirs("src\\main\\assets", "src\\main\\assets")
+                srcDirs("src\\main\\assets")
             }
         }
     }
@@ -114,9 +114,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation("nl.siegmann.epublib:epublib-core:3.1") {
-        exclude(group = "org.slf4j")
-        exclude(group = "xmlpull")
-    }
-    implementation("org.slf4j:slf4j-android:1.7.25")
+    implementation("io.github.peyilo:epublib:0.0.1")
 }
