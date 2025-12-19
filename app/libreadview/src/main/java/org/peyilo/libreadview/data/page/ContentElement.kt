@@ -11,7 +11,7 @@ open class ContentElement: AdditionalData() {
 
     // 命中测试
     fun hitTest(x: Float, y: Float): Boolean {
-        return x >= left && x <= right && y >= top && y <= bottom
+        return x in left..right && y >= top && y <= bottom
     }
 
 }

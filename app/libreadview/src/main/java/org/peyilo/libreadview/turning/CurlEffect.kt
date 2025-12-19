@@ -110,12 +110,12 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         pageContainer.invalidate()
     }
 
-    override fun startResetAnim(initDire: AbstractPageContainer.PageDirection) {
+    override fun startResetAnim(initDire: PageDirection) {
         when (initDire) {
-            AbstractPageContainer.PageDirection.NEXT -> {
+            PageDirection.NEXT -> {
                 startPrevAnim()
             }
-            AbstractPageContainer.PageDirection.PREV -> {
+            PageDirection.PREV -> {
                 startNextAnim()
             }
             else -> throw IllegalStateException("initDire is PageDirection.None")
