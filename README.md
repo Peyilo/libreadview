@@ -121,7 +121,6 @@ readview.pageEffect = EffectFactory.create(EffectFactory.COVER)
 - EffectFactory.COVER：覆盖翻页
 - EffectFactory.SLIDE：左右翻页
 - EffectFactory.SCROLL：滚动翻页
-- EffectFactory.IBOOK_CURL：模仿Apple iBook的仿真翻页
 - EffectFactory.IBOOK_SLIDE：模仿Apple iBook的左右翻页
 
 ### 关于小说内容的加载
@@ -367,10 +366,7 @@ interface BookNavigator {
 ### TODO
 
 - IBookCurlEffect在API21和API22两个版本会出现崩溃
-- SimpleCurlEffect则在更多低版本出现崩溃
-
-- 现有的仿真翻页实现有两个：SimpleCurlEffect和IBookCurlEffect，前者翻页手势过于别扭，且模拟纸张的效果并不好，考虑之后将其移出。后者虽然与真实的纸张翻页很相似，但是由于控制点与触摸点可能会重合，造成页面显示会出现突变。同时，IBookCurlEffect的装订线实现现在还没有很好的策略做出一个平滑的效果。在之后的开发中，考虑对控制点的位置重新设计，并且实现装订线。
-
+- IBookCurlEffect虽然与真实的纸张翻页很相似，但是由于控制点与触摸点可能会重合，造成页面显示会出现突变。同时，IBookCurlEffect的装订线实现现在还没有很好的策略做出一个平滑的效果。在之后的开发中，考虑对控制点的位置重新设计，并且实现装订线。
 - 关于滚动翻页：由于PageEffect处理的AbstractPageContainer的Child view，也就是一个与AbstractPageContainer大小相同的Page，这会使得整个Page（包括页眉、页脚）都在滚动，考虑一下怎么解决
 - 长按选择文字功能
   - 问题1：高亮相关信息以上面形式的数据保存呢？文本是否高亮是并不依赖于分页状态的，因此需要保证如果布局参数发生改变、需要重新进行分页时，高亮状态需要延续下去。

@@ -36,16 +36,10 @@ object EffectFactory {
      * 滚动翻页
      */
     const val SCROLL = 5
-
-    /**
-     * 仿真翻页：仿iOS风格的curl翻页
-     */
-    const val IBOOK_CURL = 6
-
     /**
      * 滑动翻页：仿iBook风格的滑动翻页
      */
-    const val IBOOK_SLIDE = 7
+    const val IBOOK_SLIDE = 6
 
     /**
      * 根据指定的PageEffect类型创建对应的PageEffect
@@ -53,11 +47,10 @@ object EffectFactory {
     fun create(effectType: Int): AbstractPageContainer.PageEffect = when (effectType) {
         NO_ANIMATION -> NoAnimEffects.Horizontal()
         NO_ANIMATION_VERTICAL -> NoAnimEffects.Vertical()
-        CURL -> SimpleCurlEffect()
+        CURL -> IBookCurlEffect()
         COVER -> CoverEffect()
         SLIDE -> SlideEffect()
         SCROLL -> ScrollEffect()
-        IBOOK_CURL -> IBookCurlEffect()
         IBOOK_SLIDE -> IBookSlideEffect()
         else -> throw IllegalStateException("Not support PageEffectType: $effectType")
     }
@@ -65,11 +58,10 @@ object EffectFactory {
     fun getType(pageEffect: AbstractPageContainer.PageEffect): Int =  when (pageEffect) {
         is NoAnimEffects.Horizontal -> NO_ANIMATION
         is NoAnimEffects.Vertical -> NO_ANIMATION_VERTICAL
-        is SimpleCurlEffect -> CURL
+        is IBookCurlEffect -> CURL
         is CoverEffect -> COVER
         is SlideEffect -> SLIDE
         is ScrollEffect -> SCROLL
-        is IBookCurlEffect -> IBOOK_CURL
         is IBookSlideEffect -> IBOOK_SLIDE
         else -> throw IllegalStateException("Not support pageEffect: $pageEffect")
     }
