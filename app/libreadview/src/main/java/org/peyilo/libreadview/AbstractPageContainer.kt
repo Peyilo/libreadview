@@ -98,7 +98,7 @@ abstract class AbstractPageContainer(
      * 表示当前显示页面的页码，从1开始
      */
     @IntRange(from = 1)
-    private var mCurContainerPageIndex = 1
+    private var mCurContainerPageIndex: Int = 1
         set(value) = synchronized(mCurPageIndexLock) {
             if (field != value) {
                 LogHelper.d(TAG, "setCurPageIndex: $field -> $value")
