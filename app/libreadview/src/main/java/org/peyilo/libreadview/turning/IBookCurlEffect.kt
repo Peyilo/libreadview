@@ -166,4 +166,7 @@ class IBookCurlEffect: CurlEffect() {
         (curlRenderer as IBookCurlRenderer).setBackTintColor(color)
     }
 
+    fun enableDebugMode(enable: Boolean) {
+        (curlRenderer as IBookCurlRenderer).enableDebugMode(enable)
+    }
 }

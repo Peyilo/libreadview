@@ -122,6 +122,7 @@ readview.pageEffect = EffectFactory.create(EffectFactory.COVER)
 - EffectFactory.SLIDE：左右翻页
 - EffectFactory.SCROLL：滚动翻页
 - EffectFactory.IBOOK_SLIDE：模仿Apple iBook的左右翻页
+- EffectFactory.GOOGLE_CURL：类似于Moon Reader中的Google仿真翻页
 
 ### 关于小说内容的加载
 

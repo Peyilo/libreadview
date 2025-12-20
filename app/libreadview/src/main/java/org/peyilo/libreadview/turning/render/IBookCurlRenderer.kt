@@ -33,7 +33,7 @@ import kotlin.math.sin
  * TODO：处理装订线
  * TODO: 当page被拖动时，page翻页动画不应该直接跳转到当前位置，而应该有过渡动画，待实现
  */
-class IBookCurlRenderer: CurlRenderer {
+class IBookCurlRenderer: CurlRenderer() {
 
     companion object {
         private const val TAG = "IBookCurlRenderer"
@@ -42,27 +42,7 @@ class IBookCurlRenderer: CurlRenderer {
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
      */
-    var enableDebugMode = false
-
-    private var _topBitmap: Bitmap? = null
-    private var _bottomBitmap: Bitmap? = null
-
-    private val topBitmap: Bitmap get() = _topBitmap!!
-    private val bottomBitmap: Bitmap get() = _bottomBitmap!!
-
-    private val topLeftPoint = PointF()
-    private val topMiddlePoint = PointF()
-    private val topRightPoint = PointF()
-    private val bottomLeftPoint = PointF()
-    private val bottomMiddlePoint = PointF()
-    private val bottomRightPoint = PointF()
-
-    private val rightPageRegion = Path()
-    private val leftPageRigion = Path()
-    private val allPageRegion = Path()
-
-    private val pageWidth get() =  topRightPoint.x - topMiddlePoint.x
-    private val pageHeight get() = bottomRightPoint.y - topRightPoint.y
+    var enableDebugMode = true
 
     private val touchPos = PointF()
     private val downPos = PointF()
@@ -137,9 +117,9 @@ class IBookCurlRenderer: CurlRenderer {
     var meshWidth = 30
     var meshHeight = 50
 
-    private val meshVertsCount = (meshWidth + 1) * (meshHeight + 1)
-    private val regionCMeshVerts = FloatArray(meshVertsCount * 2)
-    private val regionAMeshVerts = FloatArray(meshVertsCount * 2)
+    private val meshVertsCount by lazy { (meshWidth + 1) * (meshHeight + 1) }
+    private val regionCMeshVerts by lazy{ FloatArray(meshVertsCount * 2) }
+    private val regionAMeshVerts by lazy{ FloatArray(meshVertsCount * 2) }
 
     private val engleA1 = FloatArray((meshWidth + 1) * 2)
     private val engleA2 = FloatArray((meshWidth + 1) * 2)
@@ -181,41 +161,6 @@ class IBookCurlRenderer: CurlRenderer {
     fun setBackTintColor(color: Int) {
         backTintColor = color
         makeBackPagePaint(color)
-    }
-
-    override fun setPageSize(width: Float, height: Float) {
-        topLeftPoint.x = -width
-        topLeftPoint.y = 0F
-        topRightPoint.x = width
-        topRightPoint.y = 0F
-        bottomLeftPoint.x = -width
-        bottomLeftPoint.y = height
-        bottomRightPoint.x = width
-        bottomRightPoint.y = height
-        topMiddlePoint.x = (topRightPoint.x + topLeftPoint.x) / 2
-        topMiddlePoint.y = topRightPoint.y
-        bottomMiddlePoint.x = (bottomLeftPoint.x + bottomRightPoint.x) / 2
-        bottomMiddlePoint.y = bottomRightPoint.y
-        rightPageRegion.apply {
-            reset()
-            moveTo(topMiddlePoint.x, topMiddlePoint.y)
-            lineTo(topRightPoint.x, topRightPoint.y)
-            lineTo(bottomRightPoint.x, bottomRightPoint.y)
-            lineTo(bottomMiddlePoint.x, bottomMiddlePoint.y)
-            close()
-        }
-        leftPageRigion.apply {
-            reset()
-            moveTo(topMiddlePoint.x, topMiddlePoint.y)
-            lineTo(topLeftPoint.x, topLeftPoint.y)
-            lineTo(bottomLeftPoint.x, bottomLeftPoint.y)
-            lineTo(bottomMiddlePoint.x, bottomMiddlePoint.y)
-            close()
-        }
-        allPageRegion.apply {
-            addPath(leftPageRigion)
-            addPath(rightPageRegion)
-        }
     }
 
     override fun initControllPosition(
@@ -456,16 +401,6 @@ class IBookCurlRenderer: CurlRenderer {
 
             if(enableDebugMode) debug(canvas)
         }
-    }
-
-    override fun setPages(top: Bitmap, bottom: Bitmap) {
-        _topBitmap = top
-        _bottomBitmap = bottom
-    }
-
-    override fun release() {
-        _topBitmap = null
-        _bottomBitmap = null
     }
 
     private fun debug(canvas: Canvas) {
@@ -853,7 +788,6 @@ class IBookCurlRenderer: CurlRenderer {
     }
 
     override fun destory() {
-        super.destory()
         release()
         shadowCurl?.recycle()
         shadowB?.recycle()
@@ -861,7 +795,7 @@ class IBookCurlRenderer: CurlRenderer {
         shadowB = null
     }
 
-    override fun enableDebugMode(enable: Boolean) {
+    fun enableDebugMode(enable: Boolean) {
         enableDebugMode = enable
     }
 }

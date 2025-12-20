@@ -2,7 +2,6 @@ package org.peyilo.libreadview.turning
 
 import android.graphics.Canvas
 import android.view.View
-import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
 import org.peyilo.libreadview.turning.render.CurlRenderer
 import org.peyilo.libreadview.turning.util.PageBitmapCache
@@ -31,7 +30,7 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         this.animDuration = animDuration
     }
 
-    override fun prepareAnim(initDire: AbstractPageContainer.PageDirection) {
+    override fun prepareAnim(initDire: PageDirection) {
         // 创建动画所需的bitmap
         when (initDire) {
             PageDirection.NEXT -> {
@@ -180,10 +179,6 @@ abstract class CurlEffect: FlipOnReleaseEffect.Horizontal(), AnimatedEffect {
         super.onDestroy()
         pageBitmapCache.clearBitmap()
         curlRenderer.destory()
-    }
-
-    fun enableDebugMode(enable: Boolean) {
-        curlRenderer.enableDebugMode(enable)
     }
 
 }

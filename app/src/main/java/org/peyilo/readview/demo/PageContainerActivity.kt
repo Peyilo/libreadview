@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
+import org.peyilo.libreadview.turning.GoogleCurlEffect
 import org.peyilo.libreadview.turning.IBookCurlEffect
 import org.peyilo.readview.databinding.ActivityPageContainerBinding
 import org.peyilo.readview.demo.fragment.PageTurnChangeFragment
@@ -37,7 +38,7 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer.initPageIndex(2)
 
         // Choose a page animation manager (see options below)
-        pageContainer.pageEffect = IBookCurlEffect()
+        pageContainer.pageEffect = GoogleCurlEffect()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)
@@ -55,8 +56,7 @@ class PageContainerActivity : AppCompatActivity() {
 
     class ColorAdapter(private val items: List<Pair<Int, Int>>) :
         AbstractPageContainer.Adapter<ColorAdapter.ColorViewHolder>() {
-
-        inner class ColorViewHolder(itemView: View) : AbstractPageContainer.ViewHolder(itemView)
+        class ColorViewHolder(itemView: View) : AbstractPageContainer.ViewHolder(itemView)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ColorViewHolder {
             val view = GridPage(parent.context)
