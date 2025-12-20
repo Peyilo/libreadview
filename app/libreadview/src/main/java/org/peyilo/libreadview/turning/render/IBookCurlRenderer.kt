@@ -42,7 +42,7 @@ class IBookCurlRenderer: CurlRenderer() {
     /**
      * 开启debug模式以后，将会显示仿真翻页绘制过程中各个关键点的位置以及连线
      */
-    var enableDebugMode = true
+    var enableDebugMode = false
 
     private val touchPos = PointF()
     private val downPos = PointF()

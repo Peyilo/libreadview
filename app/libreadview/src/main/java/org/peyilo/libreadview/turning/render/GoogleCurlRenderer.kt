@@ -103,7 +103,7 @@ class GoogleCurlRenderer: CurlRenderer() {
         val whRatio = 1f - calcRadius
         val cameraDistance = -3.0f
 
-        val Y_BEND_STRENGTH = 0.25f * pageHeight
+        val Y_BEND_STRENGTH = 0.15f * pageHeight
 
         var maxX = Float.MIN_VALUE
         for (row in 0..meshHeight) {

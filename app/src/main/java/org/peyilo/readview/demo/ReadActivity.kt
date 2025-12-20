@@ -2,7 +2,7 @@ package org.peyilo.readview.demo
 
 import android.os.Bundle
 import org.peyilo.libreadview.basic.BasicReadView
-import org.peyilo.libreadview.turning.IBookSlideEffect
+import org.peyilo.libreadview.turning.GoogleCurlEffect
 import org.peyilo.readview.BaseActivity
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
 import org.peyilo.readview.demo.extensions.clearReadViewThemeCache
@@ -33,7 +33,7 @@ open class ReadActivity: BaseActivity() {
 
     protected open fun initReadView(readview: BasicReadView) {
         // 设置翻页模式
-        readview.pageEffect = IBookSlideEffect()
+        readview.pageEffect = GoogleCurlEffect()
 
         // 当目录完成初始化后，获取章节标题列表
         readview.setCallback(object : BasicReadView.Callback {

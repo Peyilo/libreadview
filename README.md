@@ -19,6 +19,14 @@ To quickly see the page turning animations and layout in action, you can downloa
 
 ![readview_page_turning](./images/readview_page_turning.png)
 
+| Cover                 | Google Curl                 | iBook Curl                 |
+| --------------------- | --------------------------- | -------------------------- |
+| ![](images/cover.gif) | ![](images/google_curl.gif) | ![](images/ibook_curl.gif) |
+
+| Slide                 | Scroll                 | iBook Slide                 |
+| --------------------- | ---------------------- | --------------------------- |
+| ![](images/slide.gif) | ![](images/scroll.gif) | ![](images/ibook_slide.gif) |
+
 ## Installation
 
 <details>
