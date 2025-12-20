@@ -19,8 +19,6 @@ class GoogleCurlRenderer: CurlRenderer() {
 
     private var initDir = AbstractPageContainer.PageDirection.NONE
 
-    private val radius: Float = 0.15f
-
     private val touchPos = PointF()
     private val downPos = PointF()
 
@@ -37,6 +35,9 @@ class GoogleCurlRenderer: CurlRenderer() {
     private var edgePos = pageWidth
     private val shadowWidth get() = min(0.08F * pageWidth, 100F)
 
+    /**
+     * 内部绘制依赖于初始的滑动方向
+     */
     fun setInitDirection(direction: AbstractPageContainer.PageDirection) {
         // 只能是NEXT或PREV
         if (direction == AbstractPageContainer.PageDirection.NONE) {
@@ -75,6 +76,7 @@ class GoogleCurlRenderer: CurlRenderer() {
     }
 
     private fun computeRegionAMeshVerts(): Float {
+        val radius = 0.15f
         var index = 0
         val perc = if (initDir == AbstractPageContainer.PageDirection.NEXT) {
             ((downPos.x - touchPos.x) / pageWidth)           // 在x轴方向上的滑动距离占据全部宽度的比例
@@ -92,14 +94,16 @@ class GoogleCurlRenderer: CurlRenderer() {
         }
 
         var movX = 0f
-        if (perc > 0.05f) {
-            movX = perc - 0.05f
+        if (perc > 0.1f) {
+            movX = perc - 0.1f
         }
 
         val hwRadio = pageHeight / pageWidth
         val hwCorrection = (hwRadio - 1F) / 2F
         val whRatio = 1f - calcRadius
         val cameraDistance = -3.0f
+
+        val Y_BEND_STRENGTH = 0.25f * pageHeight
 
         var maxX = Float.MIN_VALUE
         for (row in 0..meshHeight) {
@@ -110,13 +114,25 @@ class GoogleCurlRenderer: CurlRenderer() {
                     ) + calcRadius * 1.1f
                 ).toFloat()
 
-                val gridX = col.toFloat() / meshWidth * whRatio - movX
-                val gridY = row.toFloat() / meshHeight * hwRadio - hwCorrection
+                val gridX = col.toFloat() / meshWidth * whRatio  - movX
+                val gridY = row.toFloat() / meshHeight
 
-                val k = cameraDistance / (cameraDistance + gridZ)
+                // ===== x：透视压缩 =====
+                val kx = cameraDistance / (cameraDistance + gridZ.coerceAtLeast(0.001f))
+                val finalX = kx * gridX * pageWidth
 
-                regionAMeshVerts[index * 2] = gridX * k * pageWidth
-                regionAMeshVerts[index * 2 + 1] = (gridY * k + hwCorrection) * pageWidth
+                // ===== y：以中线为轴的对称扭曲 =====
+                val yCenter = gridY - 0.5f                // [-0.5, +0.5]
+                val yWeight = kotlin.math.abs(yCenter) * 2f
+                val yDir = kotlin.math.sign(yCenter)
+
+                val yBend = yDir * yWeight * gridZ * Y_BEND_STRENGTH
+
+                val finalY = gridY * pageHeight + yBend
+
+                // ===== 写入 mesh =====
+                regionAMeshVerts[index * 2] = finalX
+                regionAMeshVerts[index * 2 + 1] = finalY
                 if (regionAMeshVerts[index * 2] > maxX) {
                     maxX = regionAMeshVerts[index * 2]
                 }
@@ -139,7 +155,6 @@ class GoogleCurlRenderer: CurlRenderer() {
 
     // 绘制阴影
     private fun drawShadow(canvas: Canvas) {
-
         val centerX = edgePos
         val halfWidth = shadowWidth * 0.5f
 
