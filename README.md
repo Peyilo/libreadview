@@ -1,10 +1,14 @@
 # libreadview
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.peyilo/libreadview/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.peyilo/libreadview)
-
 An Android library designed specifically for eBook and novel reader apps, supporting multiple immersive page turning modes including scrolling, cover, simulation, and more.
 
-![readview_loading](./images/readview_loading.png)
+| Cover                 | Google Curl                 | iBook Curl                 |
+| --------------------- | --------------------------- | -------------------------- |
+| ![](images/cover.gif) | ![](images/google_curl.gif) | ![](images/ibook_curl.gif) |
+
+| Slide                 | Scroll                 | iBook Slide                 |
+| --------------------- | ---------------------- | --------------------------- |
+| ![](images/slide.gif) | ![](images/scroll.gif) | ![](images/ibook_slide.gif) |
 
 ## Demo
 
@@ -17,15 +21,7 @@ To quickly see the page turning animations and layout in action, you can downloa
 - Multiple page-turning animations, including cover page turn, horizontal slide, simulation, scrolling, and more.
 - Optimized for performance and customization
 
-![readview_page_turning](./images/readview_page_turning.png)
-
-| Cover                 | Google Curl                 | iBook Curl                 |
-| --------------------- | --------------------------- | -------------------------- |
-| ![](images/cover.gif) | ![](images/google_curl.gif) | ![](images/ibook_curl.gif) |
-
-| Slide                 | Scroll                 | iBook Slide                 |
-| --------------------- | ---------------------- | --------------------------- |
-| ![](images/slide.gif) | ![](images/scroll.gif) | ![](images/ibook_slide.gif) |
+![readview_loading](./images/readview_loading.png)
 
 ## Installation
 
