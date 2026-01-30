@@ -60,6 +60,7 @@ abstract class AbstractPageContainer(
                 forceNotInLayoutOrScroll()
                 destory()
             }
+            val oldEffect = _pageEffect
             _pageEffect = value        // 清除PageEffect中包含的PageContainer引用
             value.setPageContainer(this)
             resetPagePosition()
@@ -70,6 +71,7 @@ abstract class AbstractPageContainer(
             }
             value.requestReInitPagePosition()
             requestLayout()
+            onPageEffectChanged(value, oldEffect)
         }
         get() {
             if (_pageEffect == null) {
@@ -224,16 +226,16 @@ abstract class AbstractPageContainer(
     /**
      * 在这里处理一下收尾与数据销毁工作：如销毁
      * TODO: 如果AbstractPageContainer被某个ViewGroup作为子view进行反复复用时，如果销毁，会造成复用出现问题
-     * TODO: 如AbstractPageContainer的子view为AbstractPageContainer时，如果直接销毁会造成mPageCache、_pageEffect出现问题
+     * 如AbstractPageContainer的子view为AbstractPageContainer时，如果直接销毁会造成mPageCache、_pageEffect出现问题
      */
-//    override fun onDetachedFromWindow() {
-//        super.onDetachedFromWindow()
-//        _pageEffect?.apply {
-//            destory()
-//            _pageEffect = null
-//        }
-//        mPageCache.destroy()
-//    }
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        _pageEffect?.apply {
+            destory()
+            _pageEffect = null
+        }
+        mPageCache.destroy()
+    }
 
     /**
      * 每个子view都将会和PageContainer一样大
@@ -372,6 +374,8 @@ abstract class AbstractPageContainer(
             measureAndLayoutChild(child)
         }
     }
+
+    protected open fun onPageEffectChanged(newEffect: PageEffect, oldEffect: PageEffect?) = Unit
 
     /**
      * 事件分发策略：

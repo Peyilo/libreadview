@@ -25,6 +25,7 @@ import org.peyilo.libreadview.layout.PageContentProvider
 import org.peyilo.libreadview.load.BookLoader
 import org.peyilo.libreadview.load.TextLoader
 import org.peyilo.libreadview.load.TxtFileLoader
+import org.peyilo.libreadview.turning.ScrollEffect
 import org.peyilo.libreadview.util.DisplayUtil
 import org.peyilo.libreadview.util.LogHelper
 import java.io.File
@@ -32,7 +33,7 @@ import java.io.InputStream
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 
-class BasicReadView(
+open class BasicReadView(
     context: Context, attrs: AttributeSet? = null
 ): AbstractReadView(context, attrs) {
 
@@ -416,7 +417,6 @@ class BasicReadView(
                     pageDelegate.bindReadPage(holder.itemView, pageData, title,
                         indexPair.first, indexPair.second,
                         getChapPageCount(indexPair.first), mPageContentProvider)
-
                     LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.chapTitle.text}, ${page.progress.text}")
                 }
             }
@@ -538,7 +538,8 @@ class BasicReadView(
         ) {
             page.chapTitle.text = title
             page.progress.text = "${chapPageIndex}/${chapPageCount}"
-            page.body.updateContent(pageData, provider)
+            page.body.content = pageData
+            page.body.provider = provider
         }
 
     }
@@ -1183,4 +1184,18 @@ class BasicReadView(
 
     fun getTitleAlignment(): Alignment = mReadStyle.titleAlignment
 
+    override fun onPageEffectChanged(newEffect: PageEffect, oldEffect: PageEffect?) {
+        // 滚动效果切换为滚动效果时，不需要做额外处理
+        if (newEffect is ScrollEffect && oldEffect != null && oldEffect is ScrollEffect) {
+            return
+        }
+        // 切换为滚动效果时
+        if (newEffect is ScrollEffect) {
+
+        }
+        // 从滚动效果切换到其他效果时
+        else if (oldEffect != null && oldEffect is ScrollEffect) {
+
+        }
+    }
 }

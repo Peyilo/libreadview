@@ -19,43 +19,43 @@ open class BaseReadPage(
         private set
     lateinit var body: ReadBody          // 正文显示视图
         private set
-    lateinit var header: View                // 页眉视图
+    var header: View? = null                // 页眉视图
         private set
-    lateinit var footer: View               // 页脚视图
+    var footer: View? = null               // 页脚视图
         private set
 
-    var headerPaddingTop get() = header.paddingTop
+    var headerPaddingTop get() = header!!.paddingTop
         set(value) {
-            header.setPadding(headerPaddingLeft, value, headerPaddingRight, headerPaddingBottom)
+            header!!.setPadding(headerPaddingLeft, value, headerPaddingRight, headerPaddingBottom)
         }
-    var headerPaddingBottom get() = header.paddingBottom
+    var headerPaddingBottom get() = header!!.paddingBottom
         set(value) {
-            header.setPadding(headerPaddingLeft, headerPaddingTop, headerPaddingRight, value)
+            header!!.setPadding(headerPaddingLeft, headerPaddingTop, headerPaddingRight, value)
         }
-    var headerPaddingLeft get() = header.paddingLeft
+    var headerPaddingLeft get() = header!!.paddingLeft
         set(value) {
-            header.setPadding(value, headerPaddingTop, headerPaddingRight, headerPaddingBottom)
+            header!!.setPadding(value, headerPaddingTop, headerPaddingRight, headerPaddingBottom)
         }
-    var headerPaddingRight get() = header.paddingRight
+    var headerPaddingRight get() = header!!.paddingRight
         set(value) {
-            header.setPadding(headerPaddingLeft, headerPaddingTop, value, headerPaddingBottom)
+            header!!.setPadding(headerPaddingLeft, headerPaddingTop, value, headerPaddingBottom)
         }
 
-    var footerPaddingTop get() = footer.paddingTop
+    var footerPaddingTop get() = footer!!.paddingTop
         set(value) {
-            footer.setPadding(footerPaddingLeft, value, footerPaddingRight, footerPaddingBottom)
+            footer!!.setPadding(footerPaddingLeft, value, footerPaddingRight, footerPaddingBottom)
         }
-    var footerPaddingBottom get() = footer.paddingBottom
+    var footerPaddingBottom get() = footer!!.paddingBottom
         set(value) {
-            footer.setPadding(footerPaddingLeft, footerPaddingTop, footerPaddingRight, value)
+            footer!!.setPadding(footerPaddingLeft, footerPaddingTop, footerPaddingRight, value)
         }
-    var footerPaddingLeft get() = footer.paddingLeft
+    var footerPaddingLeft get() = footer!!.paddingLeft
         set(value) {
-            footer.setPadding(value, footerPaddingTop, footerPaddingRight, footerPaddingBottom)
+            footer!!.setPadding(value, footerPaddingTop, footerPaddingRight, footerPaddingBottom)
         }
-    var footerPaddingRight get() = footer.paddingRight
+    var footerPaddingRight get() = footer!!.paddingRight
         set(value) {
-            footer.setPadding(footerPaddingLeft, footerPaddingTop, value, footerPaddingBottom)
+            footer!!.setPadding(footerPaddingLeft, footerPaddingTop, value, footerPaddingBottom)
         }
 
 
@@ -75,6 +75,17 @@ open class BaseReadPage(
         body = root.findViewById(contentId)
         header = root.findViewById(headerId)
         footer = root.findViewById(footerId)
+    }
+
+
+    open fun bindLayout(
+        @LayoutRes layoutId: Int, @IdRes contentId: Int
+    ) {
+        LayoutInflater.from(context).inflate(layoutId, this)
+        root = getChildAt(0)
+        body = root.findViewById(contentId)
+        header = null
+        footer = null
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

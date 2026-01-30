@@ -1,6 +1,10 @@
 package org.peyilo.libreadview.data.page
 
-class StringLineData: LineData() {
+class StringLineData(): LineData() {
+
+    constructor(line: String): this() {
+        add(line)
+    }
 
     var isTitleLine = false
     var isFirstLineOfParagraph = false

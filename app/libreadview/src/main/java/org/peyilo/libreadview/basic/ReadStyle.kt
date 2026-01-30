@@ -133,8 +133,8 @@ class ReadStyle(
         page.clock.setTextColor(mHeaderAndFooterTextColor)
         page.quitImgView.setOnClickListener(quitBtnOnClickListener)
         page.setPadding(pagePaddingLeft, pagePaddingTop, pagePaddingRight, pagePaddingBottom)
-        page.header.setPadding(headerPaddingLeft, headerPaddingTop, headerPaddingRight, headerPaddingBottom)
-        page.footer.setPadding(footerPaddingLeft, footerPaddingTop, footerPaddingRight, footerPaddingBottom)
+        page.header?.setPadding(headerPaddingLeft, headerPaddingTop, headerPaddingRight, headerPaddingBottom)
+        page.footer?.setPadding(footerPaddingLeft, footerPaddingTop, footerPaddingRight, footerPaddingBottom)
         // body的padding并不是通过View的测量和布局实现的，而是通过在onDraw进行偏移实现的
         // 因此，这里无需调用page.body.setPadding
     }
