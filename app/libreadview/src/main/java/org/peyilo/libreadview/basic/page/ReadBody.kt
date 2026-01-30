@@ -21,30 +21,11 @@ class ReadBody(
     context: Context, attrs: AttributeSet? = null
 ): PageContainer(context, attrs) {
 
-    var content: PageData? = null
-
-    var provider: PageContentProvider? = null
-
     private val items: MutableList<Pair<PageData?, PageContentProvider?>> = mutableListOf()
 
     init {
         pageEffect = NoAnimEffects.Horizontal()
         adapter = InnerAdapter(items)
-    }
-
-    companion object {
-        private const val TAG = "ReadBody"
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        computeTime(TAG, "onDraw") {
-            provider?.apply {
-                content?.let {
-                    drawPage(content!!, canvas)
-                }
-            }
-        }
     }
 
     private class InnerBody(
@@ -89,13 +70,16 @@ class ReadBody(
         content: PageData?,
         provider: PageContentProvider?
     ) {
-        this.content = content
-        this.provider = provider
         if (items.isEmpty()) {
             items.add(Pair(content, provider))
         } else {
             items[0] = Pair(content, provider)
         }
+        adapter.notifyDataSetChanged()
+    }
+
+    override fun invalidate() {
+        super.invalidate()
         adapter.notifyDataSetChanged()
     }
 

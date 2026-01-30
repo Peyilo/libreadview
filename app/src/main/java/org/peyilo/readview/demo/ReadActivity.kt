@@ -2,7 +2,6 @@ package org.peyilo.readview.demo
 
 import android.os.Bundle
 import org.peyilo.libreadview.basic.BasicReadView
-import org.peyilo.libreadview.turning.GoogleCurlEffect
 import org.peyilo.libreadview.turning.ScrollEffect
 import org.peyilo.readview.BaseActivity
 import org.peyilo.readview.databinding.ActivityUniversalReadViewBinding
