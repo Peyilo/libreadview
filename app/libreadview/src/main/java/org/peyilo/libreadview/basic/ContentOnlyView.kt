@@ -1,6 +1,5 @@
 package org.peyilo.libreadview.basic
 
-
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.Drawable

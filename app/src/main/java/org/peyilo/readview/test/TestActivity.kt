@@ -15,7 +15,7 @@ class TestActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTestBinding
 
-    val readview: ContentOnlyView get() = binding.readview
+    val readview: ContentOnlyView get() = binding.pageContent
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,10 +33,6 @@ class TestActivity : AppCompatActivity() {
             }
             true
         }
-
-        // 设置预加载章节数，如下设置会产生这样的效果：加载指定章节时，同时预加载前后各1章
-        readview.preprocessBefore = 1
-        readview.preprocessBehind = 1
 
         // 网络加载: https://www.yuyouku.com/book/185030
         readview.openBook(
