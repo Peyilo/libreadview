@@ -538,8 +538,7 @@ class BasicReadView(
         ) {
             page.chapTitle.text = title
             page.progress.text = "${chapPageIndex}/${chapPageCount}"
-            page.body.content = pageData
-            page.body.provider = provider
+            page.body.updateContent(pageData, provider)
         }
 
     }
