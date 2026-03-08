@@ -9,6 +9,7 @@ import org.peyilo.libreadview.layout.PageContentProvider
 
 /**
  * 正文显示视图
+ * TODO: 如果要实现长按选择功能，应该在这里实现，而不是再ReadView这个Page容器中实现
  */
 class ReadBody(
     context: Context, attrs: AttributeSet? = null

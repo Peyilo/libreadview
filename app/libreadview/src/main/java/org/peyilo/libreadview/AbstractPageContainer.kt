@@ -58,17 +58,12 @@ abstract class AbstractPageContainer(
         set(value) {
             _pageEffect?.apply {
                 forceNotInLayoutOrScroll()
-                destory()
+                destroy()
             }
             val oldEffect = _pageEffect
             _pageEffect = value        // 清除PageEffect中包含的PageContainer引用
             value.setPageContainer(this)
             resetPagePosition()
-            val renderer = value.createRenderer()
-            renderer?.let {
-                glView.setRenderer(it)
-                glView.renderMode = RENDERMODE_CONTINUOUSLY
-            }
             value.requestReInitPagePosition()
             requestLayout()
             onPageEffectChanged(value, oldEffect)
@@ -130,26 +125,11 @@ abstract class AbstractPageContainer(
 
     private var initContainerPageIndexFlag = true
 
-    /**
-     * glView占据了index=0的位置，始终位于最底层，从而使得其他子view的remove/add不会影响到glView
-     * 此外，还通过重写getChildDrawingOrder()，使得glView始终位于最底层但是最后一个被绘制(从而保证其显示在最上层)
-     */
-    private val glView = PageGLSurfaceView(context).apply {
-        setEGLContextClientVersion(2)                   // OpenGL ES 2.0
-    }
-
-    private val pageViewStart = 1                       //  pageView的起始index，为1
     private val maxPageChildCount = 3                   // 最多3个pageView
 
     private var targetChild: View? = null
     private var selfHandling: Boolean = false
     private val tmpRect = Rect()
-
-    init {
-        isChildrenDrawingOrderEnabled = true            // 启用子View绘制顺序控制
-        addGlViewToBottom()
-        glView.visibility = INVISIBLE
-    }
 
     /**
      * 初始化mCurContainerPageIndex变量, 并且将initContainerPageIndexFlag置为false, 只能调用一次
@@ -231,7 +211,7 @@ abstract class AbstractPageContainer(
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         _pageEffect?.apply {
-            destory()
+            destroy()
             _pageEffect = null
         }
         mPageCache.destroy()
@@ -241,7 +221,7 @@ abstract class AbstractPageContainer(
      * 每个子view都将会和PageContainer一样大
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        if (getPageChildCount() > maxPageChildCount) {
+        if (childCount > maxPageChildCount) {
             throw IllegalStateException("only support childCount <= $maxPageChildCount")
         }
 
@@ -369,8 +349,8 @@ abstract class AbstractPageContainer(
     }
 
     private fun measureAndLayoutAllChildren() {
-        for (i in 0 until getPageChildCount()) {
-            val child = getPageChildAt(i)
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
             measureAndLayoutChild(child)
         }
     }
@@ -527,7 +507,7 @@ abstract class AbstractPageContainer(
         /**
          * 销毁PageEffect
          */
-        fun destory() {
+        fun destroy() {
             _pageContainer?.let {
                 _pageContainer = null
             }
@@ -585,9 +565,9 @@ abstract class AbstractPageContainer(
 
         fun storeStatus() {
             statusList.clear()
-            val oldAttachedCount = pageContainer.getPageChildCount()
+            val oldAttachedCount = pageContainer.childCount
             for (i in 0 until oldAttachedCount) {
-                val child = pageContainer.getPageChildAt(i)
+                val child = pageContainer.getChildAt(i)
                 val status = mutableMapOf<String, Any>()
                 status["translationX"] = child.translationX
                 status["translationY"] = child.translationY
@@ -600,11 +580,11 @@ abstract class AbstractPageContainer(
         }
 
         fun restoreStatus() {
-            val newAttachedCount = pageContainer.getPageChildCount()
+            val newAttachedCount = pageContainer.childCount
             // 如果数量没用变化，一次对应恢复状态
             if (newAttachedCount == statusList.size) {
                 for (i in 0 until newAttachedCount) {
-                    val child = pageContainer.getPageChildAt(i)
+                    val child = pageContainer.getChildAt(i)
                     val status = statusList[i] as Map<String, Any>
                     child.translationX = status["translationX"] as Float
                     child.translationY = status["translationY"] as Float
@@ -640,28 +620,6 @@ abstract class AbstractPageContainer(
         protected fun prevCarouselLayout() {
             pageContainer.prevCarouselLayout()
         }
-
-        /**
-         * 启用GLView进行渲染
-         */
-        protected fun enbleGLView() {
-            pageContainer.glView.visibility = VISIBLE
-        }
-
-        /**
-         * 关闭GLView的渲染
-         */
-        protected fun disableGLView() {
-            pageContainer.glView.visibility = INVISIBLE
-        }
-
-        /**
-         * 创建一个PageGLSurfaceView.PageRenderer对象，用于在GLView中进行渲染，PageRenderer中包含实际的渲染代码；
-         * 如果返回null，表示不进行任何渲染
-         */
-        open fun createRenderer(): PageGLSurfaceView.PageRenderer? = null
-
-        protected val glView get() = pageContainer.glView
 
         open fun needDrawChild(): Boolean = true
     }
@@ -1068,99 +1026,12 @@ abstract class AbstractPageContainer(
      * 用于添加普通的child view
      */
     override fun addView(child: View?, index: Int, params: LayoutParams?) {
-        if (getPageChildCount() >= maxPageChildCount) {
+        if (childCount >= maxPageChildCount) {
             throw IllegalStateException("only support childCount <= $maxPageChildCount")
         }
         val index = if (index == -1) childCount else index
-        if (index == 0) {
-            // 第一个child view必须是glView， addView不支持添加一个view到index=0的位置
-            throw IllegalStateException("the first child view must be glView, please call addGlViewToBottom() first")
-        }
         super.addView(child, index, params)
-        // index - pageViewStart 是因为glView占据了index=0的位置
-        pageEffect.onAddPage(child!!, index - pageViewStart)
-    }
-
-    private fun addGlViewToBottom() {
-        val params = generateDefaultLayoutParams();
-        params.width = width;
-        params.height = height;
-        super<ViewGroup>.addView(glView, 0, params)
-    }
-
-    // 永不移除 glView
-    override fun removeAllViews() {
-        for (i in childCount - 1 downTo pageViewStart) {      // 倒序遍历避免下标错乱
-            val child = getChildAt(i)
-            resetPagePosition(child)
-            removeView(child)
-        }
-    }
-
-    // 永不移除 glView
-    override fun removeView(view: View?) {
-        if (view == null) return
-        if (view == glView) {
-            throw IllegalStateException("glView can not be removed!")
-        }
-        resetPagePosition(view)
-        super.removeView(view)
-    }
-
-    // 永不移除 glView
-    override fun removeViewAt(index: Int) {
-        val child = getChildAt(index)
-        if (child == glView) {
-            throw IllegalStateException("glView can not be removed!")
-        }
-        resetPagePosition(child)
-        super.removeViewAt(index)
-    }
-
-    // 永不移除 glView
-    override fun removeViews(start: Int, count: Int) {
-        if (start == 0) {
-            throw IllegalStateException("glView can not be removed!")
-        }
-        for (i in start until start + count) {
-            val child = getChildAt(i)
-            resetPagePosition(child)
-        }
-        super.removeViews(start, count)
-    }
-
-    /**
-     * 永远让 glView 最后一个绘制（不会被其他child view遮挡），其他保持原相对顺序不变
-     */
-    override fun getChildDrawingOrder(childCount: Int, drawingPosition: Int): Int {
-        val g = glView
-        val gi = indexOfChild(g)
-        if (gi < 0) return drawingPosition
-
-        val last = childCount - 1
-        return when (drawingPosition) {
-            last -> gi                      // 最后一个绘制位置 → glView 的下标
-            in 0 until gi -> drawingPosition // glView 之前的孩子：顺延不变
-            else -> drawingPosition + 1      // glView 之后的孩子：整体右移一位
-        }
-    }
-
-    fun getPageChildAt(index: Int): View {
-        if (index !in 0..<maxPageChildCount) {
-            throw IllegalArgumentException("index out of range: $index")
-        }
-        val child = getChildAt(index + pageViewStart)
-            ?: throw IllegalStateException("no child at index: $index")
-        return child
-    }
-
-    fun getPageChildCount(): Int {
-        return childCount - pageViewStart
-    }
-
-    fun addPageChild(child: View?, index: Int = -1) {
-        val index = if (index == -1) childCount else index + pageViewStart
-        addView(child, index)
+        pageEffect.onAddPage(child!!, index)
     }
 
     /**
@@ -1225,8 +1096,8 @@ abstract class AbstractPageContainer(
          * 同时，还会根据设置的adapter，往pageContainer中添加新的child
          */
         override fun onDatasetChanged(force: Boolean) {
-            for (i in 0 until getPageChildCount()) {
-                val child = getPageChildAt(i)
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
                 mPageCache.recycleAttachedView(child)
             }
             removeAllViews()
@@ -1240,7 +1111,7 @@ abstract class AbstractPageContainer(
             pageRange.reversed().forEach { pageIndex ->
                 val position = pageIndex - 1            // 页码转position
                 val holder = mPageCache.getViewHolder(position)
-                addPageChild(holder.itemView)
+                addView(holder.itemView)
                 mPageCache.attachView(holder)
             }
 
@@ -1277,8 +1148,8 @@ abstract class AbstractPageContainer(
             if (pagesToUpdate.isEmpty()) return
 
             // 遍历所有的child，更新pagesToUpdate中对应的page
-            for (i in 0 until getPageChildCount()) {
-                val child = getPageChildAt(i)
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
                 val cache = mPageCache.getAttachedPage(child)
                 // 不在pagesToUpdate中，直接跳过
                 if (!pagesToUpdate.contains(cache.mPosition)) continue
@@ -1294,7 +1165,7 @@ abstract class AbstractPageContainer(
                     removeView(child)
                     mPageCache.recycleAttachedView(child)
                     val holder = mPageCache.getViewHolder(cache.mPosition)
-                    addPageChild(holder.itemView, i)     // 添加回原本的位置
+                    addView(holder.itemView, i)     // 添加回原本的位置
                     mPageCache.attachView(holder)
                 }
             }
@@ -1335,7 +1206,7 @@ abstract class AbstractPageContainer(
                     pageRange.reversed().forEachIndexed { i, pageIndex ->
                         val position = pageIndex - 1            // 页码转position
                         val holder = mPageCache.getViewHolder(position)
-                        addPageChild(holder.itemView)
+                        addView(holder.itemView)
                         mPageCache.attachView(holder)
                     }
                 }
@@ -1346,41 +1217,41 @@ abstract class AbstractPageContainer(
                         if (prevItemCount >= 3) {
                             // 移除最靠前的attachPage，然后在当前page之后插入一个新的
                             assert(attachedPagesPosition.size == 3)
-                            assert(getPageChildCount() == 3)
-                            val removedView = getPageChildAt(2)
+                            assert(childCount == 3)
+                            val removedView = getChildAt(2)
                             removeView(removedView)
                             mPageCache.recycleAttachedView(removedView)
                             // 获取下一页的holder: curPageIndex = curPosition + 1
                             val holder = mPageCache.getViewHolder(mCurContainerPageIndex)
-                            addPageChild(holder.itemView, 0)
+                            addView(holder.itemView, 0)
                             mPageCache.attachView(holder)
                         } else if (prevItemCount == 2) {
                             // 当前只有两个attachPage，且当前页为最后一页，因此需要再当前页后面，插入一个新的page
                             assert(attachedPagesPosition.size == 2)
-                            assert(getPageChildCount() == 2)
+                            assert(childCount == 2)
                             // 获取下一页的holder: curPageIndex = curPosition + 1
                             val holder = mPageCache.getViewHolder(mCurContainerPageIndex)
-                            addPageChild(holder.itemView, 0)
+                            addView(holder.itemView, 0)
                             mPageCache.attachView(holder)
                         } else {
                             assert(attachedPagesPosition.size == 1)
-                            assert(getPageChildCount() == 1)
+                            assert(childCount == 1)
                             // 插入之前只有一页，因此需要尝试在后面插入两页、或者一页
                             val addCount = min(2, itemCount)
                             for (i in 0 until addCount) {
                                 val holder = mPageCache.getViewHolder(mCurContainerPageIndex + i)
                                 // 如果是插入两次，第二次插入就会把第一次插入的往前挤，刚好达到了目的
-                                addPageChild(holder.itemView, 0)
+                                addView(holder.itemView, 0)
                                 mPageCache.attachView(holder)
                             }
                         }
                     } else if (mCurContainerPageIndex == 1 && prevItemCount == 2) {
                         assert(attachedPagesPosition.size == 2)
-                        assert(getPageChildCount() == 2)
+                        assert(childCount == 2)
                         // 因为当前有两个attachpage，且当前显示的page为第一页，因此需要插入一个page在最底下
                         // 获取下下一页的holder: curPageIndex + 1 = curPosition + 2
                         val holder = mPageCache.getViewHolder(mCurContainerPageIndex + 1)
-                        addPageChild(holder.itemView, 0)
+                        addView(holder.itemView, 0)
                         mPageCache.attachView(holder)
                     }
                     // 如果page，依赖于itemCount，因此需要更新当前所有attach
@@ -1566,10 +1437,10 @@ abstract class AbstractPageContainer(
             // 从缓存中获取，或者创建新的
             mPageCache.recycleAttachedView(temp)
             val holder = mPageCache.getViewHolder(nextPageIndex - 1)
-            addPageChild(holder.itemView, 0)
+            addView(holder.itemView, 0)
             mPageCache.attachView(holder)
         } else {
-            addPageChild(temp, 0)
+            addView(temp, 0)
         }
         onPageChanged(oldPageIndex, newPageIndex)
     }
@@ -1596,10 +1467,10 @@ abstract class AbstractPageContainer(
             // viewtype不同，得从缓存中获取，或者创建新的
             mPageCache.recycleAttachedView(temp)
             val holder = mPageCache.getViewHolder(prevPageIndex - 1)
-            addPageChild(holder.itemView, 2)
+            addView(holder.itemView, 2)
             mPageCache.attachView(holder)
         } else {
-            addPageChild(temp, 2)
+            addView(temp, 2)
         }
         onPageChanged(oldPageIndex, newPageIndex)
     }
@@ -1693,9 +1564,9 @@ abstract class AbstractPageContainer(
         return if (isFirstPage()) {
             null
         } else if (isLastPage()) {
-            getPageChildAt(1)
+            getChildAt(1)
         } else {
-            getPageChildAt(2)
+            getChildAt(2)
         }
     }
 
@@ -1703,11 +1574,11 @@ abstract class AbstractPageContainer(
         // itemCount=0，没有page
         if (getContainerPageCount() == 0) return null
         return if (isFirstPage()) {
-            getPageChildAt(getPageChildCount() - 1)              // 当前页为第一页，因此对于的page为最上面的view
+            getChildAt(childCount - 1)              // 当前页为第一页，因此对于的page为最上面的view
         } else if (isLastPage()) {
-            getPageChildAt(0)                           // 当前页为最后一页，因此对于的page为最下面的view
+            getChildAt(0)                           // 当前页为最后一页，因此对于的page为最下面的view
         } else {
-            getPageChildAt(1)                           // 当前页既不是第一页也不是最后一页，显然childCount=3，且对应的page一定为中间的view
+            getChildAt(1)                           // 当前页既不是第一页也不是最后一页，显然childCount=3，且对应的page一定为中间的view
         }
     }
 
@@ -1715,11 +1586,11 @@ abstract class AbstractPageContainer(
         // itemCount <= 1，必然没有nextPage
         if (getContainerPageCount() <= 1) return null
         return if (isFirstPage()) {
-            getPageChildAt(getPageChildCount() - 2)
+            getChildAt(childCount - 2)
         } else if (isLastPage()) {
             null
         } else {
-            getPageChildAt(0)
+            getChildAt(0)
         }
     }
 
@@ -1734,13 +1605,13 @@ abstract class AbstractPageContainer(
         if (getContainerPageCount() >= 2) {
             if (isLastPage()) {
                 if (getContainerPageCount() >= 3) {
-                    res.add(getPageChildAt(1))
-                    res.add(getPageChildAt(2))
+                    res.add(getChildAt(1))
+                    res.add(getChildAt(2))
                 } else {
-                    res.add(getPageChildAt(1))
+                    res.add(getChildAt(1))
                 }
             } else if (!isFirstPage()) {
-                res.add(getPageChildAt(2))
+                res.add(getChildAt(2))
             }
         }
         return res
@@ -1754,13 +1625,13 @@ abstract class AbstractPageContainer(
         if (getContainerPageCount() >= 2) {
             if (isFirstPage()) {
                 if (getContainerPageCount() >= 3) {
-                    res.add(getPageChildAt(1))
-                    res.add(getPageChildAt(0))
+                    res.add(getChildAt(1))
+                    res.add(getChildAt(0))
                 } else {
-                    res.add(getPageChildAt(0))
+                    res.add(getChildAt(0))
                 }
             } else if (!isLastPage()) {
-                res.add(getPageChildAt(0))
+                res.add(getChildAt(0))
             }
         }
         return res

@@ -51,8 +51,8 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
         super.forceNotInLayoutOrScroll()
         // 先恢复到初始位置
         pageContainer.apply {
-            for (i in 0 until getPageChildCount()) {
-                val child = getPageChildAt(i)
+            for (i in 0 until childCount) {
+                val child = getChildAt(i)
                 child.translationY = getTranslateY(i)
             }
         }

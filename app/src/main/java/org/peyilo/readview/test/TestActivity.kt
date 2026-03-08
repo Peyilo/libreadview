@@ -34,12 +34,8 @@ class TestActivity : AppCompatActivity() {
             true
         }
 
-        // 网络加载: https://www.yuyouku.com/book/185030
-        readview.openBook(
-            // BookLoader制定了如何加载章节内容
-            BiqugeBookLoader(185030),
-            chapIndex = 1,
-            pageIndex = 1,
+        readview.openAssetFile(
+            "txts/妖精之诗 作者：尼希维尔特.txt"
         )
     }
 }
