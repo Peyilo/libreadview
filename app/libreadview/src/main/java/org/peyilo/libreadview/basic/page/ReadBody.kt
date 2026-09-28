@@ -15,6 +15,13 @@ class ReadBody(
     context: Context, attrs: AttributeSet? = null
 ): View(context, attrs) {
 
+    data class ScrollPageSegment(
+        val chapterIndex: Int,
+        val pageData: PageData,
+        val offsetY: Float,
+        val contentBottom: Float
+    )
+
     var content: PageData? = null
 
     var provider: PageContentProvider? = null
@@ -27,6 +34,10 @@ class ReadBody(
     var scrollContentHeight = 0
         internal set
 
+    /** Chapter layouts currently attached to the continuous scroll document. */
+    var scrollPageSegments: List<ScrollPageSegment> = emptyList()
+        internal set
+
     var onScrollPositionChanged: ((Int) -> Unit)? = null
 
     companion object {
@@ -37,8 +48,21 @@ class ReadBody(
         super.onDraw(canvas)
         computeTime(TAG, "onDraw") {
             provider?.apply {
-                content?.let {
-                    drawPage(content!!, canvas)
+                if (isScrollMode && scrollPageSegments.isNotEmpty()) {
+                    val visibleTop = scrollY.toFloat()
+                    val visibleBottom = visibleTop + height
+                    scrollPageSegments.forEach { segment ->
+                        val segmentTop = segment.offsetY
+                        val segmentBottom = segment.offsetY + segment.contentBottom
+                        if (segmentBottom <= visibleTop || segmentTop >= visibleBottom) return@forEach
+
+                        canvas.save()
+                        canvas.translate(0F, segment.offsetY)
+                        drawPage(segment.pageData, canvas)
+                        canvas.restore()
+                    }
+                } else {
+                    content?.let { drawPage(it, canvas) }
                 }
             }
         }

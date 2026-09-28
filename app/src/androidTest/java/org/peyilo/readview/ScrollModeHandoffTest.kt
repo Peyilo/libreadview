@@ -132,7 +132,12 @@ class ScrollModeHandoffTest {
             var pageIndexAfterExit = 0
             var pagedCountAfterExit = 0
             instrumentation.runOnMainSync {
-                assertTrue("leaving scroll mode should map the visible text back to its page", readView!!.getCurContainerPageIndex() > initialPageIndex)
+                assertTrue(
+                    "leaving scroll mode should map visible text to its page: initial=$initialPageIndex, " +
+                        "current=${readView!!.getCurContainerPageIndex()}, scrollY=${pageAfterExit?.body?.scrollY}, " +
+                        "progress=${page?.progress?.text}",
+                    readView!!.getCurContainerPageIndex() > initialPageIndex
+                )
                 pageAfterExit = readView!!.getCurPage() as ReadPage
                 pageIndexAfterExit = readView!!.getCurContainerPageIndex()
                 pagedCountAfterExit = pageAfterExit!!.body.content!!.elements.size
@@ -148,6 +153,10 @@ class ScrollModeHandoffTest {
                 readView!!.pageEffect = ScrollEffect()
             }
             instrumentation.waitForIdleSync()
+            instrumentation.runOnMainSync { pageAfterExit!!.body.scrollTo(0, 0) }
+            waitUntil(instrumentation) {
+                pageAfterExit?.body?.scrollPageSegments?.firstOrNull()?.chapterIndex == 1
+            }
             instrumentation.runOnMainSync {
                 assertEquals(pageIndexAfterExit, readView!!.getCurContainerPageIndex())
                 assertSame(pageAfterExit, readView!!.getCurPage())
@@ -163,6 +172,7 @@ class ScrollModeHandoffTest {
                 effect.onTouchEvent(touch(downTime, downTime + 500, MotionEvent.ACTION_MOVE, 200f, endY))
                 effect.onTouchEvent(touch(downTime, downTime + 1000, MotionEvent.ACTION_UP, 200f, endY))
                 assertEquals("scrolling back to the beginning should affect only the body", 0, body.scrollY)
+                assertEquals("visible chapter should return to the first chapter at the top", 1, readView!!.getCurChapIndex())
                 assertEquals(pageIndexAfterExit, readView!!.getCurContainerPageIndex())
             }
 

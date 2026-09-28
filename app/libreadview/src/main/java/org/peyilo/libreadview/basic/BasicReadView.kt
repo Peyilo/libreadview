@@ -33,6 +33,7 @@ import org.peyilo.libreadview.util.LogHelper
 import org.peyilo.libreadview.turning.ScrollEffect
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.ceil
 import kotlin.math.max
@@ -64,24 +65,35 @@ class BasicReadView(
     private lateinit var mBookLoader: BookLoader
     private lateinit var mContentParser: ContentParser
     private lateinit var mPageContentProvider: PageContentProvider
-    private val mReadChapterTable = mutableMapOf<Int, ReadChapter>()
+    private val mReadChapterTable = ConcurrentHashMap<Int, ReadChapter>()
 
     private var mPageDelegate: PageDelegate? = null
     private val mDefaultPageDelegate: PageDelegate by lazy { PageDelegate() }
 
     private var mCallback: Callback? = null
 
-    private data class TextPosition(val contentIndex: Int, val characterIndex: Int)
+    private data class TextPosition(val chapterIndex: Int, val contentIndex: Int, val characterIndex: Int)
 
     private data class ScrollPageAnchor(val pageIndex: Int, val position: TextPosition)
 
+    private data class ScrollChapterSegment(
+        var bodySegment: ReadBody.ScrollPageSegment,
+        val lines: List<StringLineData>,
+        val pageAnchors: List<ScrollPageAnchor>
+    )
+
+    private enum class ScrollChapterLoadState { IDLE, LOADING, FAILED, END }
+
     private data class ScrollModeSession(
-        val chapterIndex: Int,
         val page: ReadPage,
         val body: ReadBody,
-        val scrollPage: PageData,
-        val scrollLines: List<StringLineData>,
-        val pageAnchors: List<ScrollPageAnchor>
+        val segments: MutableList<ScrollChapterSegment>,
+        var previousChapterIndex: Int,
+        var previousChapterLoadState: ScrollChapterLoadState,
+        var nextChapterIndex: Int,
+        var nextChapterLoadState: ScrollChapterLoadState,
+        var visibleChapterIndex: Int,
+        var visiblePageIndex: Int
     )
 
     private data class PendingScrollExit(val session: ScrollModeSession, val scrollY: Int)
@@ -404,7 +416,7 @@ class BasicReadView(
         }
     }
 
-    /** Reflow the active chapter in one ReadBody while the ScrollEffect keeps its page shell fixed. */
+    /** Reflow the active chapter and keep neighboring chapters as independent scroll segments. */
     private fun enterCurrentPageScrollMode() {
         if (bookStatus.get() != BOOK_STATUS_READY || scrollModeSession != null) return
 
@@ -415,23 +427,28 @@ class BasicReadView(
         val page = getCurPage() as? ReadPage ?: return
         val chapterIndex = findChapByPosition(position).first
         val sourceChapter = mReadChapterTable[chapterIndex] ?: return
-        val originalPages = sourceChapter.pages
-        if (originalPages.isEmpty() || sourceChapter.content.isEmpty()) return
+        if (sourceChapter.pages.isEmpty() || sourceChapter.content.isEmpty()) return
 
-        val provider = mPageContentProvider as? DefaultPageContentProvider ?: return
-        val scrollChapter = ReadChapter().apply { content.addAll(sourceChapter.content) }
-        provider.paginateForScroll(scrollChapter)
-        val scrollPage = scrollChapter.pages.singleOrNull() ?: return
-
-        val pageAnchors = originalPages.mapIndexedNotNull { index, pageData ->
-            pageData.elements.asSequence()
-                .filterIsInstance<StringLineData>()
-                .firstOrNull { it.sourceContentIndex >= 0 && it.sourceCharacterIndex >= 0 }
-                ?.let { ScrollPageAnchor(index + 1, it.toTextPosition()) }
-        }
-
-        val scrollLines = scrollPage.elements.filterIsInstance<StringLineData>()
-        val session = ScrollModeSession(chapterIndex, page, page.body, scrollPage, scrollLines, pageAnchors)
+        val firstSegment = createScrollChapterSegment(chapterIndex, sourceChapter, 0F) ?: return
+        val session = ScrollModeSession(
+            page = page,
+            body = page.body,
+            segments = mutableListOf(firstSegment),
+            previousChapterIndex = chapterIndex - 1,
+            previousChapterLoadState = if (chapterIndex <= 1) {
+                ScrollChapterLoadState.END
+            } else {
+                ScrollChapterLoadState.IDLE
+            },
+            nextChapterIndex = chapterIndex + 1,
+            nextChapterLoadState = if (chapterIndex >= getChapCount()) {
+                ScrollChapterLoadState.END
+            } else {
+                ScrollChapterLoadState.IDLE
+            },
+            visibleChapterIndex = chapterIndex,
+            visiblePageIndex = 1
+        )
         scrollModeSession = session
 
         val originalPageData = mAdapterData.getPageContent(position) as? PageData
@@ -439,33 +456,279 @@ class BasicReadView(
             ?.filterIsInstance<StringLineData>()
             ?.firstOrNull { it.sourceContentIndex >= 0 && it.sourceCharacterIndex >= 0 }
         val scrollAnchor = firstLine?.let { source ->
-            scrollPage.elements.asSequence()
-                .filterIsInstance<StringLineData>()
-                .firstOrNull { it.toTextPosition() == source.toTextPosition() }
+            firstSegment.lines.firstOrNull {
+                it.toTextPosition(chapterIndex) == source.toTextPosition(chapterIndex)
+            }
         }
         val initialScrollY = scrollAnchor?.let {
             (it.top - mReadStyle.bodyPaddingTop).toInt().coerceAtLeast(0)
         } ?: ((findChapByPosition(position).second - 1) * mReadStyle.bodyHeight).toInt()
 
-        val contentBottom = scrollPage.elements.maxOfOrNull { it.bottom } ?: 0F
-        page.body.isScrollMode = true
-        page.body.scrollContentHeight = ceil(contentBottom + mReadStyle.bodyPaddingBottom).toInt()
-        page.body.provider = mPageContentProvider
-        page.body.content = scrollPage
-        page.body.onScrollPositionChanged = { scrollY -> updateScrollProgress(session, scrollY) }
-        page.body.scrollTo(0, initialScrollY.coerceIn(0, page.body.getMaxScrollY()))
-        page.body.invalidate()
+        bindScrollModeSession(session, initialScrollY)
         (pageEffect as? ScrollEffect)?.requestReInitPagePosition()
         requestLayout()
-        updateScrollProgress(session, page.body.scrollY)
+        maybePrefetchPreviousScrollChapter(session, page.body.scrollY)
+        maybePrefetchNextScrollChapter(session, page.body.scrollY)
+    }
+
+    private fun bindScrollModeSession(session: ScrollModeSession, scrollY: Int) {
+        val body = session.body
+        body.isScrollMode = true
+        body.scrollPageSegments = session.segments.map { it.bodySegment }
+        body.scrollContentHeight = getScrollContentHeight(session)
+        body.provider = mPageContentProvider
+        body.content = session.segments.first().bodySegment.pageData
+        body.onScrollPositionChanged = { currentScrollY ->
+            updateScrollProgress(session, currentScrollY)
+            maybePrefetchPreviousScrollChapter(session, currentScrollY)
+            maybePrefetchNextScrollChapter(session, currentScrollY)
+        }
+        body.scrollTo(0, scrollY.coerceIn(0, body.getMaxScrollY()))
+        body.invalidate()
+        updateScrollProgress(session, body.scrollY)
+    }
+
+    private fun createScrollChapterSegment(
+        chapterIndex: Int,
+        sourceChapter: ReadChapter,
+        offsetY: Float
+    ): ScrollChapterSegment? {
+        val provider = mPageContentProvider as? DefaultPageContentProvider ?: return null
+        if (sourceChapter.content.isEmpty()) return null
+
+        val scrollChapter = ReadChapter().apply { content.addAll(sourceChapter.content) }
+        provider.paginateForScroll(scrollChapter)
+        val scrollPage = scrollChapter.pages.singleOrNull() ?: return null
+        val lines = scrollPage.elements.filterIsInstance<StringLineData>()
+        val anchors = sourceChapter.pages.mapIndexedNotNull { index, pageData ->
+            pageData.elements.asSequence()
+                .filterIsInstance<StringLineData>()
+                .firstOrNull { it.sourceContentIndex >= 0 && it.sourceCharacterIndex >= 0 }
+                ?.let { ScrollPageAnchor(index + 1, it.toTextPosition(chapterIndex)) }
+        }
+        val contentBottom = scrollPage.elements.maxOfOrNull { it.bottom } ?: 0F
+        return ScrollChapterSegment(
+            bodySegment = ReadBody.ScrollPageSegment(chapterIndex, scrollPage, offsetY, contentBottom),
+            lines = lines,
+            pageAnchors = anchors
+        )
+    }
+
+    private fun maybePrefetchPreviousScrollChapter(session: ScrollModeSession, scrollY: Int) {
+        if (scrollModeSession !== session
+            || session.previousChapterLoadState != ScrollChapterLoadState.IDLE) return
+        val previousChapterIndex = session.previousChapterIndex
+        if (previousChapterIndex < 1) {
+            session.previousChapterLoadState = ScrollChapterLoadState.END
+            updateScrollProgress(session, scrollY)
+            return
+        }
+
+        val firstSegment = session.segments.firstOrNull() ?: return
+        val visible = findFirstVisibleLine(session, scrollY)
+        val localScrollY = scrollY - firstSegment.bodySegment.offsetY
+        val closeToStart = visible?.first?.bodySegment?.chapterIndex == firstSegment.bodySegment.chapterIndex
+            && localScrollY <= session.body.height * 2
+        if (!closeToStart) return
+
+        session.previousChapterLoadState = ScrollChapterLoadState.LOADING
+        updateScrollProgress(session, scrollY)
+        startTask {
+            val previousSegment = try {
+                var sourceChapter = mReadChapterTable[previousChapterIndex]
+                if (sourceChapter == null) {
+                    if (!loadChap(previousChapterIndex)) throw IllegalStateException("Chapter load failed")
+                    sourceChapter = mReadChapterTable[previousChapterIndex]
+                        ?: throw IllegalStateException("Loaded chapter data is missing")
+                }
+                if (sourceChapter.pages.isEmpty()) {
+                    splitChap(previousChapterIndex)
+                    if (sourceChapter.pages.isEmpty()) throw IllegalStateException("Chapter pagination failed")
+                }
+                createScrollChapterSegment(previousChapterIndex, sourceChapter, 0F)
+                    ?: throw IllegalStateException("Scroll layout failed")
+            } catch (error: Exception) {
+                LogHelper.e(TAG, "prefetchPreviousScrollChapter($previousChapterIndex): ${error.message}")
+                null
+            }
+
+            post {
+                if (scrollModeSession !== session
+                    || session.previousChapterIndex != previousChapterIndex
+                    || pageEffect !is ScrollEffect) return@post
+
+                if (previousSegment == null) {
+                    session.previousChapterLoadState = ScrollChapterLoadState.FAILED
+                    updateScrollProgress(session, session.body.scrollY)
+                    return@post
+                }
+
+                try {
+                    val retainedScrollY = session.body.scrollY
+                    val shift = ceil(previousSegment.bodySegment.contentBottom).coerceAtLeast(0F)
+                    session.segments.forEach { segment ->
+                        segment.bodySegment = segment.bodySegment.copy(offsetY = segment.bodySegment.offsetY + shift)
+                    }
+                    session.segments.add(0, previousSegment)
+                    session.previousChapterIndex = previousChapterIndex - 1
+                    session.previousChapterLoadState = if (session.previousChapterIndex < 1) {
+                        ScrollChapterLoadState.END
+                    } else {
+                        ScrollChapterLoadState.IDLE
+                    }
+                    session.body.scrollPageSegments = session.segments.map { it.bodySegment }
+                    session.body.scrollContentHeight = getScrollContentHeight(session)
+                    session.body.scrollTo(0, retainedScrollY + shift.toInt())
+                    session.body.invalidate()
+                    updateScrollProgress(session, session.body.scrollY)
+                    maybePrefetchPreviousScrollChapter(session, session.body.scrollY)
+                } catch (error: Exception) {
+                    LogHelper.e(TAG, "attachPreviousScrollChapter($previousChapterIndex): ${error.message}")
+                    session.previousChapterLoadState = ScrollChapterLoadState.FAILED
+                    updateScrollProgress(session, session.body.scrollY)
+                }
+            }
+        }
+    }
+
+    private fun maybePrefetchNextScrollChapter(session: ScrollModeSession, scrollY: Int) {
+        if (scrollModeSession !== session || session.nextChapterLoadState != ScrollChapterLoadState.IDLE) return
+        val nextChapterIndex = session.nextChapterIndex
+        if (nextChapterIndex > getChapCount()) {
+            session.nextChapterLoadState = ScrollChapterLoadState.END
+            updateScrollProgress(session, scrollY)
+            return
+        }
+
+        val lastChapterIndex = session.segments.lastOrNull()?.bodySegment?.chapterIndex ?: return
+        val visible = findFirstVisibleLine(session, scrollY)
+        val closeToEnd = session.body.getMaxScrollY() - scrollY <= session.body.height * 2
+        if (visible?.first?.bodySegment?.chapterIndex != lastChapterIndex && !closeToEnd) return
+
+        session.nextChapterLoadState = ScrollChapterLoadState.LOADING
+        updateScrollProgress(session, scrollY)
+        startTask {
+            val nextSegment = try {
+                var sourceChapter = mReadChapterTable[nextChapterIndex]
+                if (sourceChapter == null) {
+                    if (!loadChap(nextChapterIndex)) throw IllegalStateException("Chapter load failed")
+                    sourceChapter = mReadChapterTable[nextChapterIndex]
+                        ?: throw IllegalStateException("Loaded chapter data is missing")
+                }
+                if (sourceChapter.pages.isEmpty()) {
+                    splitChap(nextChapterIndex)
+                    if (sourceChapter.pages.isEmpty()) throw IllegalStateException("Chapter pagination failed")
+                }
+
+                val previous = session.segments.last().bodySegment
+                val offsetY = previous.offsetY + previous.contentBottom
+                createScrollChapterSegment(nextChapterIndex, sourceChapter, offsetY)
+                    ?: throw IllegalStateException("Scroll layout failed")
+            } catch (error: Exception) {
+                LogHelper.e(TAG, "prefetchScrollChapter($nextChapterIndex): ${error.message}")
+                null
+            }
+
+            post {
+                if (scrollModeSession !== session || session.nextChapterIndex != nextChapterIndex
+                    || pageEffect !is ScrollEffect) return@post
+
+                if (nextSegment == null) {
+                    session.nextChapterLoadState = ScrollChapterLoadState.FAILED
+                    updateScrollProgress(session, session.body.scrollY)
+                    return@post
+                }
+
+                try {
+                    session.segments.add(nextSegment)
+                    session.nextChapterIndex = nextChapterIndex + 1
+                    session.nextChapterLoadState = if (session.nextChapterIndex > getChapCount()) {
+                        ScrollChapterLoadState.END
+                    } else {
+                        ScrollChapterLoadState.IDLE
+                    }
+                    session.body.scrollPageSegments = session.segments.map { it.bodySegment }
+                    session.body.scrollContentHeight = getScrollContentHeight(session)
+                    session.body.invalidate()
+                    updateScrollProgress(session, session.body.scrollY)
+                    maybePrefetchNextScrollChapter(session, session.body.scrollY)
+                } catch (error: Exception) {
+                    LogHelper.e(TAG, "attachScrollChapter($nextChapterIndex): ${error.message}")
+                    session.nextChapterLoadState = ScrollChapterLoadState.FAILED
+                    updateScrollProgress(session, session.body.scrollY)
+                }
+            }
+        }
+    }
+
+    private fun retryScrollChapter(session: ScrollModeSession, previous: Boolean) {
+        if (scrollModeSession !== session) return
+        if (previous) {
+            if (session.previousChapterLoadState != ScrollChapterLoadState.FAILED) return
+            session.previousChapterLoadState = ScrollChapterLoadState.IDLE
+            maybePrefetchPreviousScrollChapter(session, session.body.scrollY)
+        } else {
+            if (session.nextChapterLoadState != ScrollChapterLoadState.FAILED) return
+            session.nextChapterLoadState = ScrollChapterLoadState.IDLE
+            maybePrefetchNextScrollChapter(session, session.body.scrollY)
+        }
+    }
+
+    private fun getScrollContentHeight(session: ScrollModeSession): Int {
+        val lastSegment = session.segments.lastOrNull()?.bodySegment ?: return 0
+        return ceil(lastSegment.offsetY + lastSegment.contentBottom + mReadStyle.bodyPaddingBottom).toInt()
     }
 
     private fun updateScrollProgress(session: ScrollModeSession, scrollY: Int) {
         if (scrollModeSession !== session) return
-        val visibleLine = findFirstVisibleLine(session, scrollY) ?: return
-        val pageIndex = findPageIndex(session.pageAnchors, visibleLine.toTextPosition())
-        val pageCount = mReadChapterTable[session.chapterIndex]?.pages?.size ?: 1
-        session.page.progress.text = "${pageIndex.coerceIn(1, pageCount)}/$pageCount"
+        val visible = findFirstVisibleLine(session, scrollY)
+        val segment = visible?.first ?: session.segments.lastOrNull() ?: return
+        val chapterIndex = segment.bodySegment.chapterIndex
+        val line = visible?.second
+        val pageCount = mReadChapterTable[chapterIndex]?.pages?.size?.coerceAtLeast(1) ?: 1
+        val pageIndex = line?.let { findPageIndex(segment.pageAnchors, it.toTextPosition(chapterIndex)) }
+            ?.coerceIn(1, pageCount) ?: 1
+        val previousChapterIndex = session.visibleChapterIndex
+        session.visibleChapterIndex = chapterIndex
+        session.visiblePageIndex = pageIndex
+
+        session.page.chapTitle.text = if (pageIndex == 1) book?.title.orEmpty() else getChapTitle(chapterIndex)
+
+        val firstSegment = session.segments.first().bodySegment
+        val lastSegment = session.segments.last().bodySegment
+        val isNearStart = segment.bodySegment.chapterIndex == firstSegment.chapterIndex
+            && scrollY - firstSegment.offsetY <= session.body.height
+        val isNearEnd = segment.bodySegment.chapterIndex == lastSegment.chapterIndex
+            && session.body.getMaxScrollY() - scrollY <= session.body.height
+        when {
+            isNearStart && session.previousChapterLoadState == ScrollChapterLoadState.LOADING -> {
+                session.page.progress.text = "加载上一章…"
+                session.page.progress.setOnClickListener(null)
+            }
+            isNearStart && session.previousChapterLoadState == ScrollChapterLoadState.FAILED -> {
+                session.page.progress.text = "加载失败·点击重试"
+                session.page.progress.setOnClickListener { retryScrollChapter(session, previous = true) }
+            }
+            isNearEnd && session.nextChapterLoadState == ScrollChapterLoadState.LOADING -> {
+                session.page.progress.text = "加载下一章…"
+                session.page.progress.setOnClickListener(null)
+            }
+            isNearEnd && session.nextChapterLoadState == ScrollChapterLoadState.FAILED -> {
+                session.page.progress.text = "加载失败·点击重试"
+                session.page.progress.setOnClickListener { retryScrollChapter(session, previous = false) }
+            }
+            else -> {
+                session.page.progress.text = "${pageIndex}/${pageCount}"
+                session.page.progress.setOnClickListener(null)
+            }
+        }
+        session.page.progress.isClickable =
+            (isNearStart && session.previousChapterLoadState == ScrollChapterLoadState.FAILED)
+                || (isNearEnd && session.nextChapterLoadState == ScrollChapterLoadState.FAILED)
+
+        if (previousChapterIndex != chapterIndex) {
+            LogHelper.d(TAG, "scrollChapterChanged: $previousChapterIndex -> $chapterIndex")
+        }
     }
 
     private fun leaveScrollMode() {
@@ -474,17 +737,27 @@ class BasicReadView(
         if (session == null) return
 
         val scrollY = pending?.scrollY ?: session.body.scrollY
-        val visibleLine = findFirstVisibleLine(session, scrollY)
-        val chapterPageIndex = visibleLine?.let { findPageIndex(session.pageAnchors, it.toTextPosition()) } ?: 1
-        val chapterRange = getChapPageRange(session.chapterIndex)
-        val targetPageIndex = (chapterRange.from + chapterPageIndex)
-            .coerceIn(1, getContainerPageCount())
+        val visible = findFirstVisibleLine(session, scrollY)
+        val segment = visible?.first ?: session.segments.last()
+        val chapterIndex = segment.bodySegment.chapterIndex
+        val chapterPageIndex = visible?.second
+            ?.let { findPageIndex(segment.pageAnchors, it.toTextPosition(chapterIndex)) } ?: 1
 
         session.body.isScrollMode = false
         session.body.scrollContentHeight = 0
+        session.body.scrollPageSegments = emptyList()
         session.body.onScrollPositionChanged = null
+        session.page.progress.setOnClickListener(null)
+        session.page.progress.isClickable = false
         scrollModeSession = null
         pendingScrollExit = null
+
+        session.segments.map { it.bodySegment.chapterIndex }.distinct().forEach { loadedChapterIndex ->
+            inflateChap(loadedChapterIndex)
+        }
+        val chapterRange = getChapPageRange(chapterIndex)
+        val targetPageIndex = (chapterRange.from + chapterPageIndex)
+            .coerceIn(1, getContainerPageCount())
 
         if (targetPageIndex != getCurContainerPageIndex()) {
             navigatePage(targetPageIndex)
@@ -512,28 +785,49 @@ class BasicReadView(
         return result
     }
 
-    private fun findFirstVisibleLine(session: ScrollModeSession, scrollY: Int): StringLineData? {
-        val lines = session.scrollLines
-        if (lines.isEmpty()) return null
-        var low = 0
-        var high = lines.lastIndex
-        var result = lines.lastIndex
-        while (low <= high) {
-            val middle = (low + high) ushr 1
-            if (lines[middle].bottom > scrollY) {
-                result = middle
-                high = middle - 1
-            } else {
-                low = middle + 1
+    private fun findFirstVisibleLine(
+        session: ScrollModeSession,
+        scrollY: Int
+    ): Pair<ScrollChapterSegment, StringLineData>? {
+        session.segments.forEach { segment ->
+            val localY = scrollY - segment.bodySegment.offsetY
+            val lines = segment.lines
+            if (lines.isEmpty()) return@forEach
+            var low = 0
+            var high = lines.lastIndex
+            var result = -1
+            while (low <= high) {
+                val middle = (low + high) ushr 1
+                if (lines[middle].bottom > localY) {
+                    result = middle
+                    high = middle - 1
+                } else {
+                    low = middle + 1
+                }
             }
+            if (result >= 0) return segment to lines[result]
         }
-        return lines[result]
+        val lastSegment = session.segments.lastOrNull() ?: return null
+        return lastSegment.lines.lastOrNull()?.let { lastSegment to it }
     }
 
     private fun compareTextPosition(left: TextPosition, right: TextPosition): Int =
         compareValuesBy(left, right, TextPosition::contentIndex, TextPosition::characterIndex)
 
-    private fun StringLineData.toTextPosition() = TextPosition(sourceContentIndex, sourceCharacterIndex)
+    private fun StringLineData.toTextPosition(chapterIndex: Int) =
+        TextPosition(chapterIndex, sourceContentIndex, sourceCharacterIndex)
+
+    override fun getCurChapIndex(): Int =
+        scrollModeSession?.visibleChapterIndex ?: super.getCurChapIndex()
+
+    override fun getCurChapPageCount(): Int {
+        val session = scrollModeSession ?: return super.getCurChapPageCount()
+        return mReadChapterTable[session.visibleChapterIndex]?.pages?.size
+            ?.coerceAtLeast(1) ?: super.getCurChapPageCount()
+    }
+
+    override fun getCurChapPageIndex(): Int =
+        scrollModeSession?.visiblePageIndex ?: super.getCurChapPageIndex()
 
     /**
      * page创建完成以后调用这个函数，可以在这里对page进行一些初始化操作
@@ -592,20 +886,32 @@ class BasicReadView(
                     val page = holder.itemView as ReadPage
                     val pageData = mAdapterData.getPageContent(position) as PageData
                     val indexPair = findChapByPosition(position)
+                    val activeScrollSession = scrollModeSession?.takeIf {
+                        it.page === page && position == getCurContainerPageIndex() - 1
+                            && pageEffect is ScrollEffect
+                    }
+                    val retainedScrollY = activeScrollSession?.body?.scrollY ?: 0
                     // 如果是章节的第一页，就使用book的title作为页眉显示的标题
                     val title = if (indexPair.second != 1) getChapTitle(indexPair.first) else book!!.title
                     val pageDelegate = mPageDelegate ?: mDefaultPageDelegate
                     pageDelegate.bindReadPage(holder.itemView, pageData, title,
                         indexPair.first, indexPair.second,
                         getChapPageCount(indexPair.first), mPageContentProvider)
-                    page.body.isScrollMode = false
-                    page.body.scrollContentHeight = 0
-                    page.body.onScrollPositionChanged = null
-                    page.body.scrollTo(0, 0)
-                    if (position == getCurContainerPageIndex() - 1
-                        && bookStatus.get() == BOOK_STATUS_READY
-                        && pageEffect is ScrollEffect) {
-                        enterCurrentPageScrollMode()
+                    if (activeScrollSession != null) {
+                        bindScrollModeSession(activeScrollSession, retainedScrollY)
+                    } else {
+                        page.body.isScrollMode = false
+                        page.body.scrollContentHeight = 0
+                        page.body.scrollPageSegments = emptyList()
+                        page.body.onScrollPositionChanged = null
+                        page.body.scrollTo(0, 0)
+                        page.progress.setOnClickListener(null)
+                        page.progress.isClickable = false
+                        if (position == getCurContainerPageIndex() - 1
+                            && bookStatus.get() == BOOK_STATUS_READY
+                            && pageEffect is ScrollEffect) {
+                            enterCurrentPageScrollMode()
+                        }
                     }
 
                     LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.chapTitle.text}, ${page.progress.text}")

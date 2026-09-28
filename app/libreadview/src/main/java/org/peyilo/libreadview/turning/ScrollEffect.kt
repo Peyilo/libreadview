@@ -375,8 +375,16 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
         super.canMoveUp()
     }
 
-    private fun getScrollBody(): ReadBody? =
-        (pageContainer.getCurPage() as? ReadPage)?.body?.takeIf { it.isScrollMode }
+    private fun getScrollBody(): ReadBody? {
+        if (pageContainer.getPageChildCount() == 0) return null
+        return try {
+            (pageContainer.getCurPage() as? ReadPage)?.body?.takeIf { it.isScrollMode }
+        } catch (_: IllegalArgumentException) {
+            null
+        } catch (_: IllegalStateException) {
+            null
+        }
+    }
 
     private fun isCurrentBodyInScrollMode(): Boolean = getScrollBody() != null
 
