@@ -60,6 +60,21 @@ class ScrollModeHandoffTest {
 
             instrumentation.runOnMainSync {
                 readView!!.pageEffect = ScrollEffect()
+                assertEquals(
+                    "switching to scroll mode should immediately attach three neighboring page views",
+                    3,
+                    readView!!.getPageChildCount()
+                )
+                for (index in 0 until readView!!.getPageChildCount()) {
+                    val child = readView!!.getPageChildAt(index)
+                    if (child !== page) {
+                        assertEquals(
+                            "neighboring pages must be hidden before the next layout pass",
+                            View.INVISIBLE,
+                            child.visibility
+                        )
+                    }
+                }
             }
             instrumentation.waitForIdleSync()
 

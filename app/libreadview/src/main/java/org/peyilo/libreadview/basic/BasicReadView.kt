@@ -465,7 +465,13 @@ class BasicReadView(
         } ?: ((findChapByPosition(position).second - 1) * mReadStyle.bodyHeight).toInt()
 
         bindScrollModeSession(session, initialScrollY)
-        (pageEffect as? ScrollEffect)?.requestReInitPagePosition()
+        (pageEffect as? ScrollEffect)?.let { effect ->
+            // A page-effect change resets every cached page to the same visible position.
+            // Initialize synchronously so adjacent paged views cannot draw over the
+            // continuous body during the frame before the next layout pass.
+            effect.requestReInitPagePosition()
+            effect.initPagePosition()
+        }
         requestLayout()
         maybePrefetchPreviousScrollChapter(session, page.body.scrollY)
         maybePrefetchNextScrollChapter(session, page.body.scrollY)
