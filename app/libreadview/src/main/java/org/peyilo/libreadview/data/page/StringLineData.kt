@@ -5,6 +5,10 @@ class StringLineData: LineData() {
     var isTitleLine = false
     var isFirstLineOfParagraph = false
 
+    /** Stable location in the parsed chapter, used to hand reading position between layouts. */
+    var sourceContentIndex: Int = -1
+    var sourceCharacterIndex: Int = -1
+
     val text = mutableListOf<CharData>()
 
     fun add(str: String) {

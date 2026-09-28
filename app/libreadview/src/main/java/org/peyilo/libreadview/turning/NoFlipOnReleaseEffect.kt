@@ -118,12 +118,12 @@ abstract class NoFlipOnReleaseEffect: DirectionalEffect() {
     /**
      * 是否可以滑动由child的translationY的最大值决定
      */
-    protected fun canMoveDown() = getBottomTranslationY() != 0F
+    protected open fun canMoveDown() = getBottomTranslationY() != 0F
 
     /**
      * 是否可以滑动由child的translationY的最小值决定
      */
-    protected fun canMoveUp() = getTopTranslationY() != 0F
+    protected open fun canMoveUp() = getTopTranslationY() != 0F
 
     /**
      * 手指抬起后，不会自动触发翻页动画，也就是每次手势结束后，page都并不会对其PageContainer的边界

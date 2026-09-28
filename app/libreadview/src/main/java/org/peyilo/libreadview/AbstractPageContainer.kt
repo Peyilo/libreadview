@@ -56,10 +56,13 @@ abstract class AbstractPageContainer(
     private var _pageEffect: PageEffect? = null
     var pageEffect: PageEffect
         set(value) {
-            _pageEffect?.apply {
+            val oldEffect = _pageEffect
+            if (oldEffect === value) return
+            oldEffect?.apply {
                 forceNotInLayoutOrScroll()
-                destory()
             }
+            onBeforePageEffectChange(oldEffect, value)
+            oldEffect?.destory()
             _pageEffect = value        // 清除PageEffect中包含的PageContainer引用
             value.setPageContainer(this)
             resetPagePosition()
@@ -69,6 +72,7 @@ abstract class AbstractPageContainer(
                 glView.renderMode = RENDERMODE_CONTINUOUSLY
             }
             value.requestReInitPagePosition()
+            onAfterPageEffectChange(oldEffect, value)
             requestLayout()
         }
         get() = _pageEffect
@@ -137,6 +141,12 @@ abstract class AbstractPageContainer(
     private var targetChild: View? = null
     private var selfHandling: Boolean = false
     private val tmpRect = Rect()
+
+    /** Called after the old effect has settled and before it is detached. */
+    protected open fun onBeforePageEffectChange(oldEffect: PageEffect?, newEffect: PageEffect) = Unit
+
+    /** Called after the new effect has been attached and page positions have been reset. */
+    protected open fun onAfterPageEffectChange(oldEffect: PageEffect?, newEffect: PageEffect) = Unit
 
     init {
         isChildrenDrawingOrderEnabled = true            // 启用子View绘制顺序控制

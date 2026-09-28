@@ -19,6 +19,16 @@ class ReadBody(
 
     var provider: PageContentProvider? = null
 
+    /** True while this body draws a whole chapter and scrolls independently of its page shell. */
+    var isScrollMode = false
+        internal set
+
+    /** Bottom coordinate of the laid out content in scroll mode. */
+    var scrollContentHeight = 0
+        internal set
+
+    var onScrollPositionChanged: ((Int) -> Unit)? = null
+
     companion object {
         private const val TAG = "ReadBody"
     }
@@ -33,5 +43,12 @@ class ReadBody(
             }
         }
     }
+
+    override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+        super.onScrollChanged(l, t, oldl, oldt)
+        if (isScrollMode) onScrollPositionChanged?.invoke(t)
+    }
+
+    fun getMaxScrollY(): Int = (scrollContentHeight - height).coerceAtLeast(0)
 
 }

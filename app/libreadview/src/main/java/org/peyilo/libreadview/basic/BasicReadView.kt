@@ -11,14 +11,17 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.annotation.IntRange
 import org.peyilo.libreadview.AbstractReadView
+import org.peyilo.libreadview.AbstractPageContainer.PageEffect
 import org.peyilo.libreadview.basic.page.ChapLoadPage
 import org.peyilo.libreadview.basic.page.MessagePage
 import org.peyilo.libreadview.basic.page.ReadPage
+import org.peyilo.libreadview.basic.page.ReadBody
 import org.peyilo.libreadview.content.ContentParser
 import org.peyilo.libreadview.content.DefaultContentParser
 import org.peyilo.libreadview.content.ReadChapter
 import org.peyilo.libreadview.data.Book
 import org.peyilo.libreadview.data.page.PageData
+import org.peyilo.libreadview.data.page.StringLineData
 import org.peyilo.libreadview.layout.Alignment
 import org.peyilo.libreadview.layout.DefaultPageContentProvider
 import org.peyilo.libreadview.layout.PageContentProvider
@@ -27,9 +30,11 @@ import org.peyilo.libreadview.load.TextLoader
 import org.peyilo.libreadview.load.TxtFileLoader
 import org.peyilo.libreadview.util.DisplayUtil
 import org.peyilo.libreadview.util.LogHelper
+import org.peyilo.libreadview.turning.ScrollEffect
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.ceil
 import kotlin.math.max
 
 class BasicReadView(
@@ -65,6 +70,24 @@ class BasicReadView(
     private val mDefaultPageDelegate: PageDelegate by lazy { PageDelegate() }
 
     private var mCallback: Callback? = null
+
+    private data class TextPosition(val contentIndex: Int, val characterIndex: Int)
+
+    private data class ScrollPageAnchor(val pageIndex: Int, val position: TextPosition)
+
+    private data class ScrollModeSession(
+        val chapterIndex: Int,
+        val page: ReadPage,
+        val body: ReadBody,
+        val scrollPage: PageData,
+        val scrollLines: List<StringLineData>,
+        val pageAnchors: List<ScrollPageAnchor>
+    )
+
+    private data class PendingScrollExit(val session: ScrollModeSession, val scrollY: Int)
+
+    private var scrollModeSession: ScrollModeSession? = null
+    private var pendingScrollExit: PendingScrollExit? = null
 
     init {
         mAdapterData = AdapterData()
@@ -238,6 +261,7 @@ class BasicReadView(
                         navigateBook(chapIndex, pageIndex)
                     }
                     bookStatus.set(BOOK_STATUS_READY)
+                    if (pageEffect is ScrollEffect) enterCurrentPageScrollMode()
                 }
 
             } else {
@@ -353,6 +377,164 @@ class BasicReadView(
         }
     }
 
+    override fun onBeforePageEffectChange(oldEffect: PageEffect?, newEffect: PageEffect) {
+        super.onBeforePageEffectChange(oldEffect, newEffect)
+        if (oldEffect is ScrollEffect && newEffect !is ScrollEffect) {
+            scrollModeSession?.let { session ->
+                pendingScrollExit = PendingScrollExit(session, session.body.scrollY)
+            }
+        }
+    }
+
+    override fun onAfterPageEffectChange(oldEffect: PageEffect?, newEffect: PageEffect) {
+        super.onAfterPageEffectChange(oldEffect, newEffect)
+        if (newEffect is ScrollEffect) {
+            pendingScrollExit = null
+            enterCurrentPageScrollMode()
+        } else if (oldEffect is ScrollEffect) {
+            leaveScrollMode()
+        }
+    }
+
+    override fun onPageChanged(oldPageIndex: Int, newPageIndex: Int) {
+        super.onPageChanged(oldPageIndex, newPageIndex)
+        if (pageEffect is ScrollEffect) {
+            scrollModeSession = null
+            enterCurrentPageScrollMode()
+        }
+    }
+
+    /** Reflow the active chapter in one ReadBody while the ScrollEffect keeps its page shell fixed. */
+    private fun enterCurrentPageScrollMode() {
+        if (bookStatus.get() != BOOK_STATUS_READY || scrollModeSession != null) return
+
+        val position = getCurContainerPageIndex() - 1
+        if (position !in 0 until mAdapterData.size
+            || mAdapterData.getPageType(position) != PageType.READ_PAGE) return
+
+        val page = getCurPage() as? ReadPage ?: return
+        val chapterIndex = findChapByPosition(position).first
+        val sourceChapter = mReadChapterTable[chapterIndex] ?: return
+        val originalPages = sourceChapter.pages
+        if (originalPages.isEmpty() || sourceChapter.content.isEmpty()) return
+
+        val provider = mPageContentProvider as? DefaultPageContentProvider ?: return
+        val scrollChapter = ReadChapter().apply { content.addAll(sourceChapter.content) }
+        provider.paginateForScroll(scrollChapter)
+        val scrollPage = scrollChapter.pages.singleOrNull() ?: return
+
+        val pageAnchors = originalPages.mapIndexedNotNull { index, pageData ->
+            pageData.elements.asSequence()
+                .filterIsInstance<StringLineData>()
+                .firstOrNull { it.sourceContentIndex >= 0 && it.sourceCharacterIndex >= 0 }
+                ?.let { ScrollPageAnchor(index + 1, it.toTextPosition()) }
+        }
+
+        val scrollLines = scrollPage.elements.filterIsInstance<StringLineData>()
+        val session = ScrollModeSession(chapterIndex, page, page.body, scrollPage, scrollLines, pageAnchors)
+        scrollModeSession = session
+
+        val originalPageData = mAdapterData.getPageContent(position) as? PageData
+        val firstLine = originalPageData?.elements?.asSequence()
+            ?.filterIsInstance<StringLineData>()
+            ?.firstOrNull { it.sourceContentIndex >= 0 && it.sourceCharacterIndex >= 0 }
+        val scrollAnchor = firstLine?.let { source ->
+            scrollPage.elements.asSequence()
+                .filterIsInstance<StringLineData>()
+                .firstOrNull { it.toTextPosition() == source.toTextPosition() }
+        }
+        val initialScrollY = scrollAnchor?.let {
+            (it.top - mReadStyle.bodyPaddingTop).toInt().coerceAtLeast(0)
+        } ?: ((findChapByPosition(position).second - 1) * mReadStyle.bodyHeight).toInt()
+
+        val contentBottom = scrollPage.elements.maxOfOrNull { it.bottom } ?: 0F
+        page.body.isScrollMode = true
+        page.body.scrollContentHeight = ceil(contentBottom + mReadStyle.bodyPaddingBottom).toInt()
+        page.body.provider = mPageContentProvider
+        page.body.content = scrollPage
+        page.body.onScrollPositionChanged = { scrollY -> updateScrollProgress(session, scrollY) }
+        page.body.scrollTo(0, initialScrollY.coerceIn(0, page.body.getMaxScrollY()))
+        page.body.invalidate()
+        (pageEffect as? ScrollEffect)?.requestReInitPagePosition()
+        requestLayout()
+        updateScrollProgress(session, page.body.scrollY)
+    }
+
+    private fun updateScrollProgress(session: ScrollModeSession, scrollY: Int) {
+        if (scrollModeSession !== session) return
+        val visibleLine = findFirstVisibleLine(session, scrollY) ?: return
+        val pageIndex = findPageIndex(session.pageAnchors, visibleLine.toTextPosition())
+        val pageCount = mReadChapterTable[session.chapterIndex]?.pages?.size ?: 1
+        session.page.progress.text = "${pageIndex.coerceIn(1, pageCount)}/$pageCount"
+    }
+
+    private fun leaveScrollMode() {
+        val pending = pendingScrollExit
+        val session = pending?.session ?: scrollModeSession
+        if (session == null) return
+
+        val scrollY = pending?.scrollY ?: session.body.scrollY
+        val visibleLine = findFirstVisibleLine(session, scrollY)
+        val chapterPageIndex = visibleLine?.let { findPageIndex(session.pageAnchors, it.toTextPosition()) } ?: 1
+        val chapterRange = getChapPageRange(session.chapterIndex)
+        val targetPageIndex = (chapterRange.from + chapterPageIndex)
+            .coerceIn(1, getContainerPageCount())
+
+        session.body.isScrollMode = false
+        session.body.scrollContentHeight = 0
+        session.body.onScrollPositionChanged = null
+        scrollModeSession = null
+        pendingScrollExit = null
+
+        if (targetPageIndex != getCurContainerPageIndex()) {
+            navigatePage(targetPageIndex)
+        } else {
+            // Rebind the same holder to its original paginated PageData.
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun findPageIndex(anchors: List<ScrollPageAnchor>, position: TextPosition): Int {
+        if (anchors.isEmpty()) return 1
+        var low = 0
+        var high = anchors.lastIndex
+        var result = anchors.first().pageIndex
+        while (low <= high) {
+            val middle = (low + high) ushr 1
+            val anchor = anchors[middle]
+            if (compareTextPosition(anchor.position, position) <= 0) {
+                result = anchor.pageIndex
+                low = middle + 1
+            } else {
+                high = middle - 1
+            }
+        }
+        return result
+    }
+
+    private fun findFirstVisibleLine(session: ScrollModeSession, scrollY: Int): StringLineData? {
+        val lines = session.scrollLines
+        if (lines.isEmpty()) return null
+        var low = 0
+        var high = lines.lastIndex
+        var result = lines.lastIndex
+        while (low <= high) {
+            val middle = (low + high) ushr 1
+            if (lines[middle].bottom > scrollY) {
+                result = middle
+                high = middle - 1
+            } else {
+                low = middle + 1
+            }
+        }
+        return lines[result]
+    }
+
+    private fun compareTextPosition(left: TextPosition, right: TextPosition): Int =
+        compareValuesBy(left, right, TextPosition::contentIndex, TextPosition::characterIndex)
+
+    private fun StringLineData.toTextPosition() = TextPosition(sourceContentIndex, sourceCharacterIndex)
+
     /**
      * page创建完成以后调用这个函数，可以在这里对page进行一些初始化操作
      */
@@ -416,6 +598,15 @@ class BasicReadView(
                     pageDelegate.bindReadPage(holder.itemView, pageData, title,
                         indexPair.first, indexPair.second,
                         getChapPageCount(indexPair.first), mPageContentProvider)
+                    page.body.isScrollMode = false
+                    page.body.scrollContentHeight = 0
+                    page.body.onScrollPositionChanged = null
+                    page.body.scrollTo(0, 0)
+                    if (position == getCurContainerPageIndex() - 1
+                        && bookStatus.get() == BOOK_STATUS_READY
+                        && pageEffect is ScrollEffect) {
+                        enterCurrentPageScrollMode()
+                    }
 
                     LogHelper.d(TAG, "onBindViewHolder: ReadPage $indexPair, ${pageData.pageIndex}, ${page.chapTitle.text}, ${page.progress.text}")
                 }

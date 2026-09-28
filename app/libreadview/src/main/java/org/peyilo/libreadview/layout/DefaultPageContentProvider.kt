@@ -67,18 +67,23 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
     private fun breakLines(
         text: String,
         width: Float, size: Float,
-        textMargin: Float, offset: Float
+        textMargin: Float, offset: Float,
+        sourceContentIndex: Int
     ): List<StringLineData> {
         val lineList = ArrayList<StringLineData>()
         var line = StringLineData()
         var w = width - offset
         var dimen: Float
-        text.forEach {
+        text.forEachIndexed { sourceCharacterIndex, it ->
             dimen = measureText(it, size)
             if (w < dimen) {    // 剩余宽度已经不足以留给该字符
                 lineList.add(line)
                 line = StringLineData()
                 w = width
+            }
+            if (line.text.isEmpty()) {
+                line.sourceContentIndex = sourceContentIndex
+                line.sourceCharacterIndex = sourceCharacterIndex
             }
             w -= dimen + textMargin
             line.add(CharData(it).apply {
@@ -93,14 +98,23 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
     }
 
     override fun paginate(chap: ReadChapter) {
+        paginate(chap, allowPageBreaks = true)
+    }
+
+    /** Reflows a chapter into one tall page for the active ReadBody scroll viewport. */
+    fun paginateForScroll(chap: ReadChapter) {
+        paginate(chap, allowPageBreaks = false)
+    }
+
+    private fun paginate(chap: ReadChapter, allowPageBreaks: Boolean) {
         // 如果留给绘制内容的空间不足以绘制标题或者正文的一行，直接返回false
-        if (config.contentTextSize > remainedBodyHeight
-            || config.titleTextSize > remainedBodyHeight) {
+        if (allowPageBreaks && (config.contentTextSize > remainedBodyHeight
+            || config.titleTextSize > remainedBodyHeight)) {
             throw IllegalStateException()
         }
         chap.pages.clear()           // 清空pageData
         val width = remainedBodyWidth
-        var height = remainedBodyHeight
+        var height = if (allowPageBreaks) remainedBodyHeight else Float.MAX_VALUE
         var base = bodyTop
         val left = bodyLeft
         var curPageIndex = 1
@@ -111,7 +125,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
         val hasTitle = firstContent is TitleContent
         if (hasTitle) {
             val titleLines = breakLines(firstContent.text,
-                remainedTitleWidth, config.titleTextSize, config.titleTextMargin, 0F)
+                remainedTitleWidth, config.titleTextSize, config.titleTextMargin, 0F, 0)
             val titleFontMetrics = config.titlePaint.fontMetrics
             base += config.titlePaddingTop
             val titleLeft = left + config.titlePaddingLeft
@@ -156,7 +170,7 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
             height -= offset
         }
         // 如果剩余空间已经不足以再添加一行，就换成下一页
-        if (height < config.contentTextSize + config.contentPaddingBottom) {
+        if (allowPageBreaks && height < config.contentTextSize + config.contentPaddingBottom) {
             height = remainedBodyHeight
             base = bodyTop
             chap.pages.add(page)
@@ -171,13 +185,13 @@ class DefaultPageContentProvider(config: ReadStyle): PageContentProvider {
             val paraLines = breakLines(para.text,
                 remainedContentWidth,
                 config.contentTextSize,
-                config.contentTextMargin, config.firstParaIndent)
+                config.contentTextMargin, config.firstParaIndent, i)
             for (j in paraLines.indices) {
                 val line = paraLines[j]
                 // 如果剩余空间已经不足以再添加一行，就换成下一页
                 // 字体高度 = fontMetrics.bottom - fontMetrics.top
-                if (height < contentFontMetrics.bottom - contentFontMetrics.top
-                    + config.contentPaddingBottom) {
+                if (allowPageBreaks && (height < contentFontMetrics.bottom - contentFontMetrics.top
+                    + config.contentPaddingBottom)) {
                     height = remainedBodyHeight
                     base = bodyTop + config.contentPaddingTop
                     chap.pages.add(page)

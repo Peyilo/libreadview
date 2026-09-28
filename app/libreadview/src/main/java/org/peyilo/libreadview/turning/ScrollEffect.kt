@@ -3,6 +3,8 @@ package org.peyilo.libreadview.turning
 import android.view.View
 import android.widget.Scroller
 import org.peyilo.libreadview.AbstractPageContainer.PageDirection
+import org.peyilo.libreadview.basic.page.ReadBody
+import org.peyilo.libreadview.basic.page.ReadPage
 import org.peyilo.libreadview.util.LogHelper
 import kotlin.math.abs
 import kotlin.math.max
@@ -49,6 +51,20 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
 
     override fun forceNotInLayoutOrScroll() {
         super.forceNotInLayoutOrScroll()
+        if (isScrolling || isFliping) {
+            if (isCurrentBodyInScrollMode()) {
+                abortAnim()
+            } else {
+                scroller.forceFinished(true)
+                isScrolling = false
+                isFliping = false
+                clearPages()
+            }
+        }
+        if (isCurrentBodyInScrollMode()) {
+            clearPages()
+            return
+        }
         // 先恢复到初始位置
         pageContainer.apply {
             for (i in 0 until getPageChildCount()) {
@@ -61,6 +77,10 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     }
 
     override fun flipToNextWithNoLimit() {
+        if (isCurrentBodyInScrollMode()) {
+            getScrollBody()?.let { startBodyScroll((it.scrollY + it.height).coerceAtMost(it.getMaxScrollY())) }
+            return
+        }
         abortAnim()
         refreshPages()
         val curY = curPage!!.translationY.toInt()
@@ -72,6 +92,10 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     }
 
     override fun flipToPrevWithNoLimit() {
+        if (isCurrentBodyInScrollMode()) {
+            getScrollBody()?.let { startBodyScroll((it.scrollY - it.height).coerceAtLeast(0)) }
+            return
+        }
         abortAnim()
         refreshPages()
         val curY = curPage!!.translationY.toInt()
@@ -83,6 +107,14 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     }
 
     override fun abortAnim() {
+        if (isCurrentBodyInScrollMode()) {
+            if (isFliping) getScrollBody()?.scrollTo(0, scroller.finalY)
+            if (isScrolling || isFliping) scroller.forceFinished(true)
+            isScrolling = false
+            isFliping = false
+            clearPages()
+            return
+        }
         // 如果处于滚动状态，结束滚动动画，停在当前位置
         if (isScrolling) {
             scroller.forceFinished(true)
@@ -102,6 +134,19 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     }
 
     override fun onInitPagePosition() {
+        refreshPages()
+        if (isCurrentBodyInScrollMode()) {
+            curPage = pageContainer.getCurPage()
+            pageContainer.apply {
+                for (i in 0 until getPageChildCount()) {
+                    val page = getPageChildAt(i)
+                    page.translationY = 0F
+                    page.visibility = if (page === curPage) View.VISIBLE else View.INVISIBLE
+                }
+            }
+            return
+        }
+        super.onInitPagePosition()
         pageContainer.apply {
             getAllPrevPages().forEachIndexed { index, page ->
                 page.translationY = -height.toFloat() * (index + 1)
@@ -178,12 +223,35 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     override fun onDragging(initDire: PageDirection, dx: Float, dy: Float) {
         if (initDire == PageDirection.NONE)
             throw IllegalStateException("onDragging: initDire is PageDirection.None")
+        if (isCurrentBodyInScrollMode()) {
+            getScrollBody()?.let { body ->
+                scrollBodyBy(body, -(dy - lastdy).toInt())
+            }
+            lastdy = dy
+            return
+        }
         scrollBy(dy - lastdy)
         lastdy = dy
     }
 
     override fun onStartScroll(velocityX: Float, velocityY: Float) {
         super.onStartScroll(velocityX, velocityY)
+        if (isCurrentBodyInScrollMode()) {
+            val body = getScrollBody() ?: return
+            val maxScrollY = body.getMaxScrollY()
+            if (maxScrollY > 0 && abs(velocityY) > 0) {
+                scroller.fling(
+                    0, body.scrollY,
+                    0, -velocityY.toInt(),
+                    0, 0,
+                    0, maxScrollY
+                )
+                isScrolling = true
+                isFliping = false
+                pageContainer.invalidate()
+            }
+            return
+        }
         if (curPage == null) {
             LogHelper.e(TAG, "onStartScroll: the curpage is null")
             return
@@ -205,6 +273,21 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
 
     override fun computeScroll() {
         super.computeScroll()
+
+        if (isCurrentBodyInScrollMode()) {
+            if (scroller.computeScrollOffset()) {
+                getScrollBody()?.let { body ->
+                    body.scrollTo(0, scroller.currY.coerceIn(0, body.getMaxScrollY()))
+                }
+                if (scroller.currY == scroller.finalY) {
+                    scroller.forceFinished(true)
+                    isScrolling = false
+                    isFliping = false
+                }
+                pageContainer.invalidate()
+            }
+            return
+        }
 
         // 判断滚动是否完成
         if (scroller.computeScrollOffset()) {
@@ -250,6 +333,12 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     }
 
     override fun onAddPage(view: View, position: Int) {
+        if (isCurrentBodyInScrollMode()) {
+            refreshPages()
+            view.translationY = 0F
+            view.visibility = if (view === curPage) View.VISIBLE else View.INVISIBLE
+            return
+        }
         var dx: Float
         try {
             // getCurPage()有可能抛出异常
@@ -262,6 +351,7 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
     }
 
     override fun onDestroy() {
+        if (isScrolling || isFliping) scroller.forceFinished(true)
         super.onDestroy()
         clearPages()
         LogHelper.d(TAG, "onDestroy: clearPages")
@@ -271,5 +361,38 @@ class ScrollEffect: NoFlipOnReleaseEffect.Vertical(), AnimatedEffect {
         curPage = null
         prevPages = null
         nextPages = null
+    }
+
+    override fun canMoveDown(): Boolean = if (isCurrentBodyInScrollMode()) {
+        getScrollBody()?.let { it.scrollY < it.getMaxScrollY() } ?: false
+    } else {
+        super.canMoveDown()
+    }
+
+    override fun canMoveUp(): Boolean = if (isCurrentBodyInScrollMode()) {
+        getScrollBody()?.let { it.scrollY > 0 } ?: false
+    } else {
+        super.canMoveUp()
+    }
+
+    private fun getScrollBody(): ReadBody? =
+        (pageContainer.getCurPage() as? ReadPage)?.body?.takeIf { it.isScrollMode }
+
+    private fun isCurrentBodyInScrollMode(): Boolean = getScrollBody() != null
+
+    private fun scrollBodyBy(body: ReadBody, deltaY: Int) {
+        body.scrollTo(0, (body.scrollY + deltaY).coerceIn(0, body.getMaxScrollY()))
+    }
+
+    private fun startBodyScroll(targetY: Int) {
+        val body = getScrollBody() ?: return
+        abortAnim()
+        val startY = body.scrollY
+        if (targetY == startY) return
+        scroller.startScroll(0, startY, 0, targetY - startY, animDuration)
+        lastScrollY = startY
+        isFliping = true
+        isScrolling = false
+        pageContainer.invalidate()
     }
 }
