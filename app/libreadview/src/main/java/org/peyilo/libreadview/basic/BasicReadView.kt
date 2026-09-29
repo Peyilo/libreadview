@@ -571,7 +571,9 @@ class BasicReadView(
 
                 try {
                     val retainedScrollY = session.body.scrollY
-                    val shift = ceil(previousSegment.bodySegment.contentBottom).coerceAtLeast(0F)
+                    val shift = ceil(
+                        previousSegment.bodySegment.contentBottom + mReadStyle.scrollChapterSpacing
+                    ).coerceAtLeast(0F)
                     session.segments.forEach { segment ->
                         segment.bodySegment = segment.bodySegment.copy(offsetY = segment.bodySegment.offsetY + shift)
                     }
@@ -627,7 +629,7 @@ class BasicReadView(
                 }
 
                 val previous = session.segments.last().bodySegment
-                val offsetY = previous.offsetY + previous.contentBottom
+                val offsetY = previous.offsetY + previous.contentBottom + mReadStyle.scrollChapterSpacing
                 createScrollChapterSegment(nextChapterIndex, sourceChapter, offsetY)
                     ?: throw IllegalStateException("Scroll layout failed")
             } catch (error: Exception) {

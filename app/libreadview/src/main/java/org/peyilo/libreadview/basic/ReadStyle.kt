@@ -75,6 +75,8 @@ class ReadStyle(
     var titlePaddingBottom = DisplayUtil.dpToPx(context, 72)
     var titlePaddingLeft = DisplayUtil.dpToPx(context, 0)
     var titlePaddingRight = DisplayUtil.dpToPx(context, 0)
+    // Extra space between adjacent chapters in continuous scroll mode.
+    var scrollChapterSpacing = DisplayUtil.dpToPx(context, 24F)
     // 正文内边距
     var contentPaddingTop = DisplayUtil.dpToPx(context, 0)
     var contentPaddingBottom = DisplayUtil.dpToPx(context, 0)
