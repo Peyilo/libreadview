@@ -18,9 +18,12 @@ object EffectFactory {
     const val NO_ANIMATION_VERTICAL = 1
 
     /**
-     * 仿真翻页：模拟纸张的翻页效果
+     * iOS 原版算法的 Kotlin 仿真翻页。沿用旧仿真效果的 ID，恢复已有配置时使用新实现。
      */
-    const val CURL = 2
+    const val IOS_CURL = 2
+
+    @Deprecated("Use IOS_CURL", ReplaceWith("IOS_CURL"))
+    const val CURL = IOS_CURL
 
     /**
      * 覆盖翻页
@@ -49,7 +52,7 @@ object EffectFactory {
     fun create(effectType: Int): AbstractPageContainer.PageEffect = when (effectType) {
         NO_ANIMATION -> NoAnimEffects.Horizontal()
         NO_ANIMATION_VERTICAL -> NoAnimEffects.Vertical()
-        CURL -> IBookCurlEffect()
+        IOS_CURL -> IosCurlEffect()
         COVER -> CoverEffect()
         SLIDE -> SlideEffect()
         SCROLL -> ScrollEffect()

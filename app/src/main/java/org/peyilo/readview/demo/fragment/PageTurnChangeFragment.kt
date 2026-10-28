@@ -5,8 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import org.peyilo.libreadview.AbstractPageContainer
+import org.peyilo.libreadview.turning.GoogleCurlEffect
 import org.peyilo.libreadview.turning.CoverEffect
-import org.peyilo.libreadview.turning.IBookCurlEffect
+import org.peyilo.libreadview.turning.IosCurlEffect
 import org.peyilo.libreadview.turning.IBookSlideEffect
 import org.peyilo.libreadview.turning.ScrollEffect
 import org.peyilo.libreadview.turning.SlideEffect
@@ -35,8 +36,12 @@ class PageTurnChangeFragment(
             pageContainer.pageEffect = SlideEffect()
         }
         view.findViewById<View>(R.id.pageturn_simulation).setOnClickListener {
-            if (pageContainer.pageEffect is IBookCurlEffect) return@setOnClickListener
-            pageContainer.pageEffect = IBookCurlEffect()
+            if (pageContainer.pageEffect is IosCurlEffect) return@setOnClickListener
+            pageContainer.pageEffect = IosCurlEffect()
+        }
+        view.findViewById<View>(R.id.pageturn_google_curl).setOnClickListener {
+            if (pageContainer.pageEffect is GoogleCurlEffect) return@setOnClickListener
+            pageContainer.pageEffect = GoogleCurlEffect()
         }
         view.findViewById<View>(R.id.pageturn_scroll).setOnClickListener {
             if (pageContainer.pageEffect is ScrollEffect) return@setOnClickListener

@@ -6,7 +6,6 @@ import android.database.Observable
 import android.graphics.Canvas
 import android.graphics.PointF
 import android.graphics.Rect
-import android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
@@ -66,11 +65,6 @@ abstract class AbstractPageContainer(
             _pageEffect = value        // 清除PageEffect中包含的PageContainer引用
             value.setPageContainer(this)
             resetPagePosition()
-            val renderer = value.createRenderer()
-            renderer?.let {
-                glView.setRenderer(it)
-                glView.renderMode = RENDERMODE_CONTINUOUSLY
-            }
             value.requestReInitPagePosition()
             onAfterPageEffectChange(oldEffect, value)
             requestLayout()
@@ -127,15 +121,6 @@ abstract class AbstractPageContainer(
 
     private var initContainerPageIndexFlag = true
 
-    /**
-     * glView占据了index=0的位置，始终位于最底层，从而使得其他子view的remove/add不会影响到glView
-     * 此外，还通过重写getChildDrawingOrder()，使得glView始终位于最底层但是最后一个被绘制(从而保证其显示在最上层)
-     */
-    private val glView = PageGLSurfaceView(context).apply {
-        setEGLContextClientVersion(2)                   // OpenGL ES 2.0
-    }
-
-    private val pageViewStart = 1                       //  pageView的起始index，为1
     private val maxPageChildCount = 3                   // 最多3个pageView
 
     private var targetChild: View? = null
@@ -147,12 +132,6 @@ abstract class AbstractPageContainer(
 
     /** Called after the new effect has been attached and page positions have been reset. */
     protected open fun onAfterPageEffectChange(oldEffect: PageEffect?, newEffect: PageEffect) = Unit
-
-    init {
-        isChildrenDrawingOrderEnabled = true            // 启用子View绘制顺序控制
-        addGlViewToBottom()
-        glView.visibility = INVISIBLE
-    }
 
     /**
      * 初始化mCurContainerPageIndex变量, 并且将initContainerPageIndexFlag置为false, 只能调用一次
@@ -640,28 +619,6 @@ abstract class AbstractPageContainer(
             pageContainer.prevCarouselLayout()
         }
 
-        /**
-         * 启用GLView进行渲染
-         */
-        protected fun enbleGLView() {
-            pageContainer.glView.visibility = VISIBLE
-        }
-
-        /**
-         * 关闭GLView的渲染
-         */
-        protected fun disableGLView() {
-            pageContainer.glView.visibility = INVISIBLE
-        }
-
-        /**
-         * 创建一个PageGLSurfaceView.PageRenderer对象，用于在GLView中进行渲染，PageRenderer中包含实际的渲染代码；
-         * 如果返回null，表示不进行任何渲染
-         */
-        open fun createRenderer(): PageGLSurfaceView.PageRenderer? = null
-
-        protected val glView get() = pageContainer.glView
-
         open fun needDrawChild(): Boolean = true
     }
 
@@ -1071,94 +1028,45 @@ abstract class AbstractPageContainer(
             throw IllegalStateException("only support childCount <= $maxPageChildCount")
         }
         val index = if (index == -1) childCount else index
-        if (index == 0) {
-            // 第一个child view必须是glView， addView不支持添加一个view到index=0的位置
-            throw IllegalStateException("the first child view must be glView, please call addGlViewToBottom() first")
-        }
         super.addView(child, index, params)
-        // index - pageViewStart 是因为glView占据了index=0的位置
-        pageEffect.onAddPage(child!!, index - pageViewStart)
+        pageEffect.onAddPage(child!!, index)
     }
 
-    private fun addGlViewToBottom() {
-        val params = generateDefaultLayoutParams();
-        params.width = width;
-        params.height = height;
-        super<ViewGroup>.addView(glView, 0, params)
-    }
-
-    // 永不移除 glView
     override fun removeAllViews() {
-        for (i in childCount - 1 downTo pageViewStart) {      // 倒序遍历避免下标错乱
-            val child = getChildAt(i)
-            resetPagePosition(child)
-            removeView(child)
-        }
+        for (index in childCount - 1 downTo 0) removeViewAt(index)
     }
 
-    // 永不移除 glView
     override fun removeView(view: View?) {
         if (view == null) return
-        if (view == glView) {
-            throw IllegalStateException("glView can not be removed!")
-        }
         resetPagePosition(view)
         super.removeView(view)
     }
 
-    // 永不移除 glView
     override fun removeViewAt(index: Int) {
-        val child = getChildAt(index)
-        if (child == glView) {
-            throw IllegalStateException("glView can not be removed!")
-        }
-        resetPagePosition(child)
+        resetPagePosition(getChildAt(index))
         super.removeViewAt(index)
     }
 
-    // 永不移除 glView
     override fun removeViews(start: Int, count: Int) {
-        if (start == 0) {
-            throw IllegalStateException("glView can not be removed!")
-        }
-        for (i in start until start + count) {
-            val child = getChildAt(i)
-            resetPagePosition(child)
-        }
+        for (index in start until start + count) resetPagePosition(getChildAt(index))
         super.removeViews(start, count)
-    }
-
-    /**
-     * 永远让 glView 最后一个绘制（不会被其他child view遮挡），其他保持原相对顺序不变
-     */
-    override fun getChildDrawingOrder(childCount: Int, drawingPosition: Int): Int {
-        val g = glView
-        val gi = indexOfChild(g)
-        if (gi < 0) return drawingPosition
-
-        val last = childCount - 1
-        return when (drawingPosition) {
-            last -> gi                      // 最后一个绘制位置 → glView 的下标
-            in 0 until gi -> drawingPosition // glView 之前的孩子：顺延不变
-            else -> drawingPosition + 1      // glView 之后的孩子：整体右移一位
-        }
     }
 
     fun getPageChildAt(index: Int): View {
         if (index !in 0..<maxPageChildCount) {
             throw IllegalArgumentException("index out of range: $index")
         }
-        val child = getChildAt(index + pageViewStart)
+        val child = getChildAt(index)
             ?: throw IllegalStateException("no child at index: $index")
         return child
     }
 
     fun getPageChildCount(): Int {
-        return childCount - pageViewStart
+        return childCount
     }
 
     fun addPageChild(child: View?, index: Int = -1) {
-        val index = if (index == -1) childCount else index + pageViewStart
+        val index = if (index == -1) childCount else index
         addView(child, index)
     }
 

@@ -1,0 +1,22 @@
+{
+  "source": "Verified C11 port of iOS12.5.7 16H81 offline recovery",
+  "C_sha256": "c2d199a519e9b8fc4775e794eeee9aa903411099c3687847e50fa4288e67764b",
+  "meshFrames": 816,
+  "controlUpdates": 1440,
+  "mathSamples": 10000,
+  "panEvents": 2160,
+  "tapEvents": 360,
+  "timingSamples": 864,
+  "layouts": 20,
+  "transitionDecisions": 960,
+  "files": {
+    "control-golden.bin.gz": "23d32c66e15ea63040d1a837a376f99c885ee3e3feac247f870d20d0b6c13b66",
+    "layout-golden.bin.gz": "334c92cf10082b97b635a595f984d2d593a16721e49fbd1a66ee4e62a2da69aa",
+    "math-golden.bin.gz": "bece004efd0678779bd59a5fa36f4b340c3c2c83871d800dba5c5d9e09e84002",
+    "mesh-golden.bin.gz": "79482ccc16568d4373814846b5d3acf87c6c9cef8c6b82050c5511738266b7a4",
+    "pan-golden.bin.gz": "22e1dc6addceed198a00c135a4ca2c0031947c2db28ee5e88e2b3b2eb643b3c8",
+    "tap-golden.bin.gz": "d041eb7b12c4646f7974041648df3b11d28c7b69661dc40d19c6f7ff25bf1c1f",
+    "timing-golden.bin.gz": "4815be8ded10f33f4b8cd3ebfed9680bdc172d5ec24949d9b9c52076179ef4ef",
+    "transition-golden.bin.gz": "503b7b9798ae1bbf10604ce02da7228d43066c3ea0dfd22198ace2a7654e8674"
+  }
+}

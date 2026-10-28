@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "ReadView"
 include(":app")
 include(":app:libreadview")
+include(":ioscurl")

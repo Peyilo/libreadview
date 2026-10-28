@@ -52,9 +52,20 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="仿真"
+            android:text="iOSCurl"
+            android:textAllCaps="false"
             android:textColor="@color/black"
             tools:ignore="ContentDescription,HardcodedText" />
+
+        <Button
+            android:id="@+id/pageturn_google_curl"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="GoogleCurl"
+            android:textAllCaps="false"
+            android:textColor="@color/black" />
 
         <Button
             android:id="@+id/pageturn_scroll"

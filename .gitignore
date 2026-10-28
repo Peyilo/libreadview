@@ -5,6 +5,8 @@
 /.idea
 .DS_Store
 /build
+**/build/
+**/__pycache__/
 /captures
 /app/src/main/assets/txts
 /app/release

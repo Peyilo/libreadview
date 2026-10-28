@@ -2,9 +2,9 @@
 
 An Android library designed specifically for eBook and novel reader apps, supporting multiple immersive page turning modes including scrolling, cover, simulation, and more.
 
-| Cover                 | Google Curl                 | iBook Curl                 |
-| --------------------- | --------------------------- | -------------------------- |
-| ![](images/cover.gif) | ![](images/google_curl.gif) | ![](images/ibook_curl.gif) |
+| Cover | Google Curl |
+| --- | --- |
+| ![](images/cover.gif) | ![](images/google_curl.gif) |
 
 | Slide                 | Scroll                 | iBook Slide                 |
 | --------------------- | ---------------------- | --------------------------- |
@@ -15,6 +15,8 @@ An Android library designed specifically for eBook and novel reader apps, suppor
 To quickly see the page turning animations and layout in action, you can download the demo app:
 
  [Download demo.apk](https://github.com/Peyilo/libreadview/releases/download/v0.0.5/demo.apk)
+
+iOSCurl now uses the verified portable Kotlin algorithms. See [integration, migration and resource handling](docs/IOS_CURL.md). The current source provides iOSCurl and GoogleCurl; the linked v0.0.5 demo predates this integration.
 
 ## Features
 
@@ -121,7 +123,7 @@ readview.pageEffect = EffectFactory.create(EffectFactory.COVER)
 支持的翻页模式有：
 
 - EffectFactory.NO_ANIMATION：无动画翻页
-- EffectFactory.CURL：模拟纸张的仿真翻页
+- EffectFactory.IOS_CURL：iOS 原版算法的 Kotlin 仿真翻页（原 ID 2）
 - EffectFactory.COVER：覆盖翻页
 - EffectFactory.SLIDE：左右翻页
 - EffectFactory.SCROLL：滚动翻页
@@ -370,8 +372,6 @@ interface BookNavigator {
 
 ### TODO
 
-- IBookCurlEffect在API21和API22两个版本会出现崩溃
-- IBookCurlEffect虽然与真实的纸张翻页很相似，但是由于控制点与触摸点可能会重合，造成页面显示会出现突变。同时，IBookCurlEffect的装订线实现现在还没有很好的策略做出一个平滑的效果。在之后的开发中，考虑对控制点的位置重新设计，并且实现装订线。
 - 滚动模式默认启用，在固定的正文视口内按章节连续滚动；相邻章节在后台预加载并按需接入，加载失败时可从页脚重试。页眉页脚仅在滚动模式固定，切回分页模式时按可见正文锚点恢复到对应章节和页码。
 - 长按选择文字功能
   - 问题1：高亮相关信息以上面形式的数据保存呢？文本是否高亮是并不依赖于分页状态的，因此需要保证如果布局参数发生改变、需要重新进行分页时，高亮状态需要延续下去。

@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.peyilo.libreadview.AbstractPageContainer
 import org.peyilo.libreadview.PageContainer
 import org.peyilo.libreadview.turning.GoogleCurlEffect
-import org.peyilo.libreadview.turning.IBookCurlEffect
+import org.peyilo.libreadview.turning.IosCurlEffect
 import org.peyilo.readview.databinding.ActivityPageContainerBinding
 import org.peyilo.readview.demo.fragment.PageTurnChangeFragment
 import org.peyilo.readview.demo.view.GridPage
@@ -38,7 +38,7 @@ class PageContainerActivity : AppCompatActivity() {
         pageContainer.initPageIndex(2)
 
         // Choose a page animation manager (see options below)
-        pageContainer.pageEffect = GoogleCurlEffect()
+        pageContainer.pageEffect = IosCurlEffect()
 
         // Set adapter
         pageContainer.adapter = ColorAdapter(colors)

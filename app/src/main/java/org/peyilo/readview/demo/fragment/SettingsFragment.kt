@@ -5,8 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import org.peyilo.libreadview.basic.BasicReadView
+import org.peyilo.libreadview.turning.GoogleCurlEffect
 import org.peyilo.libreadview.turning.CoverEffect
-import org.peyilo.libreadview.turning.IBookCurlEffect
+import org.peyilo.libreadview.turning.IosCurlEffect
 import org.peyilo.libreadview.turning.IBookSlideEffect
 import org.peyilo.libreadview.turning.NoAnimEffects
 import org.peyilo.libreadview.turning.ScrollEffect
@@ -36,15 +37,16 @@ class SettingsFragment(
         val turningControll = view.findViewById<SegmentedLabelControll>(R.id.setting_turning_controll)
         turningControll.label.text = "翻页效果"
         turningControll.segmented.apply {
-            setOptions(listOf("无动画", "覆盖", "滑动", "仿真", "滚动", "Slide"))
+            setOptions(listOf("无动画", "覆盖", "滑动", "iOSCurl", "滚动", "Slide", "Google"))
             setSelectedIndex(
                 when (readview.pageEffect) {
                     is NoAnimEffects.Horizontal -> 0
                     is CoverEffect -> 1
                     is SlideEffect -> 2
-                    is IBookCurlEffect -> 3
+                    is IosCurlEffect -> 3
                     is ScrollEffect -> 4
                     is IBookSlideEffect -> 5
+                    is GoogleCurlEffect -> 6
                     else -> 0
                 }
             )
@@ -53,9 +55,10 @@ class SettingsFragment(
                     0 -> readview.pageEffect = NoAnimEffects.Horizontal()
                     1 -> readview.pageEffect = CoverEffect()
                     2 -> readview.pageEffect = SlideEffect()
-                    3 -> readview.pageEffect = IBookCurlEffect()
+                    3 -> readview.pageEffect = IosCurlEffect()
                     4 -> readview.pageEffect = ScrollEffect()
                     5 -> readview.pageEffect = IBookSlideEffect()
+                    6 -> readview.pageEffect = GoogleCurlEffect()
                     else -> throw IllegalStateException("Unexpected value: $index")
                 }
             }
